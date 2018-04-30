@@ -13,7 +13,7 @@ time_slice = session.time_slice(start, stop)
 trials = session.trials  # list of Slices corresponding to the trials
 
 filtered_time_slice = time_slice.convolve(window)
-frame_size = TimePoint(ms=0)
+frame_size = TimePoint(ms=0)#test
 frame_stride = TimePoint(ms=150)
 filtered_frames = filtered_time_slice.to_frames(frame_size, frame_stride)  # a list of FilteredSlice
 frame1 = filtered_frames[0]
