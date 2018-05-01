@@ -61,7 +61,14 @@ eventCh_TTL = all_channels_dict["channel"] #channel number
 eventType_TTL = all_channels_dict["eventType"]#3 for TTL events TODO other numbers?
 eventID_TTL = all_channels_dict["eventId"]#1: for on, 0 for off
 recording_num = all_channels_dict["recordingNumber"]
-samplerate = all_channels_dict["header"]["sampleRate"]
-print(all_channels_dict)
-print(timestamps)
-print(eventType_TTL)
+sample_rate = float(all_channels_dict["header"]["sampleRate"])
+
+
+#timestamp for foster data
+foster_timestamp = [(x-timestamps[0])/sample_rate*1000 for ind, x in enumerate(timestamps) if ((eventType_TTL[ind] == 3) and (eventCh_TTL[ind] == 2) and(eventID_TTL[ind] == 1) and(recording_num[ind] == 0))]
+
+if initial_detection.size>foster_timestamp.size: #if 
+    foster_data = foster_data[:,0:foster_timestamp.size]
+    initial_detection = initial_detection[1:foster_timestamp.size]
+
+print(foster_timestamp)
