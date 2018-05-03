@@ -1,7 +1,7 @@
 from tkinter import ttk
 import tkinter as tk
 from tkinter.scrolledtext import ScrolledText
-import config
+import settings
 
 def demo():
     root = tk.Tk()
