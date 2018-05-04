@@ -18,19 +18,19 @@ config = dict(
 )
 
 
-def save_parameters(file_name, data):
-    """ saves the parameters in a pickle file"""
+def save_as_pickle(file_name, data):
+    """ saves data in a pickle file"""
     with open(file_name, 'wb') as f:
         pickle.dump(data, f)
         return "saved!"
 
 
-def load_parameters(file_name):
-    """loads parameters from pickle file"""
+def load_pickle(file_name):
+    """loads data from pickle file"""
     with open(file_name,'rb') as f:
         data = pickle.load(f)
         return data
 
 
-save_parameters('config.pkl',config)
-config = load_parameters('config.pkl')
+save_as_pickle('config.pkl', config)
+config = load_pickle('config.pkl')
