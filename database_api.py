@@ -47,18 +47,20 @@ class Slice(FilteredSlice):
 
 
 class Session(Slice):
-    def __init__(self, spikes = None, spikes_dense = None, filter = None, filtered_spikes = None, metadata = None, enriched_metadata = None):
+    def __init__(self, spikes=None, spikes_dense=None, licks=None, licks_dense=None, position_x=None, position_y=None,
+                 speed=None, filter=None, filtered_spikes=None, metadata=None, enriched_metadata=None):
         self.spikes = spikes
         self.spikes_dense = spikes_dense
+        self.licks = licks
+        self.licks_dense = licks_dense
+        self.position_x = position_x
+        self.position_y = position_y
+        self.speed = speed
         self.filter = filter
         self.filtered_spikes = filtered_spikes
         self.metadata = metadata
         self.enriched_metadata = enriched_metadata
         pass
-
-
-
-
 
 class Trial:
     def __init__(self, spikes = None, filter = None, filtered_spikes = None, metadata = None, enriched_metadata = None):
