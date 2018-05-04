@@ -1,24 +1,6 @@
 import numpy as np
 
 
-start = TimePoint(ms=0)
-stop = TimePoint(ms=1000)
-# or equivalently
-start = TimePoint(s=0)
-stop = TimePoint(s=1)
-
-session = Session(path_to_session_1)
-session += Session(path_to_session_2)  # concatenates session1 and session2
-time_slice = session.time_slice(start, stop)
-trials = session.trials  # list of Slices corresponding to the trials
-
-filtered_time_slice = time_slice.convolve(window)
-frame_size = TimePoint(ms=0)
-frame_stride = TimePoint(ms=150)
-filtered_frames = filtered_time_slice.to_frames(frame_size, frame_stride)  # a list of FilteredSlice
-frame1 = filtered_frames[0]
-filtered_spikes = frame1.data  # a numpy array
-metadata = frame1.data  # a dictionary
 
 
 class TimePoint:
@@ -65,52 +47,26 @@ class Slice(FilteredSlice):
 
 
 class Session(Slice):
-    def __init__(self, path):
+    def __init__(self, spikes = None, spikes_dense = None, filter = None, filtered_spikes = None, metadata = None, enriched_metadata = None):
+        self.spikes = spikes
+        self.spikes_dense = spikes_dense
+        self.filter = filter
+        self.filtered_spikes = filtered_spikes
+        self.metadata = metadata
+        self.enriched_metadata = enriched_metadata
         pass
 
 
-start = TimePoint(ms=0)
-stop = TimePoint(ms=1000)
-# or equivalently
-start = TimePoint(s=0)
-stop = TimePoint(s=1)
 
-time_slice = session.time_slice(start, stop)
-trials = session.trials  # list of Slices corresponding to the trials
-
-filtered_time_slice = time_slice.convolve(window)
-frame_size = TimePoint(ms=0)
-frame_stride = TimePoint(ms=150)
-filtered_frames = filtered_time_slice.to_frames(frame_size, frame_stride)  # a list of FilteredSlice
-frame1 = filtered_frames[0]
-filtered_spikes = frame1.data  # a numpy array
-metadata = frame1.data  # a dictionary
-
-
-
-
-my_data_slice = Slice("../data/path_to_folder/")
-start = TimePoint(ms=0)
-end = TimePoint(ms=150)
-my_new_data_slice = my_data_slice.time_slice(start, end)
-my_data_slice.is_convolved  ---> returns False
-my_data_slice.set_filter(np_filter)
-my_data_slice.is_convolved  ---> returns True
-
-# returns a list of numy arrays with the convolved data
-my_frames = my_data_slice.to_frames(TimePoint(ms=100), TimePoint(ms=10))
-
-
-my_trial = my_data_slice.get_trials()
 
 
 class Trial:
-    def __init__(self, path):
-        self.spikes = ???
-        self.filter = ???
-        self.filtered_spikes = ???
-        self.metadata = ???
-        self.enriched_metadata = ???
+    def __init__(self, spikes = None, filter = None, filtered_spikes = None, metadata = None, enriched_metadata = None):
+        self.spikes = spikes
+        self.filter = filter
+        self.filtered_spikes = filtered_spikes
+        self.metadata = metadata
+        self.enriched_metadata = enriched_metadata
         pass
 
     @property
@@ -148,3 +104,7 @@ class Slice(Trial):
     def get_trials(self, start_position=None, end_position=None, max_length=None, min_length=None):
         # returns a list Trial object corresponding to the trials contained in that slice
         pass
+
+
+
+

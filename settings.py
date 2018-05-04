@@ -1,7 +1,7 @@
-# Saves and loads parameters used in all networks
+"""Saves and loads parameters used in all networks """
 import pickle
 
-# paths and filenames
+""" paths and filenames"""
 path_to_session = "C:/Users/NN/Desktop/Master/sample_data/2018-04-09_14-39-52/"
 foster_path = path_to_session + "2018-04-09_14-39-53_fostertask.dat"
 all_channels_path = path_to_session + "all_channels.events"
@@ -19,14 +19,14 @@ config = dict(
 
 
 def save_parameters(file_name, data):
-    # saves the parameters in a pickle file
+    """ saves the parameters in a pickle file"""
     with open(file_name, 'wb') as f:
         pickle.dump(data, f)
         return "saved!"
 
 
 def load_parameters(file_name):
-    # loads the parameters from file
+    """loads parameters from pickle file"""
     with open(file_name,'rb') as f:
         data = pickle.load(f)
         return data
