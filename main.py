@@ -9,7 +9,7 @@ start = TimePoint(ms=0)
 stop = TimePoint(ms=1000)
 
 session = make_session() # make session from path
-#save_as_pickle("session.pkl",session) # save session to file
+save_as_pickle("session.pkl",session) # save session to file
 #session = load_pickle("session.pkl") # load session from file
 #session += Session(path_to_session_2)  # concatenates session1 and session2
 time_slice = session.time_slice(start, stop)
