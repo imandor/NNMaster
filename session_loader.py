@@ -4,7 +4,7 @@ import tensorflow as tf
 import OpenEphys
 import scipy
 from settings import config
-from database_api import Session
+from database_api import Session, TimePoint
 
 
 def load_datafile(file_path):
@@ -40,14 +40,24 @@ def find_max_time(mat):
     return maximum
 
 
-def make_zero_nxm_matrix(n,m):
+def make_zero_nxm_matrix(n, m):
     """ creates a list of size n x m and fills it with zeros"""
     mat = [0] * m
     for i in range(m):
         mat[i] = [0] * n
     return mat
 
-def make_dense_tf_matrix(mat, minimum_value=None, maximum_value=None):
+
+def clean_spikes(spikes):
+    """spike data from the source file is formatted as [[[1,2],[3,4]]] which is unfavorable
+    and replaced by [[1,2],[3,4]] here"""
+    return_array = np.empty(spikes.size, dtype=object)
+    for i in range(0, spikes.size):
+        return_array[i] = spikes[0][i].squeeze()
+    return return_array
+
+
+def make_dense_np_matrix(mat, minimum_value=None, maximum_value=None):
     """  accepts a list of lists of float and retuns a binary dense tensorflow matrix with 1 on y-axis where float would
      be in axis. Should be interpreted as neuron x time"""
 
@@ -56,23 +66,19 @@ def make_dense_tf_matrix(mat, minimum_value=None, maximum_value=None):
     if maximum_value == None:
         maximum_value = find_max_time(mat)
 
-    dense_matrix = make_zero_nxm_matrix(1 + int(maximum_value)-int(minimum_value),len(mat))
+    dense_matrix = make_zero_nxm_matrix(1 + int(maximum_value) - int(minimum_value), len(mat))
     for i in range(0, len(mat)):  # for each neuron
-        for j in range(0, len(mat[i])-1):  # for all saved times
-            k = int(mat[i][j])  #saved time as index
+        for j in range(0, len(mat[i]) - 1):  # for all saved times
+            k = int(mat[i][j])  # saved time as index
             dense_matrix[i][k] = 1
+    dense_matrix = np.array(dense_matrix)
     return dense_matrix
 
 
 def make_session():
     """ extract all relevant information for session and returns Session object. File paths are set under settings.py"""
 
-
-
-    #TODO delete test here
-    spike_times = [[0.5, 2.0, 4,0], [3.5, 4.4, 1.2, 4.7]]
-    # load path definitions
-    print("loading session")
+    print("loading session...")
     foster_path = config["paths"]["foster_path"]
     all_channels_path = config["paths"]["all_channels_path"]
     spiketracker_path = config["paths"]["spiketracker_path"]
@@ -80,10 +86,10 @@ def make_session():
     # extract spiketracker data
     spiketracker_data = scipy.io.loadmat(spiketracker_path)
     # param: head_s, pixelcm, speed_s, spike_templates, spike_times, waveform,x_s, y_s
-    spike_times = spiketracker_data["spike_times"]
-    x_s = spiketracker_data["x_s"]
-    y_s = spiketracker_data["y_s"]
-    speed_s = spiketracker_data["speed_s"]
+    spikes = spiketracker_data["spike_times"]
+    position_x = spiketracker_data["x_s"].squeeze()
+    position_y = spiketracker_data["y_s"].squeeze()
+    speed = spiketracker_data["speed_s"].squeeze()
 
     # load foster data
     foster_data = load_datafile(foster_path)  # contains tripels with data about TODO TODO and location
@@ -105,8 +111,8 @@ def make_session():
     # timestamp for foster data
     foster_timestamp = [(x
                          - timestamps[0]) / sample_rate * 1000 for ind, x in enumerate(timestamps) if (
-            (eventtype_ttl[ind] == 3) and (eventch_ttl[ind] == 2) and (eventid_ttl[ind] == 1) and (
-                recording_num[ind] == 0))]
+                                (eventtype_ttl[ind] == 3) and (eventch_ttl[ind] == 2) and (eventid_ttl[ind] == 1) and (
+                                recording_num[ind] == 0))]
 
     if len(initial_detection) > len(foster_timestamp):
         foster_data = foster_data[:, 0:foster_timestamp.size]
@@ -123,15 +129,17 @@ def make_session():
     durations = [item[1] for item in foster_data]
     lickwells = [item[2] for item in foster_data]
 
-    rewarded_lick = [x for ind, x in enumerate(lickwells) if rewarded[ind] == 1]
+    trial_timestamp = np.array([(x, initial_detection_timestamp[ind]) for ind, x in enumerate(lickwells) if
+                                rewarded[ind] == 1])  # TODO was originally rewarded_licks, is this ok?
 
-    data_licks = [initial_detection_timestamp, foster_timestamp, lickwells,
-                  rewarded]  # TODO: code is correct until here
-    spike_times = spike_times.squeeze().squeeze()
+    licks = np.array([initial_detection_timestamp, foster_timestamp, lickwells,
+                      rewarded])
+    spikes = clean_spikes(spikes)
     # spikes = None, filter = None, filtered_spikes = None, metadata = None, enriched_metadata = None
-    spikes_dense = make_dense_tf_matrix(spike_times)
-    licks_dense = make_dense_tf_matrix(data_licks)
-    session = Session(spikes=spike_times, licks=data_licks, spikes_dense=spikes_dense, licks_dense=licks_dense, position_x=x_s, position_y=y_s,speed=speed_s)
+    spikes_dense = make_dense_np_matrix(spikes)
+    #spikes = spikes.astype(TimePoint)
+    session = Session(spikes=spikes, licks=licks, spikes_dense=spikes_dense, position_x=position_x,
+                      position_y=position_y, speed=speed, trial_timestamp=trial_timestamp)
 
     print("finished loading session")
     return session
