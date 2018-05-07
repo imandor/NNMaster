@@ -1,13 +1,16 @@
 import numpy as np
 import pickle
 import tensorflow as tf
+from settings import save_as_pickle, load_pickle
 from session_loader import make_session
 from database_api import TimePoint, Slice
 
 start = TimePoint(ms=0)
 stop = TimePoint(ms=1000)
 
-session = make_session()
+session = make_session() # make session from path
+save_as_pickle("session.pkl",session) # save session to file
+#session = load_pickle("session.pkl") # load session from file
 #session += Session(path_to_session_2)  # concatenates session1 and session2
 time_slice = session.time_slice(start, stop)
 trials = session.trials  # list of Slices corresponding to the trials

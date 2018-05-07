@@ -1,5 +1,6 @@
 """contains functions to load session data from source files"""
 import numpy as np
+import tensorflow as tf
 import OpenEphys
 import scipy
 from settings import config
@@ -17,9 +18,59 @@ def load_datafile(file_path):
         return 0
 
 
+def find_min_time(mat):
+    """ finds minimum value in ordered np list of lists. The default np min and flatten functions don't different
+    list sizes"""
+    minimum = mat[0][0]
+    for i in range(0, mat.size):
+        current_value = mat[i][0]
+        if current_value < minimum:
+            minimum = current_value
+    return minimum
+
+
+def find_max_time(mat):
+    """ finds maximum value in ordered np list of lists. The default np min and flatten functions don't different
+    list sizes"""
+    maximum = mat[0][-1]
+    for i in range(0, mat.size):
+        current_value = mat[i][-1]
+        if current_value > maximum:
+            maximum = current_value
+    return maximum
+
+
+def make_zero_nxm_matrix(n,m):
+    """ creates a list of size n x m and fills it with zeros"""
+    mat = [0] * m
+    for i in range(m):
+        mat[i] = [0] * n
+    return mat
+
+def make_dense_tf_matrix(mat, minimum_value=None, maximum_value=None):
+    """  accepts a list of lists of float and retuns a binary dense tensorflow matrix with 1 on y-axis where float would
+     be in axis. Should be interpreted as neuron x time"""
+
+    if minimum_value == None:
+        minimum_value = find_min_time(mat)
+    if maximum_value == None:
+        maximum_value = find_max_time(mat)
+
+    dense_matrix = make_zero_nxm_matrix(1 + int(maximum_value)-int(minimum_value),len(mat))
+    for i in range(0, len(mat)):  # for each neuron
+        for j in range(0, len(mat[i])-1):  # for all saved times
+            k = int(mat[i][j])  #saved time as index
+            dense_matrix[i][k] = 1
+    return dense_matrix
+
+
 def make_session():
     """ extract all relevant information for session and returns Session object. File paths are set under settings.py"""
 
+
+
+    #TODO delete test here
+    spike_times = [[0.5, 2.0, 4,0], [3.5, 4.4, 1.2, 4.7]]
     # load path definitions
     print("loading session")
     foster_path = config["paths"]["foster_path"]
@@ -76,7 +127,11 @@ def make_session():
 
     data_licks = [initial_detection_timestamp, foster_timestamp, lickwells,
                   rewarded]  # TODO: code is correct until here
+    spike_times = spike_times.squeeze().squeeze()
     # spikes = None, filter = None, filtered_spikes = None, metadata = None, enriched_metadata = None
-    session = Session(spikes=spike_times)
+    spikes_dense = make_dense_tf_matrix(spike_times)
+    licks_dense = make_dense_tf_matrix(data_licks)
+    session = Session(spikes=spike_times, licks=data_licks, spikes_dense=spikes_dense, licks_dense=licks_dense, position_x=x_s, position_y=y_s,speed=speed_s)
+
     print("finished loading session")
     return session
