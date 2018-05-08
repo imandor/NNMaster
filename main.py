@@ -1,7 +1,7 @@
 import numpy as np
 import pickle
 import tensorflow as tf
-from settings import save_as_pickle, load_pickle
+
 from session_loader import make_session
 from database_api import TimePoint, Slice
 
@@ -13,6 +13,7 @@ stop = TimePoint(ms=1000)
 session = load_pickle("session.pkl")  # load session from file
 # session += Session(path_to_session_2)  # concatenates session1 and session2
 time_slice = session.time_slice(start, stop)
+trials = session.get_trials()
 trials = session.trials  # list of Slices corresponding to the trials
 
 filtered_time_slice = time_slice.convolve()  # window

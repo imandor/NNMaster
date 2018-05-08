@@ -4,7 +4,6 @@ import tensorflow as tf
 import OpenEphys
 import scipy
 from settings import config
-from database_api import Session, TimePoint
 
 
 def load_datafile(file_path):
@@ -76,7 +75,7 @@ def make_dense_np_matrix(mat, minimum_value=None, maximum_value=None):
 
 
 def make_session():
-    """ extract all relevant information for session and returns Session object. File paths are set under settings.py"""
+    """ extract all relevant information for session and returns Session dict. File paths are set under settings.py"""
 
     print("loading session...")
     foster_path = config["paths"]["foster_path"]
@@ -129,7 +128,7 @@ def make_session():
     durations = [item[1] for item in foster_data]
     lickwells = [item[2] for item in foster_data]
 
-    trial_timestamp = np.array([(x, initial_detection_timestamp[ind]) for ind, x in enumerate(lickwells) if
+    trial_timestamp = np.array([[x, initial_detection_timestamp[ind]] for ind, x in enumerate(lickwells) if
                                 rewarded[ind] == 1])  # TODO was originally rewarded_licks, is this ok?
 
     licks = np.array([initial_detection_timestamp, foster_timestamp, lickwells,
@@ -138,8 +137,11 @@ def make_session():
     # spikes = None, filter = None, filtered_spikes = None, metadata = None, enriched_metadata = None
     spikes_dense = make_dense_np_matrix(spikes)
     #spikes = spikes.astype(TimePoint)
-    session = Session(spikes=spikes, licks=licks, spikes_dense=spikes_dense, position_x=position_x,
-                      position_y=position_y, speed=speed, trial_timestamp=trial_timestamp)
+    # session = Session(spikes=spikes, licks=licks, spikes_dense=spikes_dense, position_x=position_x,
+    #                   position_y=position_y, speed=speed, trial_timestamp=trial_timestamp)
+    return_dict = dict(
+        spikes=spikes, licks=licks, spikes_dense=spikes_dense, position_x=position_x,
+                           position_y=position_y, speed=speed, trial_timestamp=trial_timestamp)
 
     print("finished loading session")
-    return session
+    return return_dict
