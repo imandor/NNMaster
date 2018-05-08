@@ -54,8 +54,6 @@ class Slice:
         # returns a FilteredSlice
         pass
 
-    def filter_by_time(self,start,stop):
-
 
 class FilteredSlice(Slice):
     # has no __init__, must be constructed from a session
@@ -106,6 +104,7 @@ class Session(Slice):
         self.enriched_metadata = enriched_metadata
         pass
 
+
 class Trial:
     # has no __init__, must be constructed from a session
 
@@ -142,12 +141,12 @@ class Trial:
 
 class Slice(Trial):
 
-    def get_trial_by_id(self,trial_id):
+    def get_trial_by_id(self, trial_id):
         start = TimePoint(ms=self.trial_timestamp[trial_id][1])
         stop = TimePoint(ms=self.trial_timestamp[trial_id + 1][1])
         return Trial(Slice.time_slice())
 
-    def get_trial_by_time(self,trial_time):
+    def get_trial_by_time(self, trial_time):
         start = TimePoint(ms=np.argmax(self.trial_timestamp[..., 1] > trial_time))
         trial_id = np.where(self.trial_timestamp[..., 1] == start.ms)
         stop = TimePoint(ms=self.trial_timestamp[trial_id + 1][1])
@@ -166,12 +165,5 @@ class Slice(Trial):
                 if end_position == current_well or end_position is None:
                     if max_length < trial_duration or max_length is None:
                         if min_length > trial_duration or min_length is None:
-                            return_array.append(self.get_trial_by_time(self,current_time))
+                            return_array.append(self.get_trial_by_time(self, current_time))
         pass
-
-
-
-
-
-
-

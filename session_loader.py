@@ -17,7 +17,7 @@ def load_datafile(file_path):
         return 0
 
 
-def find_min_time(mat): #test
+def find_min_time(mat):
     """ finds minimum value in ordered np list of lists. The default np min and flatten functions don't different
     list sizes"""
     minimum = mat[0][0]
