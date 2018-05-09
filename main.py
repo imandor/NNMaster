@@ -10,11 +10,11 @@ stop = TimePoint(ms=1000)
 
 session = Session(session_file="session.pkl")
 
-trials = session.get_trials()
+trials = session.make_slice(start=start, stop=stop)
+print("fin")
 
-#
-#
-#
+
+
 # time_slice = session.time_slice(start, stop)
 # trials = session.get_trials()
 # trials = session.trials  # list of Slices corresponding to the trials
