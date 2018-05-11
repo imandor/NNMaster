@@ -36,25 +36,6 @@ def splice_nparray_at_start_stop2(li, start, stop):
     return np.asarray([x for ind, x in enumerate(li) if stop.ms > li[ind][1] >= start.ms])
 
 
-def make_slice(self, start, stop):
-    """ returns a slice object containing a subsection of the time"""
-    spikes = np.array([splice_nparray_at_start_stop(x, start, stop) for x in self.spikes])
-    # TODO all entries filters are not ready
-    spikes_dense = np.array(
-        [x for ind, x in enumerate(self.spikes_dense) if stop.ms > ind >= start.ms])  # TODO: not functional
-    licks = np.array([splice_nparray_at_start_stop(x, start, stop) for x in self.licks])
-    position_x = np.array([x for ind, x in enumerate(self.position_x) if stop.ms > ind >= start.ms])
-    position_y = np.array([x for ind, x in enumerate(self.position_y) if stop.ms > ind >= start.ms])
-    speed = np.array([x for ind, x in enumerate(self.speed) if stop.ms > ind >= start.ms])
-    trial_timestamp = np.asarray(splice_nparray_at_start_stop2([x for x in self.trial_timestamp], start, stop))
-    filtered_spikes = self.filtered_spikes
-    metadata = self.metadata
-    enriched_metadata = self.enriched_metadata
-    return Slice(spikes=spikes, spikes_dense=spikes_dense, licks=licks, position_x=position_x,
-                 position_y=position_y, speed=speed, trial_timestamp=trial_timestamp, filter=None,
-                 filtered_spikes=filtered_spikes, metadata=metadata, enriched_metadata=enriched_metadata)
-
-
 def make_trial(self):
     return Trial(self)
 
@@ -82,6 +63,24 @@ class Session:
         self.metadata = metadata
         self.enriched_metadata = enriched_metadata
         pass
+
+    def make_slice(self, start, stop):
+        """ returns a slice object containing a subsection of the time"""
+        spikes = np.array([splice_nparray_at_start_stop(x, start, stop) for x in self.spikes])
+        # TODO all entries filters are not ready
+        spikes_dense = np.array(
+            [x for ind, x in enumerate(self.spikes_dense) if stop.ms > ind >= start.ms])  # TODO: not functional
+        licks = np.array([splice_nparray_at_start_stop(x, start, stop) for x in self.licks])
+        position_x = np.array([x for ind, x in enumerate(self.position_x) if stop.ms > ind >= start.ms])
+        position_y = np.array([x for ind, x in enumerate(self.position_y) if stop.ms > ind >= start.ms])
+        speed = np.array([x for ind, x in enumerate(self.speed) if stop.ms > ind >= start.ms])
+        trial_timestamp = np.asarray(splice_nparray_at_start_stop2([x for x in self.trial_timestamp], start, stop))
+        filtered_spikes = self.filtered_spikes
+        metadata = self.metadata
+        enriched_metadata = self.enriched_metadata
+        return Slice(spikes=spikes, spikes_dense=spikes_dense, licks=licks, position_x=position_x,
+                     position_y=position_y, speed=speed, trial_timestamp=trial_timestamp, filter=None,
+                     filtered_spikes=filtered_spikes, metadata=metadata, enriched_metadata=enriched_metadata)
 
 
 class Slice(Session):
@@ -112,7 +111,7 @@ class Slice(Session):
     def get_trial_by_id(self, trial_id):
         start = TimePoint(ms=self.trial_timestamp[trial_id][1])
         stop = TimePoint(ms=self.trial_timestamp[trial_id + 1][1])
-        return make_trial(make_slice(start, stop))
+        return make_trial(self.make_slice(start, stop))
 
     def get_trial_by_time(self, trial_time):
         start = TimePoint(ms=np.argmax(self.trial_timestamp[..., 1] > trial_time.ms))
