@@ -1,18 +1,17 @@
-import numpy as np
-import pickle
-import tensorflow as tf
 from database_api import Slice,Session
 from session_loader import make_session
 from database_api import TimePoint, Slice
+from tdd_test import test_all
 
 start = TimePoint(ms=0)
-stop = TimePoint(ms=1000)
+stop = TimePoint(ms=10000000)
 
-session = Session(session_file="session.pkl")
+# session = Session(session_file="session.pkl")
+# session = Session(save_session_as="session.pkl")
+# session = Session(session_file="session.pkl")
 
-trials = session.make_slice(start=start, stop=stop)
+test_all()
 print("fin")
-
 
 
 # time_slice = session.time_slice(start, stop)

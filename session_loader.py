@@ -128,7 +128,7 @@ def make_session():
     durations = [item[1] for item in foster_data]
     lickwells = [item[2] for item in foster_data]
 
-    trial_timestamp = np.array([[x, initial_detection_timestamp[ind]] for ind, x in enumerate(lickwells) if
+    trial_timestamp = np.asarray([[x, initial_detection_timestamp[ind]] for ind, x in enumerate(lickwells) if
                                 rewarded[ind] == 1])  # TODO was originally rewarded_licks, is this ok?
 
     licks = np.array([initial_detection_timestamp, foster_timestamp, lickwells,
