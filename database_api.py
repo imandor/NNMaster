@@ -52,7 +52,7 @@ class Session:
         if save_session_as is not None:
             save_as_pickle(save_session_as, session_dict)
         self.spikes = session_dict["spikes"]
-        self.spikes_dense = session_dict["spikes_dense"]
+        # self.spikes_dense = session_dict["spikes_dense"]
         self.licks = session_dict["licks"]
         self.position_x = session_dict["position_x"]
         self.position_y = session_dict["position_y"]
@@ -68,8 +68,7 @@ class Session:
         """ returns a slice object containing a subsection of the time"""
         spikes = np.array([splice_nparray_at_start_stop(x, start, stop) for x in self.spikes])
         # TODO all entries filters are not ready
-        spikes_dense = np.array(
-            [x for ind, x in enumerate(self.spikes_dense) if stop.ms > ind >= start.ms])  # TODO: not functional
+        # spikes_dense = np.array([[y for ind2, y in enumerate(x) if stop.ms>ind2>start.ms] for ind1, x in enumerate(self.spikes_dense[...])])  # TODO: not functional
         licks = np.array([splice_nparray_at_start_stop(x, start, stop) for x in self.licks])
         position_x = np.array([x for ind, x in enumerate(self.position_x) if stop.ms > ind >= start.ms])
         position_y = np.array([x for ind, x in enumerate(self.position_y) if stop.ms > ind >= start.ms])
@@ -78,7 +77,7 @@ class Session:
         filtered_spikes = self.filtered_spikes
         metadata = self.metadata
         enriched_metadata = self.enriched_metadata
-        return Slice(spikes=spikes, spikes_dense=spikes_dense, licks=licks, position_x=position_x,
+        return Slice(spikes=spikes, licks=licks, position_x=position_x,
                      position_y=position_y, speed=speed, trial_timestamp=trial_timestamp, filter=None,
                      filtered_spikes=filtered_spikes, metadata=metadata, enriched_metadata=enriched_metadata)
 
@@ -88,7 +87,7 @@ class Slice(Session):
                  trial_timestamp=None, filtered_spikes=None, metadata=None, enriched_metadata=None, filter=None):
         """ Represents a time range of collected data. """
         self.spikes = spikes
-        self.spikes_dense = spikes_dense
+        # self.spikes_dense = spikes_dense
         self.licks = licks
         self.position_x = position_x
         self.position_y = position_y
@@ -146,7 +145,7 @@ class FilteredSlice(Slice):
         pass
 
 
-class Trial:
+class Trial(Slice):
 
     @property
     def is_convolved(self):

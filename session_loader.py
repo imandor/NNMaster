@@ -140,7 +140,7 @@ def make_session():
     # session = Session(spikes=spikes, licks=licks, spikes_dense=spikes_dense, position_x=position_x,
     #                   position_y=position_y, speed=speed, trial_timestamp=trial_timestamp)
     return_dict = dict(
-        spikes=spikes, licks=licks, spikes_dense=spikes_dense, position_x=position_x,
+        spikes=spikes, licks=licks, position_x=position_x,
                            position_y=position_y, speed=speed, trial_timestamp=trial_timestamp)
 
     print("finished loading session")
