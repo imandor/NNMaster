@@ -64,4 +64,3 @@ print("fin")
 #
 # my_trial = my_data_slice.get_trials()
 
-print("fin")
