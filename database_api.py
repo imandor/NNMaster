@@ -1,6 +1,7 @@
 import numpy as np
 from session_loader import make_session
 from settings import save_as_pickle, load_pickle
+import matplotlib.pyplot as plt
 
 
 class TimePoint:
@@ -101,7 +102,10 @@ class Slice(Session):
     def get_trial_by_id(self, trial_id):
         start = TimePoint(ms=self.trial_timestamp[trial_id][1])
         stop = TimePoint(ms=self.trial_timestamp[trial_id + 1][1])
-        return self.make_slice(start, stop).make_trial()
+        start_well = self.trial_timestamp[trial_id - 1][0]
+        stop_well = self.trial_timestamp[trial_id - 1][0]
+        return self.make_slice(start, stop).make_trial(trial_id=trial_id, start_time=start, stop_time=stop,
+                                                start_well=start_well, stop_well=stop_well, trial_metadata=None)
 
     def get_trial_by_time(self, trial_time):
         start = TimePoint(ms=np.argmax(self.trial_timestamp[..., 1] > trial_time.ms))
@@ -112,27 +116,32 @@ class Slice(Session):
     def get_all_trials_by_time(self, start=None, stop=None, max_length=None, min_length=None):
         # returns a list of Trial objects corresponding to the trials contained in that slice
         for ind in range(1, len(self.trial_timestamp)):  # the first intended lick is always at well 1
-            return_array = np.empty(1, dtype=object)
+            return_array = np.empty(0, dtype=object)
             last_well = self.trial_timestamp[ind - 1][0]
-            last_time = self.trial_timestamp[ind - 1][1]
+            last_time = TimePoint(ms=self.trial_timestamp[ind - 1][1])
             current_well = self.trial_timestamp[ind][0]
-            current_time = self.trial_timestamp[ind][1]
-            trial_duration = current_time - last_time
-            if start.ms == last_well or start is None:
-                if stop.ms == current_well or stop is None:
-                    if max_length < trial_duration or max_length is None:
-                        if min_length > trial_duration or min_length is None:
-                            return_array.append(self.get_trial_by_time(self, current_time))
+            current_time = TimePoint(ms=self.trial_timestamp[ind][1])
+            trial_duration = current_time.ms - last_time.ms
+            trial_id = self.trial_timestamp[1]
+            if start.ms <= last_time.ms or start is None:
+                if stop.ms >= current_time.ms or stop is None:
+                    if max_length is None or max_length.ms < trial_duration:
+                        if min_length is None or min_length.ms > trial_duration:
+                            a = [self.make_trial(trial_id=trial_id, start_time=last_time, stop_time=current_time,
+                                                start_well=last_well, stop_well=current_well, trial_metadata=None)]
+                            np.concatenate((return_array, a),axis=0)
         return return_array
 
     def get_all_trials_by_id(self):
         pass
 
-    def make_trial(self, trial_metadata=None):
-        return Trial(spikes=self.spikes, licks=self.licks, position_x=self.position_x, position_y=self.position_y,
+    def make_trial(self, trial_id, start_time, stop_time, start_well, stop_well, trial_metadata=None):
+        return Trial(trial_id=trial_id, start_time=start_time, stop_time=stop_time, start_well=start_well,
+                     stop_well=stop_well,
+                     spikes=self.spikes, licks=self.licks, position_x=self.position_x, position_y=self.position_y,
                      speed=self.speed,
-                     trial_timestamp=self.trial_timestamp, filtered_spikes=self.filtered_spikes,
-                     trial_metadata=trial_metadata, enriched_metadata=self.enriched_metadata, filter=self.filter)
+                     filtered_spikes=self.filtered_spikes, trial_metadata=trial_metadata,
+                     enriched_metadata=self.enriched_metadata, filter=self.filter)
 
 
 class FilteredSlice(Slice):
@@ -143,15 +152,20 @@ class FilteredSlice(Slice):
 
 
 class Trial:
-    def __init__(self, spikes=None, licks=None, position_x=None, position_y=None, speed=None,
-                 trial_timestamp=None, filtered_spikes=None, trial_metadata=None, enriched_metadata=None, filter=None):
+    def __init__(self, trial_id, start_time, stop_time, start_well, stop_well, spikes=None, licks=None, position_x=None,
+                 position_y=None, speed=None,
+                 filtered_spikes=None, trial_metadata=None, enriched_metadata=None, filter=None):
+        self.trial_id=trial_id
         self.spikes = spikes
+        self.start_time = start_time
+        self.stop_time = stop_time
+        self.start_well = start_well
+        self.stop_well = stop_well
         # self.spikes_dense = spikes_dense
         self.licks = licks
         self.position_x = position_x
         self.position_y = position_y
         self.speed = speed
-        self.trial_timestamp = trial_timestamp
         self.filter = filter
         self.filtered_spikes = filtered_spikes
         self.trial_metadata = trial_metadata
@@ -177,8 +191,15 @@ class Trial:
         self.plot_metadata(ax1, args1, args2)
         pass
 
-    def plot_spikes(self, ax, args1, args2, filtered=True):
+    def plot_spikes(self, ax=None, args1=None, args2=None, filtered=False):
         # if filtered = False, plot raw spikes else plot filtered spikes
+        if filtered is True:
+            x = self.filtered_spikes
+        else:
+            x = self.spikes
+        plt.plot(x, x, label='linear')
+        plt.legend()
+        plt.show()
         pass
 
     def plot_metadata(self, ax, args1, args2):
