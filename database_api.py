@@ -127,9 +127,8 @@ class Slice(Session):
                 if stop.ms >= current_time.ms or stop is None:
                     if max_length is None or max_length.ms < trial_duration:
                         if min_length is None or min_length.ms > trial_duration:
-                            a = [self.make_trial(trial_id=trial_id, start_time=last_time, stop_time=current_time,
-                                                start_well=last_well, stop_well=current_well, trial_metadata=None)]
-                            np.concatenate((return_array, a),axis=0)
+                            return_array = np.concatenate((return_array, [self.make_trial(trial_id=trial_id, start_time=last_time, stop_time=current_time,
+                                                start_well=last_well, stop_well=current_well, trial_metadata=None)]),axis=0)
         return return_array
 
     def get_all_trials_by_id(self):
