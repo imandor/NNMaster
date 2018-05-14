@@ -56,7 +56,7 @@ class Session:
         self.trial_timestamp = session_dict["trial_timestamp"]
         pass
 
-    def make_slice(self, start, stop, filtered_spikes=None, slice_metadata=None, enriched_metadata=None):
+    def make_slice(self, start, stop, slice_metadata=None, enriched_metadata=None):
         """ returns a slice object containing a subsection of the time"""
         spikes = np.array([splice_nparray_at_start_stop(x, start, stop) for x in self.spikes])
         # TODO all entries filters are not ready
@@ -67,8 +67,8 @@ class Session:
         speed = np.array([x for ind, x in enumerate(self.speed) if stop.ms > ind >= start.ms])
         trial_timestamp = np.asarray(splice_nparray_at_start_stop2([x for x in self.trial_timestamp], start, stop))
         return Slice(spikes=spikes, licks=licks, position_x=position_x,
-                     position_y=position_y, speed=speed, trial_timestamp=trial_timestamp, filter=None,
-                     filtered_spikes=filtered_spikes, slice_metadata=slice_metadata,
+                     position_y=position_y, speed=speed, trial_timestamp=trial_timestamp,
+                     slice_metadata=slice_metadata,
                      enriched_metadata=enriched_metadata)
 
 
@@ -76,7 +76,7 @@ class Slice(Session):
     """ contains data and metadata pertaining one time slice of the session"""
 
     def __init__(self, spikes=None, licks=None, position_x=None, position_y=None, speed=None,
-                 trial_timestamp=None, filtered_spikes=None, slice_metadata=None, enriched_metadata=None, filter=None):
+                 trial_timestamp=None, filtered_spikes=None, slice_metadata=None, enriched_metadata=None):
         """ Represents a time range of collected data. """
         self.spikes = spikes
         # self.spikes_dense = spikes_dense
@@ -85,14 +85,12 @@ class Slice(Session):
         self.position_y = position_y
         self.speed = speed
         self.trial_timestamp = trial_timestamp
-        self.filter = filter
-        self.filtered_spikes = filtered_spikes
         self.slice_metadata = slice_metadata
         self.enriched_metadata = enriched_metadata
         pass
 
     @property
-    def trials(self):
+    def filter(self):
         pass
 
     def convolve(self, window):
@@ -105,7 +103,7 @@ class Slice(Session):
         start_well = self.trial_timestamp[trial_id - 1][0]
         stop_well = self.trial_timestamp[trial_id - 1][0]
         return self.make_slice(start, stop).make_trial(trial_id=trial_id, start_time=start, stop_time=stop,
-                                                start_well=start_well, stop_well=stop_well, trial_metadata=None)
+                                                       start_well=start_well, stop_well=stop_well, trial_metadata=None)
 
     def get_trial_by_time(self, trial_time):
         start = TimePoint(ms=np.argmax(self.trial_timestamp[..., 1] > trial_time.ms))
@@ -114,7 +112,7 @@ class Slice(Session):
         return self.get_trial_by_id(trial_id)
 
     def get_all_trials_by_time(self, start=None, stop=None, max_length=None, min_length=None):
-        # returns a list of Trial objects corresponding to the trials contained in that slice
+        """ returns a list of Trial objects corresponding to the trials contained in that slice """
         for ind in range(1, len(self.trial_timestamp)):  # the first intended lick is always at well 1
             return_array = np.empty(0, dtype=object)
             last_well = self.trial_timestamp[ind - 1][0]
@@ -127,12 +125,11 @@ class Slice(Session):
                 if stop.ms >= current_time.ms or stop is None:
                     if max_length is None or max_length.ms < trial_duration:
                         if min_length is None or min_length.ms > trial_duration:
-                            return_array = np.concatenate((return_array, [self.make_trial(trial_id=trial_id, start_time=last_time, stop_time=current_time,
-                                                start_well=last_well, stop_well=current_well, trial_metadata=None)]),axis=0)
+                            return_array = np.concatenate((return_array, [
+                                self.make_trial(trial_id=trial_id, start_time=last_time, stop_time=current_time,
+                                                start_well=last_well, stop_well=current_well, trial_metadata=None)]),
+                                                          axis=0)
         return return_array
-
-    def get_all_trials_by_id(self):
-        pass
 
     def make_trial(self, trial_id, start_time, stop_time, start_well, stop_well, trial_metadata=None):
         return Trial(trial_id=trial_id, start_time=start_time, stop_time=stop_time, start_well=start_well,
@@ -142,9 +139,27 @@ class Slice(Session):
                      filtered_spikes=self.filtered_spikes, trial_metadata=trial_metadata,
                      enriched_metadata=self.enriched_metadata, filter=self.filter)
 
+    def filter_trials_by_duration:
+        #TODO
+        pass
+
 
 class FilteredSlice(Slice):
     """ has no __init__, must be constructed from a slice"""
+
+    @property
+    def filter(self):
+        return self.filter
+
+    @property
+    def filtered_spikes(self):
+        return self.filter
+
+    def bin_spikes(self, bin_size):
+        pass
+
+    def convolve(self, window):
+        pass
 
     def to_frames(self, frame_size, frame_stride):
         pass
@@ -154,7 +169,7 @@ class Trial:
     def __init__(self, trial_id, start_time, stop_time, start_well, stop_well, spikes=None, licks=None, position_x=None,
                  position_y=None, speed=None,
                  filtered_spikes=None, trial_metadata=None, enriched_metadata=None, filter=None):
-        self.trial_id=trial_id
+        self.trial_id = trial_id
         self.spikes = spikes
         self.start_time = start_time
         self.stop_time = stop_time
@@ -190,7 +205,7 @@ class Trial:
         self.plot_metadata(ax1, args1, args2)
         pass
 
-    def plot_spikes(self, ax=None, args1=None, args2=None, filtered=False):
+    def plot_spikes(self, filtered=False):
         # if filtered = False, plot raw spikes else plot filtered spikes
         if filtered is True:
             x = self.filtered_spikes

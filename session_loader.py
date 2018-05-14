@@ -91,9 +91,9 @@ def make_session():
     speed = spiketracker_data["speed_s"].squeeze()
 
     # load foster data
-    foster_data = load_datafile(foster_path)  # contains tripels with data about TODO TODO and location
+    foster_data = load_datafile(foster_path)  # contains tripels with data about 0: rewarded, 1: lickwell, 2: duration
     foster_data = np.reshape(foster_data, [foster_data.size // 3,
-                                           3])  # 0: rewarded, 1: lickwell, 2: duration TODO what do values stand for?
+                                           3])  # 0: rewarded, 1: lickwell, 2: duration
     initial_detection = [x == 2 for x in
                          foster_data[:, 0]]  # TODO "Exclude detection events", i am not sure what this is used for
 
