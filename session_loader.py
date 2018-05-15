@@ -21,7 +21,7 @@ def find_min_time(mat):
     """ finds minimum value in ordered np list of lists. The default np min and flatten functions don't different
     list sizes"""
     minimum = mat[0][0]
-    for i in range(0, mat.size):
+    for i in range(0, len(mat)):
         current_value = mat[i][0]
         if current_value < minimum:
             minimum = current_value
@@ -29,10 +29,10 @@ def find_min_time(mat):
 
 
 def find_max_time(mat):
-    """ finds maximum value in ordered np list of lists. The default np min and flatten functions don't different
+    """ finds maximum value in ordered np list of lists. The default np min and flatten functions don't work with different
     list sizes"""
     maximum = mat[0][-1]
-    for i in range(0, mat.size):
+    for i in range(0, len(mat)):
         current_value = mat[i][-1]
         if current_value > maximum:
             maximum = current_value
@@ -50,9 +50,9 @@ def make_zero_nxm_matrix(n, m):
 def clean_spikes(spikes):
     """spike data from the source file is formatted as [[[1,2],[3,4]]] which is unfavorable
     and replaced by [[1,2],[3,4]] here"""
-    return_array = np.empty(spikes.size, dtype=object)
+    return_array = []
     for i in range(0, spikes.size):
-        return_array[i] = spikes[0][i].squeeze()
+        return_array = return_array + spikes[0][i].tolist()
     return return_array
 
 
@@ -74,7 +74,7 @@ def make_dense_np_matrix(mat, minimum_value=None, maximum_value=None):
     return dense_matrix
 
 
-def make_session():
+def read_file():
     """ extract all relevant information for session and returns Session dict. File paths are set under settings.py"""
 
     print("loading session...")
@@ -121,26 +121,30 @@ def make_session():
                        x == False]  # index positions of non detection events
     initial_detection_timestamp = [foster_timestamp[ind - 1] for ind in
                                    detected_events[1:]]  # TODO why is this index shifted?
-    initial_detection_timestamp = [0] + initial_detection_timestamp  # %the first lick is at homewell for which the initial lick timing is not measured
+    initial_detection_timestamp = [
+                                      0] + initial_detection_timestamp  # %the first lick is at homewell for which the initial lick timing is not measured
     foster_timestamp = [x for ind, x in enumerate(foster_timestamp) if initial_detection[ind] != 1]
     rewarded = [item[0] for item in foster_data]
     durations = [item[1] for item in foster_data]
     lickwells = [item[2] for item in foster_data]
 
     trial_timestamp = np.asarray([[x, initial_detection_timestamp[ind]] for ind, x in enumerate(lickwells) if
-                                rewarded[ind] == 1])  # TODO was originally rewarded_licks, is this ok?
+                                  rewarded[ind] == 1])  # TODO was originally rewarded_licks, is this ok?
 
-    licks = np.array([initial_detection_timestamp, foster_timestamp, lickwells,
-                      rewarded])
+    licks = dict(
+        time=initial_detection_timestamp,
+        lickwells=lickwells,
+        rewarded=rewarded
+    )
     spikes = clean_spikes(spikes)
     # spikes = None, filter = None, filtered_spikes = None, metadata = None, enriched_metadata = None
     spikes_dense = make_dense_np_matrix(spikes)
-    #spikes = spikes.astype(TimePoint)
+    # spikes = spikes.astype(TimePoint)
     # session = Session(spikes=spikes, licks=licks, spikes_dense=spikes_dense, position_x=position_x,
     #                   position_y=position_y, speed=speed, trial_timestamp=trial_timestamp)
     return_dict = dict(
         spikes=spikes, licks=licks, position_x=position_x,
-                           position_y=position_y, speed=speed, trial_timestamp=trial_timestamp)
+        position_y=position_y, speed=speed, trial_timestamp=trial_timestamp)
 
     print("finished loading session")
     return return_dict

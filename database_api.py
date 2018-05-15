@@ -1,5 +1,5 @@
 import numpy as np
-from session_loader import make_session
+from session_loader import read_file
 from settings import save_as_pickle, load_pickle
 import matplotlib.pyplot as plt
 
