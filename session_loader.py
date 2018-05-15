@@ -130,14 +130,21 @@ def read_file():
     durations = [item[1] for item in foster_data]
     lickwells = [item[2] for item in foster_data]
 
-    trial_timestamp = np.asarray([[x, initial_detection_timestamp[ind]] for ind, x in enumerate(lickwells) if
-                                  rewarded[ind] == 1])  # TODO was originally rewarded_licks, is this ok?
+    trial_timestamp = []
+    for i in range(0,len(initial_detection_timestamp)):
+        trial_timestamp = trial_timestamp + dict( # for a trial the lick must have been correct
+            time=[initial_detection_timestamp[i][ind] for ind, x in enumerate(lickwells[i]) if
+                  rewarded[ind] == 1],
+            trial_lickwells=[x for ind, x in enumerate(lickwells) if
+                       rewarded[ind] == 1]
+    )
 
-    licks = dict(
+    licks = dict( # contains data about correct and incorrect licks
         time=initial_detection_timestamp,
         lickwells=lickwells,
         rewarded=rewarded
     )
+
     spikes = clean_spikes(spikes)
     # spikes = None, filter = None, filtered_spikes = None, metadata = None, enriched_metadata = None
     spikes_dense = make_dense_np_matrix(spikes)
