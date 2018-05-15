@@ -89,7 +89,9 @@ def read_file():
     position_x = spiketracker_data["x_s"].squeeze()
     position_y = spiketracker_data["y_s"].squeeze()
     speed = spiketracker_data["speed_s"].squeeze()
-
+    position_x = position_x.astype(float)
+    position_y = position_y.astype(float)
+    speed = speed.astype(float)
     # load foster data
     foster_data = load_datafile(foster_path)  # contains tripels with data about 0: rewarded, 1: lickwell, 2: duration
     foster_data = np.reshape(foster_data, [foster_data.size // 3,
