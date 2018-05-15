@@ -19,6 +19,7 @@ def save_sample_session():
 
 
 def test_trial_sample():
+    session = Session(session_file="session.pkl")
     trial = load_pickle("trial_sample.pkl")
     trial.plot_spikes()
     pass

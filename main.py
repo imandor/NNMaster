@@ -1,10 +1,11 @@
 from database_api import Slice,Session
 from database_api import TimePoint, Slice
+from session_loader import make_session
 from tdd_test import save_sample_session, test_trial_sample
 start = TimePoint(ms=0)
 stop = TimePoint(ms=10000000)
 
-
+session = make_session()
 test_trial_sample()
 # trial_sample.plot_spikes(filtered=False)
 
