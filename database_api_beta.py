@@ -115,9 +115,9 @@ class Trial:
         position_y = slice_array(self.position_y, time_slice)
         speed = slice_array(self.speed, time_slice)
         trial_timestamp = slice_list_of_dict(self.trial_timestamp, time_slice)
-        filter = self._filter
+        _filter = None
         return Slice(spikes, licks, position_x, position_y, speed,
-                     trial_timestamp, filter=filter)
+                     trial_timestamp, _filter=_filter)
 
     def write(self, path):
         pass
@@ -149,7 +149,7 @@ class Trial:
 
 class Slice(Trial):
     def __init__(self, spikes, licks, position_x, position_y, speed,
-                 trial_timestamp, filter=None):
+                 trial_timestamp, _filter=None):
         # list for every neuron of lists of times at which a spike occured
         self.spikes = spikes
         # list of dictionaries each dict being:
@@ -161,7 +161,7 @@ class Slice(Trial):
         self.speed = speed
         # list of dictionaries {"time":float, "well":0/1/2/3/4/5} for every rewarded lick
         self.trial_timestamp = trial_timestamp
-        if filter is None:
+        if _filter is None:
             self.filtered_spikes = None
         else:
             self.set_filter(filter)
