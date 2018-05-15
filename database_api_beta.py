@@ -4,42 +4,6 @@ from settings import save_as_pickle, load_pickle
 import matplotlib.pyplot as plt
 
 
-class TimePoint:
-    def __init__(self, ms=None, s=None, min=None):
-        self._ms = 0
-        if ms is not None:
-            self._ms += ms
-        if s is not None:
-            self._ms += 1e3 * s
-        if min is not None:
-            self._ms += 6e4 * min
-
-    @property
-    def ms(self):
-        return self._ms
-
-    @property
-    def s(self):
-        return self._ms / 1e3
-
-    @property
-    def min(self):
-        return self._ms / 6e4
-
-
-def splice_nparray_at_start_stop(li, start, stop):
-    """splices a numpy array at the entry higher than start and the entry lower than stop value"""
-    return np.asarray([x for ind, x in enumerate(li) if stop.ms > li[ind] >= start.ms])
-
-
-def splice_nparray_at_start_stop2(li, start, stop):
-    """splices a numpy array at the entry higher than start and the entry lower than stop value"""
-    return np.asarray([x for ind, x in enumerate(li) if stop.ms > li[ind][1] >= start.ms])
-
-
-
-
-
 class Slice():
     """ contains data and metadata pertaining one time slice of the session"""
 
@@ -109,54 +73,50 @@ class Slice():
 
 
 
+def slice_spikes(spikes, time_slice):
+    return [t for t in spikes if time_in_slice(t, time_slice)]
 
-class FilteredSlice(Slice):
-    """ has no __init__, must be constructed from a slice"""
 
-    @property
-    def filter(self):
-        return self.filter
+def slice_list_of_dict(l, time_slice):
+    return [d for d in l if time_in_slice(d["time"], time_slice)]
 
-    @property
-    def filtered_spikes(self):
-        return self.filter
 
-    def bin_spikes(self, bin_size):
-        pass
+def slice_array(a, time_slice, sample_freq=1000):
+    start = int(time_slice.start * sample_freq / 1000)
+    stop = int(time_slice.stop * sample_freq / 1000)
+    return a[start:stop]
 
-    def convolve(self, window):
-        pass
 
-    def to_frames(self, frame_size, frame_stride):
-        pass
+def time_in_slice(time, time_slice):
+    return time > time_slice.start and time < time_slice.stop
+
 
 
 class Trial:
-    def __init__(self, trial_id, start_time, stop_time, start_well, stop_well, spikes=None, licks=None, position_x=None,
-                 position_y=None, speed=None,
-                 filtered_spikes=None, trial_metadata=None, enriched_metadata=None, filter=None):
-        self.trial_id = trial_id
-        self.spikes = spikes
-        self.start_time = start_time
-        self.stop_time = stop_time
-        self.start_well = start_well
-        self.stop_well = stop_well
-        # self.spikes_dense = spikes_dense
-        self.licks = licks
-        self.position_x = position_x
-        self.position_y = position_y
-        self.speed = speed
-        self.filter = filter
-        self.filtered_spikes = filtered_spikes
-        self.trial_metadata = trial_metadata
-        self.enriched_metadata = enriched_metadata
+    def set_filter(self, filter):
+        self._filter = filter
+        self._convolve()
+
+    def _convolve(self):
+        # do some stuff
+        self._is_convolved = True
 
     @property
     def is_convolved(self):
-        pass
+        return self._is_convolved
 
-    def set_filter(self, filter):
-        pass
+    def __getitem__(self, time_slice):
+        if not isinstance(time_slice, slice):
+            raise TypeError("Key must be a slice, got {}".format(type(time_slice)))
+        spikes = slice_spikes(self.spikes, time_slice)
+        licks = slice_list_of_dict(self.licks, time_slice)
+        position_x = slice_array(self.position_x, time_slice)
+        position_y = slice_array(self.position_y, time_slice)
+        speed = slice_array(self.speed, time_slice)
+        trial_timestamp = slice_list_of_dict(self.trial_timestamp, time_slice)
+        filter = self._filter
+        return Slice(spikes, licks, position_x, position_y, speed,
+                     trial_timestamp, filter=filter)
 
     def write(self, path):
         pass
@@ -187,7 +147,26 @@ class Trial:
 
 
 class Slice(Trial):
-    def __init__(self, session_file=None, save_session_as=None):
+    def __init__(self, spikes, licks, position_x, position_y, speed,
+                 trial_timestamp, filter=None):
+        # list for every neuron of lists of times at which a spike occured
+        self.spikes = spikes
+        # list of dictionaries each dict being:
+        # {"time_detection":float, "time":float, "well":0/1/2/3/4/5, "correct":True/False}
+        self.licks = licks
+        # np arrays
+        self.position_x = position_x
+        self.position_y = position_y
+        self.speed = speed
+        # list of dictionaries {"time":float, "well":0/1/2/3/4/5} for every rewarded lick
+        self.trial_timestamp = trial_timestamp
+        if filter is None:
+            self.filtered_spikes = None
+        else:
+            self.set_filter(filter)
+
+    @classmethod
+    def from_path(cls, session_file=None, save_session_as=None):
         """ Contains all data in one session. A session object can be stored or loaded from a pickle file.
         If no session_file is specified, Session is generated by reading the source files specified in settings.py"""
         if session_file is None:
@@ -196,57 +175,14 @@ class Slice(Trial):
             session_dict = load_pickle(session_file)
         if save_session_as is not None:
             save_as_pickle(save_session_as, session_dict)
-        self.spikes = session_dict["spikes"]
-        # self.spikes_dense = session_dict["spikes_dense"]
-        self.licks = session_dict["licks"]
-        self.position_x = session_dict["position_x"]
-        self.position_y = session_dict["position_y"]
-        self.speed = session_dict["speed"]
-        self.trial_timestamp = session_dict["trial_timestamp"]
-        self.filtered_spikes = None
-        self._is_convolved = False
-        self._filter = None
+        spikes = session_dict["spikes"]
+        licks = session_dict["licks"]
+        position_x = session_dict["position_x"]
+        position_y = session_dict["position_y"]
+        speed = session_dict["speed"]
+        trial_timestamp = session_dict["trial_timestamp"]
+        return cls(spikes, licks, position_x, position_y, speed,
+                   trial_timestamp)
+
+    def get_all_trials(self, args):
         pass
-
-    def set_filter(self, filter):
-        self._filter = filter
-        self._convolve()
-
-    def _convolve(self):
-        # do some stuff
-        self._is_convolved = True
-
-    @classmethod
-    def from_data(cls, spikes, licks, position_x, position_y, speed,
-                  trial_timestamp, filter=None):
-        self.spikes = spikes
-        self.licks = licks
-        self.position_x = position_x
-        self.position_y = position_y
-        self.speed = speed
-        self.trial_timestamp = trial_timestamp
-        if filter is None and filtered_spikes is not None:
-            self.filtered_spikes = None
-            self.set_filter(filter)
-        self._is_convolved = False
-        self._filter = None
-
-    def __getitem__(self, time_slice):
-        if not isinstance(time_slice, slice):
-            raise TypeError("Key must be a slice")
-        pass
-
-    def slice(self, start, stop):
-        """ returns a slice object containing a subsection of the time"""
-        spikes = np.array([splice_nparray_at_start_stop(x, start, stop) for x in self.spikes])
-        # TODO all entries filters are not ready
-        # spikes_dense = np.array([[y for ind2, y in enumerate(x) if stop.ms>ind2>start.ms] for ind1, x in enumerate(self.spikes_dense[...])])  # TODO: not functional
-        licks = np.array([splice_nparray_at_start_stop(x, start, stop) for x in self.licks])
-        position_x = np.array([x for ind, x in enumerate(self.position_x) if stop.ms > ind >= start.ms])
-        position_y = np.array([x for ind, x in enumerate(self.position_y) if stop.ms > ind >= start.ms])
-        speed = np.array([x for ind, x in enumerate(self.speed) if stop.ms > ind >= start.ms])
-        trial_timestamp = np.asarray(splice_nparray_at_start_stop2([x for x in self.trial_timestamp], start, stop))
-        return Slice.from_data(spikes=spikes, licks=licks, position_x=position_x,
-                     position_y=position_y, speed=speed, trial_timestamp=trial_timestamp,
-                     slice_metadata=slice_metadata,
-                     enriched_metadata=enriched_metadata)

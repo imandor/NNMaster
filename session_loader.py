@@ -121,8 +121,7 @@ def make_session():
                        x == False]  # index positions of non detection events
     initial_detection_timestamp = [foster_timestamp[ind - 1] for ind in
                                    detected_events[1:]]  # TODO why is this index shifted?
-    initial_detection_timestamp = [
-                                      0] + initial_detection_timestamp  # %the first lick is at homewell for which the initial lick timing is not measured
+    initial_detection_timestamp = [0] + initial_detection_timestamp  # %the first lick is at homewell for which the initial lick timing is not measured
     foster_timestamp = [x for ind, x in enumerate(foster_timestamp) if initial_detection[ind] != 1]
     rewarded = [item[0] for item in foster_data]
     durations = [item[1] for item in foster_data]
