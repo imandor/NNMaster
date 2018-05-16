@@ -120,7 +120,7 @@ def read_file():
         initial_detection = initial_detection[1:foster_timestamp.size]
     foster_data = [x for ind, x in enumerate(foster_data) if initial_detection[ind] != 1]
     detected_events = [ind for ind, x in enumerate(initial_detection) if
-                       x == False]  # index positions of non detection events
+                       x is False]  # index positions of non detection events
     initial_detection_timestamp = [foster_timestamp[ind - 1] for ind in
                                    detected_events[1:]]  # TODO why is this index shifted?
     initial_detection_timestamp = [

@@ -1,75 +1,7 @@
 import numpy as np
-from session_loader import read_file
+from session_loader import read_file, find_max_time
 from settings import save_as_pickle, load_pickle
 import matplotlib.pyplot as plt
-
-
-class Slice:
-    """ contains data and metadata pertaining one time slice of the session"""
-
-    def __init__(self, spikes=None, licks=None, position_x=None, position_y=None, speed=None,
-                 trial_timestamp=None, filtered_spikes=None, slice_metadata=None, enriched_metadata=None):
-        """ Represents a time range of collected data. """
-        self.spikes = spikes
-        # self.spikes_dense = spikes_dense
-        self.licks = licks
-        self.position_x = position_x
-        self.position_y = position_y
-        self.speed = speed
-        self.trial_timestamp = trial_timestamp
-        self.slice_metadata = slice_metadata
-        self.enriched_metadata = enriched_metadata
-        pass
-
-    @property
-    def filter(self):
-        pass
-
-    def convolve(self, window):
-        # returns a FilteredSlice
-        pass
-
-    def get_trial_by_id(self, trial_id):
-        start = self.trial_timestamp[trial_id][1]
-        stop = self.trial_timestamp[trial_id + 1][1]
-        start_well = self.trial_timestamp[trial_id - 1][0]
-        stop_well = self.trial_timestamp[trial_id - 1][0]
-        return self.make_slice(start, stop).make_trial(trial_id=trial_id, start_time=start, stop_time=stop,
-                                                       start_well=start_well, stop_well=stop_well, trial_metadata=None)
-
-    def get_trial_by_time(self, trial_time):
-        start = np.argmax(self.trial_timestamp[..., 1] > trial_time)
-        trial_id = np.where(self.trial_timestamp[..., 1] >= start)
-        trial_id = trial_id[0][0]
-        return self.get_trial_by_id(trial_id)
-
-    def get_all_trials_by_time(self, start=None, stop=None, max_length=None, min_length=None):
-        """ returns a list of Trial objects corresponding to the trials contained in that slice """
-        for ind in range(1, len(self.trial_timestamp)):  # the first intended lick is always at well 1
-            return_array = np.empty(0, dtype=object)
-            last_well = self.trial_timestamp[ind - 1][0]
-            last_time = self.trial_timestamp[ind - 1][1]
-            current_well = self.trial_timestamp[ind][0]
-            current_time = self.trial_timestamp[ind][1]
-            trial_duration = current_time - last_time
-            trial_id = self.trial_timestamp[1]
-            if start <= last_time or start is None:
-                if stop >= current_time or stop is None:
-                    if max_length is None or max_length < trial_duration:
-                        if min_length is None or min_length > trial_duration:
-                            return_array = np.concatenate((return_array, [
-                                self.make_trial(trial_id=trial_id, start_time=last_time, stop_time=current_time,
-                                                start_well=last_well, stop_well=current_well, trial_metadata=None)]),
-                                                          axis=0)
-        return return_array
-
-    def make_trial(self, trial_id, start_time, stop_time, start_well, stop_well, trial_metadata=None):
-        return Trial(trial_id=trial_id, start_time=start_time, stop_time=stop_time, start_well=start_well,
-                     stop_well=stop_well,
-                     spikes=self.spikes, licks=self.licks, position_x=self.position_x, position_y=self.position_y,
-                     speed=self.speed,
-                     filtered_spikes=self.filtered_spikes, trial_metadata=trial_metadata,
-                     enriched_metadata=self.enriched_metadata, filter=self.filter)
 
 
 
@@ -90,8 +22,10 @@ def slice_array(a, time_slice, sample_freq=1000):
 def time_in_slice(time, time_slice):
     return time_slice.start < time < time_slice.stop
 
+
 def time_in_slice_list(time, time_slice):
     return [x for ind, x in enumerate(time) if time_slice.start < x < time_slice.stop]
+
 
 class Trial:
     def set_filter(self, filter):
@@ -99,8 +33,22 @@ class Trial:
         self._convolve()
 
     def _convolve(self):
-        # do some stuff
+        for i in range(0,len(self.spikes)):
+            self.filtered_spikes = np.convolve(self.spikes, self._filter) #TODO spikes would have to be dense here for proper convolution
         self._is_convolved = True
+
+
+    def bin_spikes(self,bin_size=1,normalize_to=None, binarize=False):
+        """
+        :param bin_size:
+        :param normalize_to:
+        :return: bins spikes. If normalize_to is not None, the bin is normalized
+        """
+        max_time = find_max_time(self.spikes):
+        min_time = 0
+        bins = np.arange(min_time,max_time,bin_size)
+        for each
+        pass
 
     @property
     def is_convolved(self):
@@ -147,6 +95,22 @@ class Trial:
         pass
 
 
+class Trials:
+    def __init__(self):
+        self.container = []
+
+    def __getitem__(self, time_slice):
+        return self.container[time_slice]
+
+    def add_trial(self, trial):
+        # if not isinstance(trial, Trial):
+        #     raise TypeError("Key must be a Trial, got {}".format(type(trial)))
+        self.container.append(trial)
+
+    def get_all(self):
+        return self._container[:]
+
+
 class Slice(Trial):
     def __init__(self, spikes, licks, position_x, position_y, speed,
                  trial_timestamp, _filter=None):
@@ -185,23 +149,43 @@ class Slice(Trial):
         return cls(spikes, licks, position_x, position_y, speed,
                    trial_timestamp)
 
-    def get_all_trials(self, time_slice):
+    def get_trial_by_id(self, trial_id):
+        start = self.trial_timestamp[trial_id][1]
+        stop = self.trial_timestamp[trial_id + 1][1]
+        start_well = self.trial_timestamp[trial_id - 1][0]
+        stop_well = self.trial_timestamp[trial_id - 1][0]
+        return self.make_slice(start, stop).make_trial(trial_id=trial_id, start_time=start, stop_time=stop,
+                                                       start_well=start_well, stop_well=stop_well, trial_metadata=None)
+
+    def get_trial_by_time(self, trial_time):
+        start = np.argmax(self.trial_timestamp[..., 1] > trial_time)
+        trial_id = np.where(self.trial_timestamp[..., 1] >= start)
+        trial_id = trial_id[0][0]
+        return self.get_trial_by_id(trial_id)
+
+    def make_trial(self, trial_id, start_time, stop_time, start_well, stop_well, trial_metadata=None):
+        return Trial(trial_id=trial_id, start_time=start_time, stop_time=stop_time,
+                                        start_well=start_well, stop_well=stop_well, trial_metadata=None)
+
+    def get_trials(self, time_slice):
         """ returns a list of Trial objects corresponding to the trials contained in that slice """
         if not isinstance(time_slice, slice):
             raise TypeError("Key must be a slice, got {}".format(type(time_slice)))
         start = time_slice.start
         stop = time_slice.stop
+        return_array = Trials()
         for ind in range(1, len(self.trial_timestamp)):  # the first intended lick is always at well 1
-            return_array = np.empty(0, dtype=object)
-            last_well = self.trial_timestamp[ind - 1][0]
-            last_time = self.trial_timestamp[ind - 1][1]
-            current_well = self.trial_timestamp[ind][0]
-            current_time = self.trial_timestamp[ind][1]
-            trial_id = self.trial_timestamp[1]
+            last_well = self.trial_timestamp[ind - 1]["trial_lickwells"]
+            last_time = self.trial_timestamp[ind - 1]["time"]
+            current_well = self.trial_timestamp[ind]["trial_lickwells"]
+            current_time = self.trial_timestamp[ind]["time"]
+            trial_id = ind - 1
             if start <= last_time or start is None:
-                if stop >= current_time or stop is None:
-                    return_array = np.concatenate((return_array, [
-                        self.make_trial(trial_id=trial_id, start_time=last_time, stop_time=current_time,
-                                        start_well=last_well, stop_well=current_well, trial_metadata=None)]),
-                                                  axis=0)
+                if stop >= current_time or stop is None or stop == -1:
+                    s = slice(last_time,current_time)
+                    return_array.add_trial(self[s])
         return return_array
+
+    def get_all_trials(self):
+        s = slice(0, -1)
+        return self.get_trials(s)
