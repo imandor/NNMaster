@@ -1,8 +1,8 @@
 import numpy as np
+from math import ceil
 from session_loader import read_file, find_max_time
 from settings import save_as_pickle, load_pickle
 import matplotlib.pyplot as plt
-
 
 
 def slice_spikes(spikes, time_slice):
@@ -33,21 +33,37 @@ class Trial:
         self._convolve()
 
     def _convolve(self):
-        for i in range(0,len(self.spikes)):
-            self.filtered_spikes = np.convolve(self.spikes, self._filter) #TODO spikes would have to be dense here for proper convolution
+        # for i in range(0, len(self.spikes)):
+        #     self.filtered_spikes = np.convolve(self.spikes,
+        #                                        self._filter)  # TODO spikes would have to be dense here for proper convolution
         self._is_convolved = True
 
+    def bin_spikes(self, binarize=False, bin_size=1):
+        if self._filter is None:
+            self.bin_index_spikes(bin_size=bin_size)
+        for i in range(0, len(self.filtered_spikes)):
+            bin_amount = ceil(find_max_time(self.spikes))*bin_size #TODO
+            new_spikes = np.zeros(bin_amount*bin_size, dtype=int)
+            for j in range(0, len(self.filtered_spikes[i])):
+                new_spikes[j] = new_spikes[self.filtered_spikes[i][j]] + 1
+            if binarize is True:
+                new_spikes = np.where(new_spikes > 0, 1, 0)
+            self.filter = "bins"
+            self.filtered_spikes[i] = np.ndarray.tolist(new_spikes)
 
-    def bin_spikes(self,bin_size=1,normalize_to=None, binarize=False):
-        """
-        :param bin_size:
-        :param normalize_to:
-        :return: bins spikes. If normalize_to is not None, the bin is normalized
-        """
-        max_time = find_max_time(self.spikes):
+    def bin_index_spikes(self, bin_size=1):
+        """ sets filtered_spikes to the index of spikes in a binned list with len(spikes)/bin_size entries"""
+        max_time = ceil(find_max_time(self.spikes))
         min_time = 0
-        bins = np.arange(min_time,max_time,bin_size)
-        for each
+        bins = np.arange(min_time, max_time, bin_size)
+        self.filtered_spikes = self.spikes
+        self.filter = "bin_index"
+
+        for i in range(0, len(self.spikes)):
+            new_spikes = np.digitize(self.spikes[i], bins)
+
+            self.filtered_spikes[i] = np.ndarray.tolist(new_spikes)
+
         pass
 
     @property
@@ -127,6 +143,7 @@ class Slice(Trial):
         self.trial_timestamp = trial_timestamp
         if _filter is None:
             self.filtered_spikes = None
+            self.set_filter(filter=None)
         else:
             self.set_filter(filter)
 
@@ -150,22 +167,17 @@ class Slice(Trial):
                    trial_timestamp)
 
     def get_trial_by_id(self, trial_id):
-        start = self.trial_timestamp[trial_id][1]
-        stop = self.trial_timestamp[trial_id + 1][1]
-        start_well = self.trial_timestamp[trial_id - 1][0]
-        stop_well = self.trial_timestamp[trial_id - 1][0]
-        return self.make_slice(start, stop).make_trial(trial_id=trial_id, start_time=start, stop_time=stop,
-                                                       start_well=start_well, stop_well=stop_well, trial_metadata=None)
+        start = self.trial_timestamp[trial_id]["time"]
+        stop = self.trial_timestamp[trial_id + 1]["time"]
+        start_well = self.trial_timestamp[trial_id - 1]["trial_lickwell"]
+        stop_well = self.trial_timestamp[trial_id - 1]["trial_lickwell"]
+        return self[start:stop]
 
     def get_trial_by_time(self, trial_time):
         start = np.argmax(self.trial_timestamp[..., 1] > trial_time)
         trial_id = np.where(self.trial_timestamp[..., 1] >= start)
         trial_id = trial_id[0][0]
         return self.get_trial_by_id(trial_id)
-
-    def make_trial(self, trial_id, start_time, stop_time, start_well, stop_well, trial_metadata=None):
-        return Trial(trial_id=trial_id, start_time=start_time, stop_time=stop_time,
-                                        start_well=start_well, stop_well=stop_well, trial_metadata=None)
 
     def get_trials(self, time_slice):
         """ returns a list of Trial objects corresponding to the trials contained in that slice """
@@ -175,14 +187,14 @@ class Slice(Trial):
         stop = time_slice.stop
         return_array = Trials()
         for ind in range(1, len(self.trial_timestamp)):  # the first intended lick is always at well 1
-            last_well = self.trial_timestamp[ind - 1]["trial_lickwells"]
+            last_well = self.trial_timestamp[ind - 1]["trial_lickwell"]
             last_time = self.trial_timestamp[ind - 1]["time"]
-            current_well = self.trial_timestamp[ind]["trial_lickwells"]
+            current_well = self.trial_timestamp[ind]["trial_lickwell"]
             current_time = self.trial_timestamp[ind]["time"]
             trial_id = ind - 1
             if start <= last_time or start is None:
                 if stop >= current_time or stop is None or stop == -1:
-                    s = slice(last_time,current_time)
+                    s = slice(last_time, current_time)
                     return_array.add_trial(self[s])
         return return_array
 

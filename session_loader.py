@@ -120,7 +120,7 @@ def read_file():
         initial_detection = initial_detection[1:foster_timestamp.size]
     foster_data = [x for ind, x in enumerate(foster_data) if initial_detection[ind] != 1]
     detected_events = [ind for ind, x in enumerate(initial_detection) if
-                       x is False]  # index positions of non detection events
+                       x == False]  # index positions of non detection events
     initial_detection_timestamp = [foster_timestamp[ind - 1] for ind in
                                    detected_events[1:]]  # TODO why is this index shifted?
     initial_detection_timestamp = [
@@ -136,7 +136,7 @@ def read_file():
         if rewarded[ind] == 1:  # for a trial the lick must have been correct
             trial_timestamp = trial_timestamp + [dict(
                 time=initial_detection_timestamp[ind],
-                trial_lickwells=well
+                trial_lickwell=well
             )]
 
     # licks
@@ -144,7 +144,7 @@ def read_file():
     for i in range(0, len(initial_detection_timestamp)):
         licks = licks + [dict(  # contains data about correct and incorrect licks
             time=initial_detection_timestamp[i],
-            lickwells=lickwells[i],
+            lickwell=lickwells[i],
             rewarded=rewarded[i]
         )]
 
