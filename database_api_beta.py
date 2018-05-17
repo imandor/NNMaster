@@ -175,8 +175,8 @@ class Slice(Trial):
     def get_trial_by_id(self, trial_id):
         start = self.trial_timestamp[trial_id]["time"]
         stop = self.trial_timestamp[trial_id + 1]["time"]
-        start_well = self.trial_timestamp[trial_id - 1]["trial_lickwell"]
-        stop_well = self.trial_timestamp[trial_id - 1]["trial_lickwell"]
+        # start_well = self.trial_timestamp[trial_id - 1]["trial_lickwell"]
+        # stop_well = self.trial_timestamp[trial_id - 1]["trial_lickwell"]
         return self[start:stop]
 
     def get_trial_by_time(self, trial_time):
@@ -193,11 +193,11 @@ class Slice(Trial):
         stop = time_slice.stop
         return_array = Trials()
         for ind in range(1, len(self.trial_timestamp)):  # the first intended lick is always at well 1
-            last_well = self.trial_timestamp[ind - 1]["trial_lickwell"]
             last_time = self.trial_timestamp[ind - 1]["time"]
-            current_well = self.trial_timestamp[ind]["trial_lickwell"]
             current_time = self.trial_timestamp[ind]["time"]
-            trial_id = ind - 1
+            # last_well = self.trial_timestamp[ind - 1]["trial_lickwell"]
+            # current_well = self.trial_timestamp[ind]["trial_lickwell"]
+            # trial_id = ind - 1
             if start <= last_time or start is None:
                 if stop >= current_time or stop is None or stop == -1:
                     s = slice(last_time, current_time)

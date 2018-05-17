@@ -31,11 +31,12 @@ def find_min_time(mat):
 def find_max_time(mat):
     """ finds maximum value in ordered np list of lists. The default np min and flatten functions don't work with different
     list sizes"""
-    maximum = mat[0][-1]
+    maximum = 0
     for i in range(0, len(mat)):
-        current_value = mat[i][-1]
-        if current_value > maximum:
-            maximum = current_value
+        if len(mat[i]) > 0:
+            current_value = mat[i][-1]
+            if current_value > maximum:
+                maximum = current_value
     return maximum
 
 
