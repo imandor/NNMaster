@@ -18,14 +18,15 @@ def load_datafile(file_path):
 
 
 def find_min_time(mat):
-    """ finds minimum value in ordered np list of lists. The default np min and flatten functions don't different
+    """ finds minimum value in ordered np list of lists. The default np min and flatten functions don't work with different
     list sizes"""
-    minimum = mat[0][0]
+    minimum = np.inf
     for i in range(0, len(mat)):
-        current_value = mat[i][0]
-        if current_value < minimum:
-            minimum = current_value
-    return minimum
+        if len(mat[i]) > 0:
+            current_value = mat[i][0]
+            if current_value < minimum:
+                minimum = current_value
+    return float(minimum)
 
 
 def find_max_time(mat):

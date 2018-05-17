@@ -1,6 +1,6 @@
 import numpy as np
 from math import ceil
-from session_loader import read_file, find_max_time
+from session_loader import read_file, find_max_time, find_min_time
 from settings import save_as_pickle, load_pickle
 import matplotlib.pyplot as plt
 
@@ -8,10 +8,10 @@ import matplotlib.pyplot as plt
 def slice_spikes(spikes, time_slice):
     start = []
     stop = []
-    for i in range(0,len(spikes)):
-        start.append(next(ind for ind,v in enumerate(spikes[i]) if v > time_slice.start))
-        stop.append(next(ind for ind,v in enumerate(spikes[i]) if v > time_slice.stop))
-    return [slice_array(t, slice(start[ind],stop[ind])) for ind, t in enumerate(spikes)]
+    for i in range(0, len(spikes)):
+        start.append(next(ind for ind, v in enumerate(spikes[i]) if v > time_slice.start))
+        stop.append(next(ind for ind, v in enumerate(spikes[i]) if v > time_slice.stop))
+    return [slice_array(t, slice(start[ind], stop[ind])) for ind, t in enumerate(spikes)]
 
 
 def slice_list_of_dict(li, time_slice):
@@ -43,33 +43,37 @@ class Trial:
         #                                        self._filter)  # TODO spikes would have to be dense here for proper convolution
         self._is_convolved = True
 
-    def bin_spikes(self, binarize=False, bin_size=1):
+    def bin_spikes(self, binarize=False, binarize_threshold=None, bin_size=1):
+        """ sets filtered_spikes to bins the range of the objects spike values and increases value of each bin by one
+        for each occurrence of the corresponding value in spikes. If binarize is True, all values are set to 0 or 1
+        depending on binarize_threshold"""
         bin_amount = ceil(find_max_time(self.spikes) / bin_size)
         if self._filter is None:
             self.bin_index_spikes(bin_size=bin_size)
         for i in range(0, len(self.filtered_spikes)):
             new_spikes = np.zeros(bin_amount, dtype=int)
             for j in range(0, len(self.filtered_spikes[i])):
-                new_spikes[j] = new_spikes[self.filtered_spikes[i][j]-1] + 1
+                print(i, " ", j, " ", self.filtered_spikes[i][j])
+                new_spikes[self.filtered_spikes[i][j]] = new_spikes[self.filtered_spikes[i][j]] + 1
             if binarize is True:
-                new_spikes = np.where(new_spikes > 0, 1, 0)
+                new_spikes = np.where(new_spikes > binarize_threshold, 1, 0)
             self.filter = "bins"
             self.filtered_spikes[i] = np.ndarray.tolist(new_spikes)
+            if self.filtered_spikes[i] is []: self.filtered_spikes = np.zeros(bin_amount, dtype=int)
         pass
 
     def bin_index_spikes(self, bin_size=1):
         """ sets filtered_spikes to the index of spikes in a binned list with len(spikes)/bin_size entries"""
-        max_time = ceil(find_max_time(self.spikes))
-        min_time = 0
+        max_time = (find_max_time(self.spikes))
+        min_time = int(find_min_time(self.spikes))
         bins = np.arange(min_time, max_time, bin_size)
         self.filtered_spikes = self.spikes
         self.filter = "bin_index"
 
         for i in range(0, len(self.spikes)):
             new_spikes = np.digitize(self.spikes[i], bins)
-
-            self.filtered_spikes[i] = np.ndarray.tolist(new_spikes)
-        mm = find_max_time(self.filtered_spikes)
+            new_spikes = [x - 1 for x in new_spikes]  # digitize moves index + 1 for some reason
+            self.filtered_spikes[i] = new_spikes
         pass
 
     @property
