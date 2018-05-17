@@ -6,7 +6,12 @@ import matplotlib.pyplot as plt
 
 
 def slice_spikes(spikes, time_slice):
-    return [t for t in spikes if time_in_slice_list(t, time_slice)]
+    start = []
+    stop = []
+    for i in range(0,len(spikes)):
+        start.append(next(ind for ind,v in enumerate(spikes[i]) if v > time_slice.start))
+        stop.append(next(ind for ind,v in enumerate(spikes[i]) if v > time_slice.stop))
+    return [slice_array(t, slice(start[ind],stop[ind])) for ind, t in enumerate(spikes)]
 
 
 def slice_list_of_dict(li, time_slice):
@@ -20,7 +25,7 @@ def slice_array(a, time_slice, sample_freq=1000):
 
 
 def time_in_slice(time, time_slice):
-    return time_slice.start < time < time_slice.stop
+    return time_slice.start <= time <= time_slice.stop
 
 
 def time_in_slice_list(time, time_slice):
@@ -39,17 +44,18 @@ class Trial:
         self._is_convolved = True
 
     def bin_spikes(self, binarize=False, bin_size=1):
+        bin_amount = ceil(find_max_time(self.spikes) / bin_size)
         if self._filter is None:
             self.bin_index_spikes(bin_size=bin_size)
         for i in range(0, len(self.filtered_spikes)):
-            bin_amount = ceil(find_max_time(self.spikes))*bin_size #TODO
-            new_spikes = np.zeros(bin_amount*bin_size, dtype=int)
+            new_spikes = np.zeros(bin_amount, dtype=int)
             for j in range(0, len(self.filtered_spikes[i])):
-                new_spikes[j] = new_spikes[self.filtered_spikes[i][j]] + 1
+                new_spikes[j] = new_spikes[self.filtered_spikes[i][j]-1] + 1
             if binarize is True:
                 new_spikes = np.where(new_spikes > 0, 1, 0)
             self.filter = "bins"
             self.filtered_spikes[i] = np.ndarray.tolist(new_spikes)
+        pass
 
     def bin_index_spikes(self, bin_size=1):
         """ sets filtered_spikes to the index of spikes in a binned list with len(spikes)/bin_size entries"""
@@ -63,7 +69,7 @@ class Trial:
             new_spikes = np.digitize(self.spikes[i], bins)
 
             self.filtered_spikes[i] = np.ndarray.tolist(new_spikes)
-
+        mm = find_max_time(self.filtered_spikes)
         pass
 
     @property

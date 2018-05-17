@@ -4,8 +4,8 @@ from session_loader import read_file
 from tdd_test import save_sample_session, test_trial_sample
 # data_slice = Slice.from_path(save_as="slice.pkl")
 data_slice = Slice.from_path(load_from="slice.pkl")
-trial = data_slice.get_trial_by_id(1)
-trial.bin_spikes(bin_size=100)
+trial = data_slice.get_trial_by_id(5)
+trial.bin_spikes(bin_size=1000)
 # slice = Slice.from_path(save_as="slice.pkl")
 a = data_slice[0:2]
 s = slice(1,2)
