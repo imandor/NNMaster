@@ -69,9 +69,8 @@ def make_dense_np_matrix(mat, minimum_value=None, maximum_value=None):
 
     dense_matrix = make_zero_nxm_matrix(1 + int(maximum_value) - int(minimum_value), len(mat))
     for i in range(0, len(mat)):  # for each neuron
-        for j in range(0, len(mat[i]) - 1 - minimum_value):  # for all saved times
-            k = int(mat[i][j])  # saved time as index
-            print(i," ",j," ",k)
+        for j in range(0, len(mat[i])):  # for all saved times
+            k = int(mat[i][j])-minimum_value  # saved time as index
             dense_matrix[i][k] = 1.0
     dense_matrix = np.array(dense_matrix)
     return dense_matrix

@@ -54,20 +54,22 @@ class Trial:
             filtered_spike = []
             for n in range(0, len(dense_spikes)-1):
                 c = 0
-                for m in range(-window, window, step_size):
+                if i==5 and n == 58:
+                    print("asd")
+                for m in range(-window, window+1, step_size):
                     if n - m >= 0 and n - m < len(dense_spikes):  # cut of edges
                         self._filter(dense_spikes[m])
                         asd = dense_spikes[n-m]
                         dsa = self._filter(dense_spikes[m])
-                        c = c + dense_spikes[n - m] * self._filter(dense_spikes[m])
-            filtered_spike.append(c)
-        self.filtered_spikes.append(filtered_spike)
-        pass
+                        c = c + (dense_spikes[n - m] * self._filter(dense_spikes[m]))
+                filtered_spike.append(c)
+            self.filtered_spikes.append(filtered_spike)
+
         # for i in range(0, len(self.spikes)):
         #     self.filtered_spikes = np.convolve(self.spikes,
         #                                        self._filter)  # TODO spikes would have to be dense here for proper convolution
         self._is_convolved = True
-
+        pass
     def bin_spikes(self, binarize=False, binarize_threshold=None, bin_size=1):
         """ sets filtered_spikes to bins the range of the objects spike values and increases value of each bin by one
         for each occurrence of the corresponding value in spikes. If binarize is True, all values are set to 0 or 1
