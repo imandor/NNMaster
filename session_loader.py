@@ -4,7 +4,7 @@ import tensorflow as tf
 import OpenEphys
 import scipy
 from settings import config
-
+from math import ceil
 
 def load_datafile(file_path):
     """ loads data from .dat file with numpy"""
@@ -63,15 +63,16 @@ def make_dense_np_matrix(mat, minimum_value=None, maximum_value=None):
      be in axis. Should be interpreted as neuron x time"""
 
     if minimum_value == None:
-        minimum_value = find_min_time(mat)
+        minimum_value = int(find_min_time(mat))
     if maximum_value == None:
-        maximum_value = find_max_time(mat)
+        maximum_value = ceil(find_max_time(mat))
 
     dense_matrix = make_zero_nxm_matrix(1 + int(maximum_value) - int(minimum_value), len(mat))
     for i in range(0, len(mat)):  # for each neuron
-        for j in range(0, len(mat[i]) - 1):  # for all saved times
+        for j in range(0, len(mat[i]) - 1 - minimum_value):  # for all saved times
             k = int(mat[i][j])  # saved time as index
-            dense_matrix[i][k] = 1
+            print(i," ",j," ",k)
+            dense_matrix[i][k] = 1.0
     dense_matrix = np.array(dense_matrix)
     return dense_matrix
 
