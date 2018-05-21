@@ -7,17 +7,19 @@ import matplotlib.pyplot as plt
 import tensorflow as tf
 
 
-def bin_filter(x):
-    return 1
-
-
 def slice_spikes(spikes, time_slice):
     start = []
     stop = []
     for i in range(0, len(spikes)):
-        start.append(next(ind for ind, v in enumerate(spikes[i]) if v > time_slice.start))
-        stop.append(next(ind for ind, v in enumerate(spikes[i]) if v > time_slice.stop))
-    return [slice_array(t, slice(start[ind], stop[ind])) for ind, t in enumerate(spikes)]
+        print(i)
+        start.append(next((ind for ind, v in enumerate(spikes[i]) if v > time_slice.start),None))
+        stop.append(next((ind for ind, v in enumerate(spikes[i]) if v > time_slice.stop),None))
+        if stop is None:
+            spikes[i].reverse()
+            stop.append(next((ind for ind, v in enumerate(spikes[i]) if v < time_slice.stop), None))
+            spikes[i].reverse()
+    asd = [slice_array(t, slice(start[ind], stop[ind])) for ind, t in enumerate(spikes)]
+    return asd
 
 
 def slice_list_of_dict(li, time_slice):
@@ -49,17 +51,15 @@ class Trial:
         d = np.asarray(d, dtype=float)
         test_e = np.ones(d.shape, dtype=float)
 
-        for i in range(0,len(d)):
+        for i in range(0, len(d)):
             dense_spikes = d[i]
             filtered_spike = []
-            for n in range(0, len(dense_spikes)-1):
+            for n in range(0, len(dense_spikes) - 1):
                 c = 0
-                if i==5 and n == 58:
-                    print("asd")
-                for m in range(-window, window+1, step_size):
+                for m in range(-window, window + 1, step_size):
                     if n - m >= 0 and n - m < len(dense_spikes):  # cut of edges
                         self._filter(dense_spikes[m])
-                        asd = dense_spikes[n-m]
+                        asd = dense_spikes[n - m]
                         dsa = self._filter(dense_spikes[m])
                         c = c + (dense_spikes[n - m] * self._filter(dense_spikes[m]))
                 filtered_spike.append(c)
@@ -70,6 +70,7 @@ class Trial:
         #                                        self._filter)  # TODO spikes would have to be dense here for proper convolution
         self._is_convolved = True
         pass
+
     def bin_spikes(self, binarize=False, binarize_threshold=None, bin_size=1):
         """ sets filtered_spikes to bins the range of the objects spike values and increases value of each bin by one
         for each occurrence of the corresponding value in spikes. If binarize is True, all values are set to 0 or 1
@@ -80,7 +81,6 @@ class Trial:
         for i in range(0, len(self.filtered_spikes)):
             new_spikes = np.zeros(bin_amount, dtype=int)
             for j in range(0, len(self.filtered_spikes[i])):
-                print(i, " ", j, " ", self.filtered_spikes[i][j])
                 new_spikes[self.filtered_spikes[i][j]] = new_spikes[self.filtered_spikes[i][j]] + 1
             if binarize is True:
                 new_spikes = np.where(new_spikes > binarize_threshold, 1, 0)
@@ -148,20 +148,7 @@ class Trial:
         pass
 
 
-class Trials:
-    def __init__(self):
-        self.container = []
 
-    def __getitem__(self, time_slice):
-        return self.container[time_slice]
-
-    def add_trial(self, trial):
-        # if not isinstance(trial, Trial):
-        #     raise TypeError("Key must be a Trial, got {}".format(type(trial)))
-        self.container.append(trial)
-
-    def get_all(self):
-        return self._container[:]
 
 
 class Slice(Trial):
@@ -222,8 +209,8 @@ class Slice(Trial):
             raise TypeError("Key must be a slice, got {}".format(type(time_slice)))
         start = time_slice.start
         stop = time_slice.stop
-        return_array = Trials()
-        for ind in range(1, len(self.trial_timestamp)):  # the first intended lick is always at well 1
+        return_array = []
+        for ind in range(1, len(self.trial_timestamp)):  # trial finishing in slice is also valid
             last_time = self.trial_timestamp[ind - 1]["time"]
             current_time = self.trial_timestamp[ind]["time"]
             # last_well = self.trial_timestamp[ind - 1]["trial_lickwell"]
@@ -232,9 +219,30 @@ class Slice(Trial):
             if start <= last_time or start is None:
                 if stop >= current_time or stop is None or stop == -1:
                     s = slice(last_time, current_time)
-                    return_array.add_trial(self[s])
+                    return_array.append(self[s])
         return return_array
 
     def get_all_trials(self):
         s = slice(0, -1)
         return self.get_trials(s)
+
+    def get_phases(self, time_slice):
+        """ returns a list of slices corresponding to the training phases contained in that slice """
+        if not isinstance(time_slice, slice):
+            raise TypeError("Key must be a slice, got {}".format(type(time_slice)))
+        return_array = []
+        first_well_in_phase = self.trial_timestamp[0]["trial_lickwell"]
+        last_time = self.trial_timestamp[0]["time"]
+        for ind in range(0, len(self.trial_timestamp) - 2):  # phases finishing (but not starting) in slice are also valid
+            second_well_in_phase = self.trial_timestamp[ind+2]["trial_lickwell"]
+            if first_well_in_phase != second_well_in_phase:
+                current_time = self.trial_timestamp[ind+2]["time"]
+                s = slice(last_time, current_time)
+                return_array.append(self[s])
+                last_time = current_time
+            first_well_in_phase = second_well_in_phase
+        return return_array
+
+    def get_all_phases(self):
+        s = slice(0, -1)
+        return self.get_phases(s)
