@@ -11,13 +11,15 @@ def slice_spikes(spikes, time_slice):
     start = []
     stop = []
     for i in range(0, len(spikes)):
-        print(i)
-        start.append(next((ind for ind, v in enumerate(spikes[i]) if v > time_slice.start),None))
-        stop.append(next((ind for ind, v in enumerate(spikes[i]) if v > time_slice.stop),None))
-        if stop is None:
-            spikes[i].reverse()
-            stop.append(next((ind for ind, v in enumerate(spikes[i]) if v < time_slice.stop), None))
-            spikes[i].reverse()
+        if spikes[i] != []:
+            start.append(next((ind for ind, v in enumerate(spikes[i]) if v >= time_slice.start), spikes[i][-1]))
+            if time_slice.stop == None:
+                stop.append(None)
+            else:
+                stop.append(next((ind for ind, v in enumerate(spikes[i]) if v > time_slice.stop), None))
+        else:
+            start.append(0)
+            stop.append(None)
     asd = [slice_array(t, slice(start[ind], stop[ind])) for ind, t in enumerate(spikes)]
     return asd
 
@@ -28,16 +30,29 @@ def slice_list_of_dict(li, time_slice):
 
 def slice_array(a, time_slice, sample_freq=1000):
     start = int(time_slice.start * sample_freq / 1000)
-    stop = int(time_slice.stop * sample_freq / 1000)
+    if time_slice.stop is not None:
+        stop = int(time_slice.stop * sample_freq / 1000)
+    else:
+        stop = None
     return a[start:stop]
 
 
 def time_in_slice(time, time_slice):
-    return time_slice.start <= time <= time_slice.stop
+    if time_slice.stop is None:
+        return time_slice.start <= time
+    else:
+        return time_slice.start <= time <= time_slice.stop
 
 
 def time_in_slice_list(time, time_slice):
     return [x for ind, x in enumerate(time) if time_slice.start < x < time_slice.stop]
+
+
+def get_nth_trial_in_each_phase(phase, n):
+    return_list = []
+    for i in range(0, len(phase)):
+        return_list.append(phase[i].get_nth_trial(n))
+    return return_list
 
 
 class Trial:
@@ -72,6 +87,7 @@ class Trial:
         pass
 
     def bin_spikes(self, binarize=False, binarize_threshold=None, bin_size=1):
+        """ obsolete. to be removed"""
         """ sets filtered_spikes to bins the range of the objects spike values and increases value of each bin by one
         for each occurrence of the corresponding value in spikes. If binarize is True, all values are set to 0 or 1
         depending on binarize_threshold"""
@@ -90,6 +106,7 @@ class Trial:
         pass
 
     def bin_index_spikes(self, bin_size=1):
+        """ obsolete. to be removed"""
         """ sets filtered_spikes to the index of spikes in a binned list with len(spikes)/bin_size entries"""
         max_time = (find_max_time(self.spikes))
         min_time = int(find_min_time(self.spikes))
@@ -110,15 +127,23 @@ class Trial:
     def __getitem__(self, time_slice):
         if not isinstance(time_slice, slice):
             raise TypeError("Key must be a slice, got {}".format(type(time_slice)))
+
+        # normalize start/stop for dense parameters, which always start at index = 0:
+        if time_slice.stop is None:
+            stop = None
+        else:
+            stop = time_slice.stop - self.start_time
+        start = time_slice.start - self.start_time
+        normalized_slice = slice(start,stop)
         spikes = slice_spikes(self.spikes, time_slice)
         licks = slice_list_of_dict(self.licks, time_slice)
-        position_x = slice_array(self.position_x, time_slice)
-        position_y = slice_array(self.position_y, time_slice)
-        speed = slice_array(self.speed, time_slice)
+        position_x = slice_array(self.position_x, normalized_slice)
+        position_y = slice_array(self.position_y, normalized_slice)
+        speed = slice_array(self.speed, normalized_slice)
         trial_timestamp = slice_list_of_dict(self.trial_timestamp, time_slice)
         _filter = None
-        return Slice(spikes, licks, position_x, position_y, speed,
-                     trial_timestamp, _filter=_filter)
+        return Slice(spikes=spikes, licks=licks, position_x=position_x, position_y=position_y, speed=speed,
+                     trial_timestamp=trial_timestamp, _filter=_filter,start_time = time_slice.start)
 
     def write(self, path):
         pass
@@ -148,12 +173,9 @@ class Trial:
         pass
 
 
-
-
-
 class Slice(Trial):
     def __init__(self, spikes, licks, position_x, position_y, speed,
-                 trial_timestamp, _filter=None):
+                 trial_timestamp, start_time, _filter=None):
         # list for every neuron of lists of times at which a spike occured
         self.spikes = spikes
         # list of dictionaries each dict being:
@@ -165,6 +187,7 @@ class Slice(Trial):
         self.speed = speed
         # list of dictionaries {"time":float, "well":0/1/2/3/4/5} for every rewarded lick
         self.trial_timestamp = trial_timestamp
+        self.start_time = start_time
         if _filter is None:
             self.filtered_spikes = None
             self.set_filter(filter=None, window=0)
@@ -187,12 +210,21 @@ class Slice(Trial):
         position_y = session_dict["position_y"]
         speed = session_dict["speed"]
         trial_timestamp = session_dict["trial_timestamp"]
+        start_time = 0 # trial is always normalized to zero
         return cls(spikes, licks, position_x, position_y, speed,
-                   trial_timestamp)
+                   trial_timestamp,start_time)
 
-    def get_trial_by_id(self, trial_id):
-        start = self.trial_timestamp[trial_id]["time"]
-        stop = self.trial_timestamp[trial_id + 1]["time"]
+    def get_nth_trial(self, n):
+        if not isinstance(n, int):
+            raise TypeError("Key must be an int, got {}".format(type(n)))
+
+        try:
+            start = self.trial_timestamp[n]["time"]
+            stop = self.trial_timestamp[n + 1]["time"]
+        except IndexError:
+            print("Error: Trial " + str(n) + " only partially or not in slice")
+            return None
+
         # start_well = self.trial_timestamp[trial_id - 1]["trial_lickwell"]
         # stop_well = self.trial_timestamp[trial_id - 1]["trial_lickwell"]
         return self[start:stop]
@@ -201,7 +233,7 @@ class Slice(Trial):
         start = np.argmax(self.trial_timestamp[..., 1] > trial_time)
         trial_id = np.where(self.trial_timestamp[..., 1] >= start)
         trial_id = trial_id[0][0]
-        return self.get_trial_by_id(trial_id)
+        return self.get_nth_trial(trial_id)
 
     def get_trials(self, time_slice):
         """ returns a list of Trial objects corresponding to the trials contained in that slice """
@@ -223,7 +255,7 @@ class Slice(Trial):
         return return_array
 
     def get_all_trials(self):
-        s = slice(0, -1)
+        s = slice(0, None)
         return self.get_trials(s)
 
     def get_phases(self, time_slice):
@@ -231,18 +263,21 @@ class Slice(Trial):
         if not isinstance(time_slice, slice):
             raise TypeError("Key must be a slice, got {}".format(type(time_slice)))
         return_array = []
-        first_well_in_phase = self.trial_timestamp[0]["trial_lickwell"]
+        current_time = 0
         last_time = self.trial_timestamp[0]["time"]
-        for ind in range(0, len(self.trial_timestamp) - 2):  # phases finishing (but not starting) in slice are also valid
-            second_well_in_phase = self.trial_timestamp[ind+2]["trial_lickwell"]
-            if first_well_in_phase != second_well_in_phase:
-                current_time = self.trial_timestamp[ind+2]["time"]
+        for ind in range(0,
+                         len(self.trial_timestamp) - 2):  # phases finishing (but not starting) in slice are also valid
+            current_starting_point = self.trial_timestamp[ind]["trial_lickwell"]
+            next_starting_point = self.trial_timestamp[ind + 2]["trial_lickwell"]
+            if current_starting_point != next_starting_point:
+                current_time = self.trial_timestamp[ind + 2]["time"]
                 s = slice(last_time, current_time)
                 return_array.append(self[s])
                 last_time = current_time
-            first_well_in_phase = second_well_in_phase
+        final_slice = slice(current_time, time_slice.stop)
+        return_array.append(self[final_slice])
         return return_array
 
     def get_all_phases(self):
-        s = slice(0, -1)
+        s = slice(0, None)
         return self.get_phases(s)
