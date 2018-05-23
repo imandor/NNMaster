@@ -67,7 +67,7 @@ class Trial:
         for i in range(0, len(d)):
             dense_spikes = d[i]
             filtered_spike = []
-            for n in range(0, len(dense_spikes) - 1):
+            for n in range(0, len(dense_spikes)):
                 c = 0
                 for m in range(-window, window + 1, step_size):
                     if n - m >= 0 and n - m < len(dense_spikes):  # cut off edges
@@ -75,7 +75,6 @@ class Trial:
                         c = c + (dense_spikes[n - m] * self._filter(dense_spikes[m]))
                 filtered_spike.append(c)
             self.filtered_spikes.append(filtered_spike)
-            if (i % 1000 == 0): print(i)
 
         # for i in range(0, len(self.spikes)):
         #     self.filtered_spikes = np.convolve(self.spikes,

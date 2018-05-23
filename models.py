@@ -55,7 +55,7 @@ class SimpleRNNDecoder(object):
 
         model=Sequential() #Declare model
         #Add recurrent layer
-        model.add(SimpleRNN(self.units,input_shape=X_train.shape,dropout_W=self.dropout,dropout_U=self.dropout,activation='relu')) #Within recurrent layer, include dropout
+        model.add(SimpleRNN(self.units,input_shape=(X_train.shape[1],X_train.shape[2]),dropout_W=self.dropout,dropout_U=self.dropout,activation='relu')) #Within recurrent layer, include dropout
         if self.dropout!=0: model.add(Dropout(self.dropout)) #Dropout some units (recurrent layer output units)
 
         #Add dense connections to output layer
