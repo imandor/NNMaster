@@ -64,21 +64,18 @@ class Trial:
         self.filtered_spikes = []
         d = make_dense_np_matrix(self.spikes)
         d = np.asarray(d, dtype=float)
-        test_e = np.ones(d.shape, dtype=float)
-
         for i in range(0, len(d)):
             dense_spikes = d[i]
             filtered_spike = []
             for n in range(0, len(dense_spikes) - 1):
                 c = 0
                 for m in range(-window, window + 1, step_size):
-                    if n - m >= 0 and n - m < len(dense_spikes):  # cut of edges
+                    if n - m >= 0 and n - m < len(dense_spikes):  # cut off edges
                         self._filter(dense_spikes[m])
-                        asd = dense_spikes[n - m]
-                        dsa = self._filter(dense_spikes[m])
                         c = c + (dense_spikes[n - m] * self._filter(dense_spikes[m]))
                 filtered_spike.append(c)
             self.filtered_spikes.append(filtered_spike)
+            if (i % 1000 == 0): print(i)
 
         # for i in range(0, len(self.spikes)):
         #     self.filtered_spikes = np.convolve(self.spikes,
@@ -134,7 +131,7 @@ class Trial:
         else:
             stop = time_slice.stop - self.start_time
         start = time_slice.start - self.start_time
-        normalized_slice = slice(start,stop)
+        normalized_slice = slice(start, stop)
         spikes = slice_spikes(self.spikes, time_slice)
         licks = slice_list_of_dict(self.licks, time_slice)
         position_x = slice_array(self.position_x, normalized_slice)
@@ -143,7 +140,7 @@ class Trial:
         trial_timestamp = slice_list_of_dict(self.trial_timestamp, time_slice)
         _filter = None
         return Slice(spikes=spikes, licks=licks, position_x=position_x, position_y=position_y, speed=speed,
-                     trial_timestamp=trial_timestamp, _filter=_filter,start_time = time_slice.start)
+                     trial_timestamp=trial_timestamp, _filter=_filter, start_time=time_slice.start)
 
     def write(self, path):
         pass
@@ -210,9 +207,9 @@ class Slice(Trial):
         position_y = session_dict["position_y"]
         speed = session_dict["speed"]
         trial_timestamp = session_dict["trial_timestamp"]
-        start_time = 0 # trial is always normalized to zero
+        start_time = 0  # trial is always normalized to zero
         return cls(spikes, licks, position_x, position_y, speed,
-                   trial_timestamp,start_time)
+                   trial_timestamp, start_time)
 
     def get_nth_trial(self, n):
         if not isinstance(n, int):
