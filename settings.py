@@ -1,6 +1,7 @@
 """Saves and loads parameters used in all networks """
 import pickle
-
+import dill
+import json
 """ paths and filenames"""
 path_to_session = "C:/Users/NN/Desktop/Master/sample_data/2018-04-09_14-39-52/"
 foster_path = path_to_session + "2018-04-09_14-39-53_fostertask.dat"
@@ -21,16 +22,19 @@ config = dict(
 def save_as_pickle(file_name, data):
     """ saves data in a pickle file"""
     with open(file_name, 'wb') as f:
-        pickle.dump(data, f)
+        dill.dump(data, f)
         return "saved!"
 
 
 def load_pickle(file_name):
     """loads data from pickle file"""
     with open(file_name,'rb') as f:
-        data = pickle.load(f)
+        data = dill.load(f)
         return data
+def save_as_json(file_name,data):
 
+    with open('data.txt', 'w') as outfile:
+        json.dump(data, outfile)
 
-save_as_pickle('config.pkl', config)
-config = load_pickle('config.pkl')
+# save_as_pickle('config.pkl', config)
+# config = load_pickle('config.pkl')
