@@ -4,7 +4,9 @@ from session_loader import read_file, find_max_time, find_min_time
 from settings import save_as_pickle, load_pickle
 from session_loader import make_dense_np_matrix
 import matplotlib.pyplot as plt
+import plotly.plotly as py
 import tensorflow as tf
+import matplotlib.mlab as mlab
 
 
 def slice_spikes(spikes, time_slice):
@@ -154,15 +156,49 @@ class Trial:
         self.plot_metadata(ax1, args1, args2)
         pass
 
+    def plot_time_x_trials(self):
+        trials = self.get_all_trials()
+        fig, axes = plt.subplots(nrows=len(trials))
+         
+        axes.set_xlim([xmin, xmax])
+        axes.set_ylim([ymin, ymax])
+        colors = ('k', 'r', 'b')
+        for ax, color in zip(axes, colors):
+            ind = np.where(axes == ax)[0][0]
+            data = trials[ind].spikes[0]
+            # ax.plot(data, marker='o', linestyle='none', color=color)
+            ax.bar(data,height=1,align='center',width = 1)
+
+            ax.xticks(y,x)
+            ax.ylabel('spikes')
+            ax.title('trial ' + ind)
+        plt.show()
+
     def plot_spikes(self, filtered=False):
         # if filtered = False, plot raw spikes else plot filtered spikes
         if filtered is True:
-            x = self.filtered_spikes
+            y = self.filtered_spikes[8]
         else:
-            x = self.spikes
-        plt.plot(x, x, label='linear')
-        plt.legend()
-        plt.show()
+            y = self.spikes[8]
+        x = np.arange(len(self.position_x))
+        width = y[-1] / 400
+        plt.bar(y, height=1, align='center', width=width)
+        # plt.xticks(y,x)
+        plt.ylabel('values')
+        plt.title('some plot')
+        plt.show(block=True)
+
+        # add some text for labels, title and axes ticks
+        # ax.set_ylabel('Scores')
+        # ax.set_title('Scores by group and gender')
+        # ax.set_xticks(ind + width / 2)
+        # ax.set_xticklabels(('G1', 'G2', 'G3', 'G4', 'G5'))
+
+        # ax.legend((rects1[0]), ('Men'))
+        # x = np.arange(y[0][0],y[0][-1])
+        # plt.plot(y[0], label='linear')
+        # plt.legend()
+        # plt.show(block=True)
         pass
 
     def plot_metadata(self, ax, args1, args2):
@@ -226,6 +262,7 @@ class Slice(Trial):
         return self[start:stop]
 
     def get_trial_by_time(self, trial_time):
+        # TODO must be updated to new trial timestamp format
         start = np.argmax(self.trial_timestamp[..., 1] > trial_time)
         trial_id = np.where(self.trial_timestamp[..., 1] >= start)
         trial_id = trial_id[0][0]
@@ -245,7 +282,7 @@ class Slice(Trial):
             # current_well = self.trial_timestamp[ind]["trial_lickwell"]
             # trial_id = ind - 1
             if start <= last_time or start is None:
-                if stop >= current_time or stop is None or stop == -1:
+                if stop is None or stop >= current_time or stop == -1:
                     s = slice(last_time, current_time)
                     return_array.append(self[s])
         return return_array

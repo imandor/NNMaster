@@ -8,8 +8,12 @@ from numpy.random import seed
 from networks import test_CNN
 
 seed(1)
-test_CNN()
+# test_CNN()
 data_slice = Slice.from_path(load_from="slice.pkl")
+
+medium_data_slice = data_slice[0:200000]
+medium_data_slice.plot_time_x_trials()
+medium_data_slice.plot_spikes()
 # ------------- test functions -----------------
 # medium_data_slice = data_slice[0:200000]
 # phases_1 = medium_data_slice.get_all_phases()
