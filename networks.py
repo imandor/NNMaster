@@ -1,9 +1,9 @@
 from models import SimpleRNNDecoder
-import dill
 from session_loader import make_dense_np_matrix
 from database_api_beta import Slice
 import numpy as np
 from settings import save_as_pickle, load_pickle
+from keras.models import load_model
 from filters import bin_filter
 
 
@@ -29,45 +29,46 @@ def process_input(X_train):
 
 def test_CNN():
     # Declare model
-    model_rnn = SimpleRNNDecoder(units=400, dropout=0, num_epochs=5)
-    # model_rnn = load_pickle("model_2018-5-23.pkl")
+    #
+    data_slice = Slice.from_path(load_from="slice.pkl")
+    # data_slice = data_slice[0:1000]
+    maximum_value = len(data_slice.position_x)
+    size = len(data_slice.position_x)
+    train_slice = data_slice[0:int(size / 2)]
+    test_slice = data_slice[int(size / 2):]
+    y_train = list(zip(train_slice.position_x,train_slice.position_y))
+    y_valid = list(zip(test_slice.position_x,test_slice.position_y))
 
-    # data_slice = Slice.from_path(load_from="slice.pkl")
-    # maximum_value = len(data_slice.position_x)
-    # size = len(data_slice.position_x)
-    # train_slice = data_slice[0:int(size / 2)]
-    # test_slice = data_slice[int(size / 2):]
-    # y_train = list(zip(train_slice.position_x,train_slice.position_y))
-    # y_valid = list(zip(test_slice.position_x,test_slice.position_y))
-    #
-    # X_train = make_dense_np_matrix(mat=train_slice.spikes, minimum_value=0, maximum_value=int(maximum_value / 2))
-    # X_valid = make_dense_np_matrix(mat=train_slice.spikes, minimum_value=int(maximum_value / 2),
-    #                                maximum_value=maximum_value)
-    # # Fit model
-    #
-    #
-    # X_train = process_input(X_train)
-    # X_valid = process_input(X_valid)
-    # X_train = np.asarray(X_train)
-    # X_valid = np.asarray(X_valid)
-    # y_train = np.asarray(y_train)
-    # y_valid = np.asarray(y_valid)
-    # model_data = dict(
-    #     X_train=X_train,
-    #     X_valid=X_valid,
-    #     y_train=y_train,
-    #     y_valid=y_valid
-    # )
-    # save_as_pickle("model_data.pkl", model_data)
+    X_train = make_dense_np_matrix(mat=train_slice.spikes, minimum_value=0, maximum_value=int(maximum_value / 2))
+    X_valid = make_dense_np_matrix(mat=train_slice.spikes, minimum_value=int(maximum_value / 2),
+                                   maximum_value=maximum_value)
+    # Fit model
+
+
+    X_train = process_input(X_train)
+    X_valid = process_input(X_valid)
+    X_train = np.asarray(X_train)
+    X_valid = np.asarray(X_valid)
+    y_train = np.asarray(y_train)
+    y_valid = np.asarray(y_valid)
+    model_data = dict(
+        X_train=X_train,
+        X_valid=X_valid,
+        y_train=y_train,
+        y_valid=y_valid
+    )
+    save_as_pickle("model_data.pkl", model_data)
 
     model_data = load_pickle("model_data.pkl")
     X_train = model_data["X_train"]
     X_valid = model_data["X_valid"]
     y_train = model_data["y_train"]
     y_valid = model_data["y_valid"]
+    model_rnn = SimpleRNNDecoder(units=400, dropout=0, num_epochs=1000)
     model_rnn.fit(X_train, y_train)
-    save_as_pickle("network_2018-05-23.pkl",model_rnn)
-    model_rnn = load_pickle("network_2018-05-23.pkl")
+    model_rnn.model.save("network_2018-05-23.h5")
+
+    model_rnn.model = load_model("network_2018-05-23.h5")
     # dill.dump_session('network_2018-05-23.pkl')
     # dill.load_session('network_2018-05-23.pkl')
     # Get predictions

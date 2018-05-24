@@ -3,9 +3,11 @@ from filters import bin_filter
 from session_loader import read_file
 from tdd_test import save_sample_session, test_trial_sample
 # data_slice = Slice.from_path(save_as="slice.pkl")
+from numpy.random import seed
+
 from networks import test_CNN
 
-
+seed(1)
 test_CNN()
 data_slice = Slice.from_path(load_from="slice.pkl")
 # ------------- test functions -----------------

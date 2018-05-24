@@ -1,6 +1,6 @@
 """Saves and loads parameters used in all networks """
 import pickle
-import dill
+# import dill as pickle
 import json
 """ paths and filenames"""
 path_to_session = "C:/Users/NN/Desktop/Master/sample_data/2018-04-09_14-39-52/"
@@ -22,14 +22,14 @@ config = dict(
 def save_as_pickle(file_name, data):
     """ saves data in a pickle file"""
     with open(file_name, 'wb') as f:
-        dill.dump(data, f)
+        pickle.dump(data, f)
         return "saved!"
 
 
 def load_pickle(file_name):
     """loads data from pickle file"""
     with open(file_name,'rb') as f:
-        data = dill.load(f)
+        data = pickle.load(f)
         return data
 def save_as_json(file_name,data):
 
