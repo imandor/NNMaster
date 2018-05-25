@@ -7,12 +7,14 @@ path_to_session = "C:/Users/NN/Desktop/Master/sample_data/2018-04-09_14-39-52/"
 foster_path = path_to_session + "2018-04-09_14-39-53_fostertask.dat"
 all_channels_path = path_to_session + "all_channels.events"
 spiketracker_path = path_to_session + "probe1/session1/spike_tracker_data.mat"
+figure_path = "C:/Users/NN/Desktop/Master/figures/"
 config = dict(
     paths = dict(
     path_to_session = path_to_session,
     foster_path = foster_path,
     all_channels_path = all_channels_path,
     spiketracker_path = spiketracker_path,
+    figure_path = figure_path
     )
 
 

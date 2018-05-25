@@ -4,9 +4,72 @@ from session_loader import read_file, find_max_time, find_min_time
 from settings import save_as_pickle, load_pickle
 from session_loader import make_dense_np_matrix
 import matplotlib.pyplot as plt
+import matplotlib.ticker as mticker
+from settings import config
 import plotly.plotly as py
 import tensorflow as tf
 import matplotlib.mlab as mlab
+
+
+def subtract_from_list(li, number):
+    return [x - number for x in li]
+
+
+
+def filter_trials_by_well(trials, start_well=None, end_well = None, well = None):
+    return [trial for trial in trials if
+            (int(trial.trial_timestamp[0]["trial_lickwell"])== start_well
+            or start_well == None
+            or int(trial.trial_timestamp[0]["trial_lickwell"])== well)
+            and
+            (int(trial.trial_timestamp[1]["trial_lickwell"]) == end_well
+             or end_well == None
+             or int(trial.trial_timestamp[1]["trial_lickwell"]) == well)
+
+            ]
+
+def plot_time_x_trials(trials,  neuron_no, max_range=None):
+    # find maximum range
+    trial_spike_list = []
+    if max_range is None:
+        max_range = 0
+        for trial in trials:
+            try:
+                max = trial.spikes[neuron_no][-1]
+                min = trial.spikes[neuron_no][0]
+                trial_range = max - min
+                if trial_range > max_range: max_range = trial_range
+            except IndexError:
+                None
+
+    # plot trials
+
+    fig, axes = plt.subplots(nrows=len(trials))
+
+    for ind in range(0, len(axes)):
+        trial = trials[ind]
+        xmin = trial.start_time
+        xmax = trial.start_time + max_range
+        ax = axes[ind]
+        data = trial.spikes[neuron_no]
+        ax.vlines(data, 0, 1)
+        well_1 = str(trial.trial_timestamp[0]["trial_lickwell"])
+        well_2 = str(trial.trial_timestamp[1]["trial_lickwell"])
+        plt.setp(ax.set_title("trial at " + str(int(trial.start_time)) + "ms (well "+ well_1 + " - " + well_2 + ")"))
+        # plt.setp(ax.get_yticklabels(), visible=False)
+        ax.set_yticks([])
+        ax.xaxis.set_major_locator(mticker.LinearLocator(10))
+        ax.set_xlim(left = xmin,right =xmax)
+
+        # if ind != len(axes)-1:
+        #     plt.setp(ax.get_xticklabels(), visible=False)
+        # else:
+        #     ax.set_xticks(np.arange(0, max_range, int(max_range / 10)))
+        # if ind ==2: plt.show()
+    save_path = config["paths"]["figure_path"] + "neuron_" + str(neuron_no) + "_" + ".png"
+    plt.savefig(save_path, bbox_inches='tight') #TODO add session date to session object and save image to file
+    plt.close(fig)
+    pass
 
 
 def slice_spikes(spikes, time_slice):
@@ -53,7 +116,8 @@ def time_in_slice_list(time, time_slice):
 def get_nth_trial_in_each_phase(phase, n):
     return_list = []
     for i in range(0, len(phase)):
-        return_list.append(phase[i].get_nth_trial(n))
+        trial = phase[i].get_nth_trial(n)
+        if trial is not None: return_list.append(trial)
     return return_list
 
 
@@ -156,24 +220,6 @@ class Trial:
         self.plot_metadata(ax1, args1, args2)
         pass
 
-    def plot_time_x_trials(self):
-        trials = self.get_all_trials()
-        fig, axes = plt.subplots(nrows=len(trials))
-         
-        axes.set_xlim([xmin, xmax])
-        axes.set_ylim([ymin, ymax])
-        colors = ('k', 'r', 'b')
-        for ax, color in zip(axes, colors):
-            ind = np.where(axes == ax)[0][0]
-            data = trials[ind].spikes[0]
-            # ax.plot(data, marker='o', linestyle='none', color=color)
-            ax.bar(data,height=1,align='center',width = 1)
-
-            ax.xticks(y,x)
-            ax.ylabel('spikes')
-            ax.title('trial ' + ind)
-        plt.show()
-
     def plot_spikes(self, filtered=False):
         # if filtered = False, plot raw spikes else plot filtered spikes
         if filtered is True:
@@ -254,7 +300,7 @@ class Slice(Trial):
             start = self.trial_timestamp[n]["time"]
             stop = self.trial_timestamp[n + 1]["time"]
         except IndexError:
-            print("Error: Trial " + str(n) + " only partially or not in slice")
+            print("Warning: Slice does not contain " + str(n) + "th trial")
             return None
 
         # start_well = self.trial_timestamp[trial_id - 1]["trial_lickwell"]

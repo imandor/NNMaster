@@ -1,4 +1,4 @@
-from database_api_beta import  Slice, get_nth_trial_in_each_phase
+from database_api_beta import  Slice, plot_time_x_trials, get_nth_trial_in_each_phase
 from filters import bin_filter
 from session_loader import read_file
 from tdd_test import save_sample_session, test_trial_sample
@@ -6,14 +6,18 @@ from tdd_test import save_sample_session, test_trial_sample
 from numpy.random import seed
 
 from networks import test_CNN
-
+import matplotlib.pyplot as plt
+from database_api_beta import filter_trials_by_well
 seed(1)
 # test_CNN()
 data_slice = Slice.from_path(load_from="slice.pkl")
+phases_2 = data_slice.get_all_phases()
+medium_data_slice = data_slice
+nth_trial_list = filter_trials_by_well(phases_2[2].get_all_trials(),start_well=1)
 
-medium_data_slice = data_slice[0:200000]
-medium_data_slice.plot_time_x_trials()
-medium_data_slice.plot_spikes()
+for i in range(0,166):
+    plot_time_x_trials(nth_trial_list,neuron_no=i)
+
 # ------------- test functions -----------------
 # medium_data_slice = data_slice[0:200000]
 # phases_1 = medium_data_slice.get_all_phases()
