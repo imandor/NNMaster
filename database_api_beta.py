@@ -35,8 +35,8 @@ def plot_time_x_trials(trials,  neuron_no, max_range=None):
         max_range = 0
         for trial in trials:
             try:
-                max = trial.spikes[neuron_no][-1]
-                min = trial.spikes[neuron_no][0]
+                max = trial.trial_timestamp[1]["time"]
+                min = trial.trial_timestamp[0]["time"]
                 trial_range = max - min
                 if trial_range > max_range: max_range = trial_range
             except IndexError:
@@ -44,30 +44,45 @@ def plot_time_x_trials(trials,  neuron_no, max_range=None):
 
     # plot trials
 
-    fig, axes = plt.subplots(nrows=len(trials))
-
+    fig, axes = plt.subplots(nrows=len(trials),sharex=True,sharey=True)
+    plt.yticks([])
+    plt.xticks([])
+    plt.xlabel(config["image_labels"]["trial_spikes_x1"])
+    plt.ylabel(config["image_labels"]["trial_spikes_y1_left"])
+    plt.subplots_adjust(hspace=0)
+    #pylab.yaxis.set_label_position(config["image_labels"]["trial_spikes_y1_left"])
     for ind in range(0, len(axes)):
         trial = trials[ind]
         xmin = trial.start_time
         xmax = trial.start_time + max_range
         ax = axes[ind]
-        data = trial.spikes[neuron_no]
+        data = subtract_from_list(trial.spikes[neuron_no],xmin)
+        start_lick = trial.trial_timestamp[0]["time"]-xmin
+        end_lick = trial.trial_timestamp[1]["time"]-xmin
+        ax.vlines(start_lick, 0, 1, colors=['g'])
+        ax.vlines(end_lick,0,1,colors=['r'])
+        ax.set_xlim(left=0, right=xmax - xmin)
+        ax.set_ylabel(int(xmin),rotation="horizontal")
         ax.vlines(data, 0, 1)
+        # if ind == 2:
+        #     plt.show()
         well_1 = str(trial.trial_timestamp[0]["trial_lickwell"])
         well_2 = str(trial.trial_timestamp[1]["trial_lickwell"])
-        plt.setp(ax.set_title("trial at " + str(int(trial.start_time)) + "ms (well "+ well_1 + " - " + well_2 + ")"))
+        # pylab.setp(ax.set_title("trial at " + str(int(trial.start_time)) + "ms (well "+ well_1 + " - " + well_2 + ")"))
         # plt.setp(ax.get_yticklabels(), visible=False)
         ax.set_yticks([])
-        ax.xaxis.set_major_locator(mticker.LinearLocator(10))
-        ax.set_xlim(left = xmin,right =xmax)
+
+        if ind == len(axes) -1: ax.xaxis.set_major_locator(mticker.LinearLocator(10))
+
 
         # if ind != len(axes)-1:
         #     plt.setp(ax.get_xticklabels(), visible=False)
         # else:
         #     ax.set_xticks(np.arange(0, max_range, int(max_range / 10)))
-        # if ind ==2: plt.show()
+
     save_path = config["paths"]["figure_path"] + "neuron_" + str(neuron_no) + "_" + ".png"
     plt.savefig(save_path, bbox_inches='tight') #TODO add session date to session object and save image to file
+    plt.show(block=True)
     plt.close(fig)
     pass
 

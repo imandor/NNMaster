@@ -15,7 +15,7 @@ phases_2 = data_slice.get_all_phases()
 medium_data_slice = data_slice
 nth_trial_list = filter_trials_by_well(phases_2[2].get_all_trials(),start_well=1)
 
-for i in range(0,166):
+for i in range(0,1):
     plot_time_x_trials(nth_trial_list,neuron_no=i)
 
 # ------------- test functions -----------------
