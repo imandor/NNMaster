@@ -137,7 +137,8 @@ def read_file():
         if rewarded[ind] == 1:  # for a trial the lick must have been correct
             trial_timestamp = trial_timestamp + [dict(
                 time=initial_detection_timestamp[ind],
-                trial_lickwell=well
+                trial_lickwell=well,
+                trial_id = ind
             )]
 
     # licks

@@ -17,10 +17,14 @@ config = dict(
     figure_path = figure_path
     ),
     image_labels = dict(
-        trial_spikes_y1_left = "trial time",
+        trial_spikes_title = "Spikes in trials by time",
+        trial_spikes_y1_left = "trial id",
         trial_spikes_y1_right = "wells",
-        trial_spikes_x1 = "time (ms)"
-
+        trial_spikes_x1 = "time (ms)",
+        position_spikes_title="Spikes in trials by position",
+        position_y1_left="trial id",
+        position_y1_right="wells",
+        position_x1="position (cm)"
     )
 
 )
