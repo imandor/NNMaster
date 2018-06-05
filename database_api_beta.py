@@ -11,188 +11,156 @@ import tensorflow as tf
 import matplotlib.mlab as mlab
 import bisect
 
+
 def subtract_from_list(li, number):
+    """
+
+    :param li: python list
+    :param number: a number
+    :return: list with number subtracted from each list entry
+    """
     return [x - number for x in li]
 
 
-def filter_trials_by_well(trials, start_well=None, end_well=None, well=None):
-    return [trial for trial in trials if
-            (int(trial.trial_timestamp[0]["trial_lickwell"]) == start_well
-             or start_well == None
-             or int(trial.trial_timestamp[0]["trial_lickwell"]) == well)
-            and
-            (int(trial.trial_timestamp[1]["trial_lickwell"]) == end_well
-             or end_well == None
-             or int(trial.trial_timestamp[1]["trial_lickwell"]) == well)
-
-            ]
 
 
-def find_longest_trial(trials):
-    max_range = 0
-    for trial in trials:
-        try:
-            max = trial.trial_timestamp[1]["time"]
-            min = trial.trial_timestamp[0]["time"]
-            trial_range = max - min
-            if trial_range > max_range: max_range = trial_range
-        except IndexError:
-            None
-    return max_range
 
-def plot_time_x_trials(trials, neuron_no, max_range=None):
-    # find maximum range
-    trial_spike_list = []
-    if max_range is None:
-        max_range = find_longest_trial(trials)
+class Slices:
+    def __init__(self):
+        self.container = []
 
-    # plot trials
+    def __getitem__(self, time_slice):
+        return self.container[time_slice]
 
-    fig, axes = plt.subplots(nrows=len(trials), sharex=True, sharey=True)
-    plt.yticks([])
-    plt.xticks([])
-    plt.suptitle(config["image_labels"]["trial_spikes_title"])
-    # plt.subplots_adjust(hspace=0)
-    # pylab.yaxis.set_label_position(config["image_labels"]["trial_spikes_y1_left"])
-    fig.text(0.5, 0.04, config["image_labels"]["trial_spikes_x1"], ha='center', va='center')
-    fig.text(0.06, 0.5, config["image_labels"]["trial_spikes_y1_left"], ha='center', va='center', rotation='vertical')
-    fig.text(0.94, 0.5, config["image_labels"]["trial_spikes_y1_left"], ha='center', va='center', rotation='vertical')
-    for ind in range(0, len(axes)):
-        trial = trials[ind]
-        xmin = trial.start_time
-        xmax = trial.start_time + max_range
-        ax = axes[ind]
-        data = subtract_from_list(trial.spikes[neuron_no], xmin)
-        start_lick = trial.trial_timestamp[0]["time"] - xmin
-        end_lick = trial.trial_timestamp[1]["time"] - xmin
-        ax.vlines(start_lick, 0, 1, colors=['g'])
-        ax.vlines(end_lick, 0, 1, colors=['r'])
-        ax.set_xlim(left=0, right=xmax - xmin)
-        ax.set_ylabel(trial.trial_timestamp[0]["trial_id"], rotation="horizontal", labelpad=10,verticalalignment="center")
-        ax.vlines(data, 0, 1)
-        ax.set_yticks([])
-    save_path = config["paths"]["figure_path"] + "spike_times_single_neuron" + str(neuron_no) + "_" + ".png"
-    plt.savefig(save_path, bbox_inches='tight')  # TODO add session date to session object and save image to file
-    # plt.show(block=True)
-    plt.close(fig)
-    pass
+    def add_slice(self, slice):
+        # if not isinstance(trial, Trial):
+        #     raise TypeError("Key must be a Trial, got {}".format(type(trial)))
+        self.container.append(slice)
 
+    def get_all(self):
+        return self._container[:]
 
-def map_spikes_to_position(time_slice,neuron_nos = None):
-    """ returns an array containing the positions corresponding to each spike for each neuron. if neuron_nos is given, only the given neurons are returned"""
-    spikes = time_slice.spikes
-    position_x = time_slice.position_x
-    start_time = int(time_slice.start_time)
-    max_position = int(np.amax(position_x))
-    return_array = []
-    if neuron_nos is None or []:
-        i_range = range(0,len(spikes))
-    else:
-        i_range = neuron_nos
-    for i in i_range:
-        dense_spikes = [0]*max_position
-        for j in range(0,len(spikes[i])):
-            pos = int(position_x[int(spikes[i][j]-start_time)])-1
-            dense_spikes[pos] = dense_spikes[pos]+1
-        # np.trim_zeros(dense_spikes, trim='b') # remove trailing zeros
-        return_array.append(dense_spikes)
-    return return_array
+    def get_nth_trial_in_each_phase(self, n):
+        return_list = []
+        for i in range(0, len(self)):
+            slice = self[i].get_nth_trial(n)
+            if slice is not None: return_list.append(slice)
+        return return_list
 
+    def plot_positionx_x_trials(self, neuron_no, max_range=None):
+        # find maximum range
+        trial_spike_list = []
+        if max_range is None:
+            max_range = self.find_longest_trial()
 
-def plot_positionx_x_trials(trials, neuron_no, max_range=None):
-    # find maximum range
-    trial_spike_list = []
-    if max_range is None:
-        max_range = find_longest_trial(trials)
+        # plot trials
 
-    # plot trials
+        fig, axes = plt.subplots(nrows=len(self.trials), sharex=True, sharey=True)
+        plt.yticks([])
+        plt.xticks([])
+        plt.suptitle(config["image_labels"]["position_spikes_title"])
+        # plt.subplots_adjust(hspace=0)
+        # pylab.yaxis.set_label_position(config["image_labels"]["trial_spikes_y1_left"])
+        fig.text(0.5, 0.04, config["image_labels"]["position_x1"], ha='center', va='center')
+        fig.text(0.06, 0.5, config["image_labels"]["position_y1_left"], ha='center', va='center', rotation='vertical')
+        fig.text(0.94, 0.5, config["image_labels"]["position_y1_left"], ha='center', va='center', rotation='vertical')
 
-    fig, axes = plt.subplots(nrows=len(trials), sharex=True, sharey=True)
-    plt.yticks([])
-    plt.xticks([])
-    plt.suptitle(config["image_labels"]["position_spikes_title"])
-    # plt.subplots_adjust(hspace=0)
-    # pylab.yaxis.set_label_position(config["image_labels"]["trial_spikes_y1_left"])
-    fig.text(0.5, 0.04, config["image_labels"]["position_x1"], ha='center', va='center')
-    fig.text(0.06, 0.5, config["image_labels"]["position_y1_left"], ha='center', va='center', rotation='vertical')
-    fig.text(0.94, 0.5, config["image_labels"]["position_y1_left"], ha='center', va='center', rotation='vertical')
+        for ind in range(0, len(axes)):
+            trial = self.trials[ind]
 
-    for ind in range(0, len(axes)):
-        trial = trials[ind]
+            ax = axes[ind]
+            data = trial.map_spikes_to_position([neuron_no])[0]
 
-        ax = axes[ind]
-        data = map_spikes_to_position(trial,[neuron_no])[0]
+            data_trimmed = np.trim_zeros(data)
+            # data_trimmed_left = np.trim_zeros(data, trim='f')
+            # data_trimmed_right = np.trim_zeros(data, trim='b')
+            # xmin = len(data) - len(data_trimmed_left) #TODO fix data trim or change to default trimmed data
+            # xmax = len(data_trimmed_right)   # 000123400000 - 0001234
+            # start_lick = trial.trial_timestamp[0]["time"] - xmin
+            # end_lick = trial.trial_timestamp[1]["time"] - xmin
+            # ax.vlines(start_lick, 0, 1, colors=['g'])
+            # ax.vlines(end_lick, 0, 1, colors=['r'])
 
-        data_trimmed = np.trim_zeros(data)
-        # data_trimmed_left = np.trim_zeros(data, trim='f')
-        # data_trimmed_right = np.trim_zeros(data, trim='b')
-        # xmin = len(data) - len(data_trimmed_left) #TODO fix data trim or change to default trimmed data
-        # xmax = len(data_trimmed_right)   # 000123400000 - 0001234
-        # start_lick = trial.trial_timestamp[0]["time"] - xmin
-        # end_lick = trial.trial_timestamp[1]["time"] - xmin
-        # ax.vlines(start_lick, 0, 1, colors=['g'])
-        # ax.vlines(end_lick, 0, 1, colors=['r'])
+            # ax.set_xlim(left=0)
+            ax.set_ylabel(trial.trial_timestamp[0]["trial_id"], rotation="horizontal", labelpad=10,
+                          verticalalignment="center")
+            # ax.vlines(data, 0, 1)
+            ax.bar(range(len(data)), data, width=1, align='center', color='black', zorder=3)
+            # ax.grid(b=True, which='major', color='b', linestyle='-')
+            ax.set_yticks([])
+        save_path = config["paths"]["figure_path"] + "spike_positions_single_neuron_" + str(neuron_no) + "_" + ".png"
+        plt.savefig(save_path, bbox_inches='tight')  # TODO add session date to session object and save image to file
+        plt.show(block=True)
+        plt.close(fig)
+        pass
 
-        # ax.set_xlim(left=0)
-        ax.set_ylabel(trial.trial_timestamp[0]["trial_id"], rotation="horizontal", labelpad=10,verticalalignment="center")
-        # ax.vlines(data, 0, 1)
-        ax.bar(range(len(data)), data, width=1, align='center', color='black', zorder=3)
-        # ax.grid(b=True, which='major', color='b', linestyle='-')
-        ax.set_yticks([])
-    save_path = config["paths"]["figure_path"] + "spike_positions_single_neuron_" + str(neuron_no) + "_" + ".png"
-    plt.savefig(save_path, bbox_inches='tight')  # TODO add session date to session object and save image to file
-    plt.show(block=True)
-    plt.close(fig)
-    pass
+    def find_longest_trial(self):
+        """
 
+        :param trials:
+        :return:
+        """
+        max_range = 0
+        for trial in self:
+            try:
+                max = trial.trial_timestamp[1]["time"]
+                min = trial.trial_timestamp[0]["time"]
+                trial_range = max - min
+                if trial_range > max_range: max_range = trial_range
+            except IndexError:
+                None
+        return max_range
 
-def slice_spikes(spikes, time_slice):
-    start = []
-    stop = []
-    for i in range(0, len(spikes)):
-        if spikes[i] != []:
-            start.append(next((ind for ind, v in enumerate(spikes[i]) if v >= time_slice.start), spikes[i][-1]))
-            if time_slice.stop == None:
-                stop.append(None)
-            else:
-                stop.append(next((ind for ind, v in enumerate(spikes[i]) if v > time_slice.stop), None))
-        else:
-            start.append(0)
-            stop.append(None)
-    return [slice_array(t, slice(start[ind], stop[ind])) for ind, t in enumerate(spikes)]
+    def plot_time_x_trials(self, neuron_no, max_range=None):
+        # find maximum range
+        trial_spike_list = []
+        if max_range is None:
+            max_range = self.find_longest_trial()
 
+        # plot trials
 
-def slice_list_of_dict(li, time_slice):
-    return [d for d in li if time_in_slice(d["time"], time_slice)]
+        fig, axes = plt.subplots(nrows=len(self), sharex=True, sharey=True)
+        plt.yticks([])
+        plt.xticks([])
+        plt.suptitle(config["image_labels"]["trial_spikes_title"])
+        # plt.subplots_adjust(hspace=0)
+        # pylab.yaxis.set_label_position(config["image_labels"]["trial_spikes_y1_left"])
+        fig.text(0.5, 0.04, config["image_labels"]["trial_spikes_x1"], ha='center', va='center')
+        fig.text(0.06, 0.5, config["image_labels"]["trial_spikes_y1_left"], ha='center', va='center',
+                 rotation='vertical')
+        fig.text(0.94, 0.5, config["image_labels"]["trial_spikes_y1_left"], ha='center', va='center',
+                 rotation='vertical')
+        for ind in range(0, len(axes)):
+            trial = self[ind]
+            xmin = trial.start_time
+            xmax = trial.start_time + max_range
+            ax = axes[ind]
+            data = subtract_from_list(trial.spikes[neuron_no], xmin)
+            start_lick = trial.trial_timestamp[0]["time"] - xmin
+            end_lick = trial.trial_timestamp[1]["time"] - xmin
+            ax.vlines(start_lick, 0, 1, colors=['g'])
+            ax.vlines(end_lick, 0, 1, colors=['r'])
+            ax.set_xlim(left=0, right=xmax - xmin)
+            ax.set_ylabel(trial.trial_timestamp[0]["trial_id"], rotation="horizontal", labelpad=10,
+                          verticalalignment="center")
+            ax.vlines(data, 0, 1)
+            ax.set_yticks([])
+        save_path = config["paths"]["figure_path"] + "spike_times_single_neuron" + str(neuron_no) + "_" + ".png"
+        plt.savefig(save_path, bbox_inches='tight')  # TODO add session date to session object and save image to file
+        # plt.show(block=True)
+        plt.close(fig)
+        pass
 
-
-def slice_array(a, time_slice, sample_freq=1000):
-    start = int(time_slice.start * sample_freq / 1000)
-    if time_slice.stop is not None:
-        stop = int(time_slice.stop * sample_freq / 1000)
-    else:
-        stop = None
-    return a[start:stop]
-
-
-def time_in_slice(time, time_slice):
-    if time_slice.stop is None:
-        return time_slice.start <= time
-    else:
-        return time_slice.start <= time <= time_slice.stop
-
-
-def time_in_slice_list(time, time_slice):
-    return [x for ind, x in enumerate(time) if time_slice.start < x < time_slice.stop]
-
-
-def get_nth_trial_in_each_phase(phase, n):
-    return_list = []
-    for i in range(0, len(phase)):
-        trial = phase[i].get_nth_trial(n)
-        if trial is not None: return_list.append(trial)
-    return return_list
-
+    def filter_trials_by_well(self, start_well=None, end_well=None, well=None):
+        return [trial for trial in self if
+                (int(trial.trial_timestamp[0]["trial_lickwell"]) == start_well
+                 or start_well == None
+                 or int(trial.trial_timestamp[0]["trial_lickwell"]) == well)
+                and
+                (int(trial.trial_timestamp[1]["trial_lickwell"]) == end_well
+                 or end_well == None
+                 or int(trial.trial_timestamp[1]["trial_lickwell"]) == well)
+                ]
 
 class Trial:
     def set_filter(self, filter, window):
@@ -200,7 +168,7 @@ class Trial:
         if filter is not None: self._convolve(window=window)
 
     def _convolve(self, window, step_size=1):
-        n_bin_points =  len(self.position_x) // step_size
+        n_bin_points = len(self.position_x) // step_size
         self.filtered_spikes = np.zeros((len(self.spikes), n_bin_points))
         d = make_dense_np_matrix(self.spikes)
         d = np.asarray(d, dtype=float)
@@ -208,7 +176,8 @@ class Trial:
             for i in range(n_bin_points):
                 cursor = i * step_size
                 valid_spikes = one_neurone_spikes[bisect.bisect_left(one_neurone_spikes, cursor - window):]
-                valid_spikes = valid_spikes[bisect.bisect_right(valid_spikes, cursor + window):]#[x for x in one_neurone_spikes if x < cursor + window and x > cursor - window]
+                valid_spikes = valid_spikes[bisect.bisect_right(valid_spikes,
+                                                                cursor + window):]  # [x for x in one_neurone_spikes if x < cursor + window and x > cursor - window]
                 s = 0
                 for t in valid_spikes:
                     delta = t - cursor
@@ -255,6 +224,22 @@ class Trial:
             self.filtered_spikes[i] = new_spikes
         pass
 
+    def slice_spikes(self, time_slice):
+        start = []
+        stop = []
+        for i in range(0, len(self.spikes)):
+            if self.spikes[i] != []:
+                start.append(
+                    next((ind for ind, v in enumerate(self.spikes[i]) if v >= time_slice.start), self.spikes[i][-1]))
+                if time_slice.stop == None:
+                    stop.append(None)
+                else:
+                    stop.append(next((ind for ind, v in enumerate(self.spikes[i]) if v > time_slice.stop), None))
+            else:
+                start.append(0)
+                stop.append(None)
+        return [slice(start[ind], stop[ind]).slice_array(t) for ind, t in enumerate(self.spikes)]
+
     @property
     def is_convolved(self):
         return self._is_convolved
@@ -270,12 +255,12 @@ class Trial:
             stop = time_slice.stop - self.start_time
         start = time_slice.start - self.start_time
         normalized_slice = slice(start, stop)
-        spikes = slice_spikes(self.spikes, time_slice)
-        licks = slice_list_of_dict(self.licks, time_slice)
-        position_x = slice_array(self.position_x, normalized_slice)
-        position_y = slice_array(self.position_y, normalized_slice)
-        speed = slice_array(self.speed, normalized_slice)
-        trial_timestamp = slice_list_of_dict(self.trial_timestamp, time_slice)
+        spikes = self.slice_spikes(time_slice)
+        licks = time_slice.slice_list_of_dict(self.licks)
+        position_x = normalized_slice.slice_array(self.position_x)
+        position_y = normalized_slice.slice_array(self.position_y )
+        speed = normalized_slice.slice_array(self.speed)
+        trial_timestamp =  time_slice.slice_list_of_dict(self.trial_timestamp)
         _filter = None
         return Slice(spikes=spikes, licks=licks, position_x=position_x, position_y=position_y, speed=speed,
                      trial_timestamp=trial_timestamp, _filter=_filter, start_time=time_slice.start)
@@ -433,3 +418,48 @@ class Slice(Trial):
     def get_all_phases(self):
         s = slice(0, None)
         return self.get_phases(s)
+
+    def map_spikes_to_position(self, neuron_nos=None):
+        """ returns an array containing the positions corresponding to each spike for each neuron. if neuron_nos is given, only the given neurons are returned"""
+        spikes = self.spikes
+        position_x = self.position_x
+        start_time = int(self.start_time)
+        max_position = int(np.amax(position_x))
+        return_array = []
+        if neuron_nos is None or []:
+            i_range = range(0, len(spikes))
+        else:
+            i_range = neuron_nos
+        for i in i_range:
+            dense_spikes = [0] * max_position
+            for j in range(0, len(spikes[i])):
+                pos = int(position_x[int(spikes[i][j] - start_time)]) - 1
+                dense_spikes[pos] = dense_spikes[pos] + 1
+            # np.trim_zeros(dense_spikes, trim='b') # remove trailing zeros
+            return_array.append(dense_spikes)
+        return return_array
+
+    def slice_list_of_dict(self, li):
+        """
+        :param li: python list
+        :param time_slice: python slice
+        :return:
+        """
+        return [d for d in li if self.time_in_slice(d["time"])]
+
+    def slice_array(self, a, sample_freq=1000):
+        start = int(self.start * sample_freq / 1000)
+        if self.stop is not None:
+            stop = int(self.stop * sample_freq / 1000)
+        else:
+            stop = None
+        return a[start:stop]
+
+    def time_in_slice(self, time):
+        if self.stop is None:
+            return self.start <= time
+        else:
+            return self.start <= time <= self.stop
+
+    def time_in_slice_list(self,time):
+        return [x for ind, x in enumerate(time) if self.start < x < self.stop]
