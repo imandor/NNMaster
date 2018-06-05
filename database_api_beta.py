@@ -9,7 +9,7 @@ from settings import config
 import plotly.plotly as py
 import tensorflow as tf
 import matplotlib.mlab as mlab
-
+import bisect
 
 def subtract_from_list(li, number):
     return [x - number for x in li]
@@ -133,7 +133,7 @@ def plot_positionx_x_trials(trials, neuron_no, max_range=None):
         # ax.vlines(start_lick, 0, 1, colors=['g'])
         # ax.vlines(end_lick, 0, 1, colors=['r'])
 
-        ax.set_xlim(left=0)
+        # ax.set_xlim(left=0)
         ax.set_ylabel(trial.trial_timestamp[0]["trial_id"], rotation="horizontal", labelpad=10,verticalalignment="center")
         # ax.vlines(data, 0, 1)
         ax.bar(range(len(data)), data, width=1, align='center', color='black', zorder=3)
@@ -141,7 +141,7 @@ def plot_positionx_x_trials(trials, neuron_no, max_range=None):
         ax.set_yticks([])
     save_path = config["paths"]["figure_path"] + "spike_positions_single_neuron_" + str(neuron_no) + "_" + ".png"
     plt.savefig(save_path, bbox_inches='tight')  # TODO add session date to session object and save image to file
-    # plt.show(block=True)
+    plt.show(block=True)
     plt.close(fig)
     pass
 
@@ -200,20 +200,20 @@ class Trial:
         if filter is not None: self._convolve(window=window)
 
     def _convolve(self, window, step_size=1):
-        self.filtered_spikes = []
+        n_bin_points =  len(self.position_x) // step_size
+        self.filtered_spikes = np.zeros((len(self.spikes), n_bin_points))
         d = make_dense_np_matrix(self.spikes)
         d = np.asarray(d, dtype=float)
-        for i in range(0, len(d)):
-            dense_spikes = d[i]
-            filtered_spike = []
-            for n in range(0, len(dense_spikes)):
-                c = 0
-                for m in range(-window, window + 1, step_size):
-                    if n - m >= 0 and n - m < len(dense_spikes):  # cut off edges
-                        self._filter(dense_spikes[m])
-                        c = c + (dense_spikes[n - m] * self._filter(dense_spikes[m]))
-                filtered_spike.append(c)
-            self.filtered_spikes.append(filtered_spike)
+        for n, one_neurone_spikes in enumerate(self.spikes):
+            for i in range(n_bin_points):
+                cursor = i * step_size
+                valid_spikes = one_neurone_spikes[bisect.bisect_left(one_neurone_spikes, cursor - window):]
+                valid_spikes = valid_spikes[bisect.bisect_right(valid_spikes, cursor + window):]#[x for x in one_neurone_spikes if x < cursor + window and x > cursor - window]
+                s = 0
+                for t in valid_spikes:
+                    delta = t - cursor
+                    s += self._filter(delta)
+                self.filtered_spikes[n][i] = s
 
         # for i in range(0, len(self.spikes)):
         #     self.filtered_spikes = np.convolve(self.spikes,

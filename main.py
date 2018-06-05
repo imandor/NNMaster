@@ -1,23 +1,19 @@
-from database_api_beta import Slice, plot_time_x_trials, plot_positionx_x_trials, get_nth_trial_in_each_phase
-from filters import bin_filter
-from session_loader import read_file
-from tdd_test import save_sample_session, test_trial_sample
+from database_api_beta import Slice, plot_positionx_x_trials, get_nth_trial_in_each_phase
+from src.filters import bin_filter
 # data_slice = Slice.from_path(save_as="slice.pkl")
 from numpy.random import seed
 
-from networks import test_CNN
-import matplotlib.pyplot as plt
 from database_api_beta import filter_trials_by_well
 
 seed(1)
 # test_CNN()
 # data_slice = Slice.from_path(save_as="slice.pkl")
 
-data_slice = Slice.from_path(load_from="slice.pkl")  # load a data slice containing entire session
+data_slice = Slice.from_path(load_from="data/pickle/slice.pkl")  # load a data slice containing entire session
 
 smaller_data_slice = data_slice[0:200000] # slices first 200 seconds of session
 
-# smaller_data_slice.set_filter(filter=bin_filter,window=1) # convolves data into bins
+smaller_data_slice.set_filter(filter=bin_filter,window=1) # convolves data into bins
 phases = data_slice.get_all_phases()  # gets all training phases as list of data slices
 trial = phases[0].get_nth_trial(0) # gets first trial in first training phase
 list_of_trials = data_slice.get_trials(slice(0,200000)) # returns a list of trials in the first 200000 ms of session
@@ -29,8 +25,8 @@ all_trials_in_second_phase = phases[2].get_all_trials()  # returns a list of all
 all_trials_starting_with_well_1 = \
     filter_trials_by_well(all_trials_in_second_phase, start_well=1)  # returns all trials in second phase that start with a lick at well 1
 
-for i in range(0, 10): # for neuron no 0 to 9:
-    plot_time_x_trials(all_trials_starting_with_well_1,neuron_no=i)
+for i in range(0, 30): # for neuron no 0 to 9:
+    # plot_time_x_trials(all_trials_star>ting_with_well_1,neuron_no=i)
     plot_positionx_x_trials(all_trials_starting_with_well_1, neuron_no=i)
 # ------------- test functions -----------------
 # medium_data_slice = data_slice[0:200000]

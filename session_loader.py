@@ -1,7 +1,6 @@
 """contains functions to load session data from source files"""
 import numpy as np
-import tensorflow as tf
-import OpenEphys
+from src import OpenEphys
 import scipy
 from settings import config
 from math import ceil

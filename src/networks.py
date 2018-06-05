@@ -1,10 +1,9 @@
-from models import SimpleRNNDecoder
+from src.models import SimpleRNNDecoder
 from session_loader import make_dense_np_matrix
 from database_api_beta import Slice
 import numpy as np
 from settings import save_as_pickle, load_pickle
 from keras.models import load_model
-from filters import bin_filter
 
 
 def get_R2(y_test, y_test_pred):
