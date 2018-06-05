@@ -73,7 +73,7 @@ def plot_time_x_trials(trials, neuron_no, max_range=None):
         ax.set_yticks([])
     save_path = config["paths"]["figure_path"] + "spike_times_single_neuron" + str(neuron_no) + "_" + ".png"
     plt.savefig(save_path, bbox_inches='tight')  # TODO add session date to session object and save image to file
-    plt.show(block=True)
+    # plt.show(block=True)
     plt.close(fig)
     pass
 
@@ -116,25 +116,28 @@ def plot_positionx_x_trials(trials, neuron_no, max_range=None):
     fig.text(0.5, 0.04, config["image_labels"]["position_x1"], ha='center', va='center')
     fig.text(0.06, 0.5, config["image_labels"]["position_y1_left"], ha='center', va='center', rotation='vertical')
     fig.text(0.94, 0.5, config["image_labels"]["position_y1_left"], ha='center', va='center', rotation='vertical')
+
     for ind in range(0, len(axes)):
         trial = trials[ind]
 
         ax = axes[ind]
-        data = map_spikes_to_position(trial,[neuron_no])
-        data_trimmed = np.trim_zeros(data[0])
-        data_trimmed_left = np.trim_zeros(data[0], trim='f')
-        data_trimmed_right = np.trim_zeros(data[0], trim='b')
-        xmin = len(data_trimmed) - len(data_trimmed_left) #TODO fix data trim or change to default trimmed data
-        xmax = len(data[0]) - len(data_trimmed_right)
-        start_lick = trial.trial_timestamp[0]["time"] - xmin
-        end_lick = trial.trial_timestamp[1]["time"] - xmin
+        data = map_spikes_to_position(trial,[neuron_no])[0]
+
+        data_trimmed = np.trim_zeros(data)
+        # data_trimmed_left = np.trim_zeros(data, trim='f')
+        # data_trimmed_right = np.trim_zeros(data, trim='b')
+        # xmin = len(data) - len(data_trimmed_left) #TODO fix data trim or change to default trimmed data
+        # xmax = len(data_trimmed_right)   # 000123400000 - 0001234
+        # start_lick = trial.trial_timestamp[0]["time"] - xmin
+        # end_lick = trial.trial_timestamp[1]["time"] - xmin
         # ax.vlines(start_lick, 0, 1, colors=['g'])
         # ax.vlines(end_lick, 0, 1, colors=['r'])
 
-        ax.set_xlim(left=0, right=xmax - xmin)
+        ax.set_xlim(left=0)
         ax.set_ylabel(trial.trial_timestamp[0]["trial_id"], rotation="horizontal", labelpad=10,verticalalignment="center")
         # ax.vlines(data, 0, 1)
-        ax.hist(data[0])
+        ax.bar(range(len(data)), data, width=1, align='center', color='black', zorder=3)
+        # ax.grid(b=True, which='major', color='b', linestyle='-')
         ax.set_yticks([])
     save_path = config["paths"]["figure_path"] + "spike_positions_single_neuron_" + str(neuron_no) + "_" + ".png"
     plt.savefig(save_path, bbox_inches='tight')  # TODO add session date to session object and save image to file
