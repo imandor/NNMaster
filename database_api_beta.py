@@ -65,19 +65,6 @@ class Slices:
             if slice is not None: return_list.append(slice)
         return return_list
 
-
-
-    def plot_position_x_num_spikes(self,max_range=None):
-        if max_range is None:
-            max_range = self.range_of_longest_trial()
-        plt.yticks([])
-        plt.xticks([])
-        plt.suptitle(config["image_labels"]["position_spikes_title"])
-
-        plt.bar(data, height=1, align='center', width=max_range)
-        plt.text(0.5, 0.04, config["image_labels"]["position_x1"], ha='center', va='center')
-        plt.text(0.06, 0.5, config["image_labels"]["position_y1_left"], ha='center', va='center', rotation='vertical')
-        plt.text(0.94, 0.5, config["image_labels"]["position_y1_left"], ha='center', va='center', rotation='vertical')
     def plot_positionx_x_trials(self, neuron_no, max_range=None):
         """
         Plotting function, creates subplots containing trials by time
@@ -87,7 +74,6 @@ class Slices:
         """
         # find maximum range
         trial_spike_list = []
-
 
         # plot trials
 
@@ -150,8 +136,6 @@ class Slices:
         ax.vlines(data, 0, 1)
         ax.set_yticks([])
         return ax
-
-
 
     def plot_time_x_trials(self, neuron_no, max_range=None):
         # find maximum range
@@ -226,31 +210,30 @@ class Trial:
                                                                 int(
                                                                     one_spike) + window)]  # [x for x in one_neurone_spikes if x < cursor + window and x > cursor - window]
                 for t in valid_spikes:
-                    self.filtered_spikes[n][int(t // step_size)-1] += self._filter(t)
+                    print(n, " ",i, " ", t)
+                    self.filtered_spikes[n][int((t-self.start_time) // step_size) - 1 ] += self._filter(t)
         self._is_convolved = True
         pass
 
-
-    def plot_filtered_spikes(self, filter = None, window = 0, step_size = 1,max_range=None):
-        plt.yticks([])
-        plt.xticks([])
+    def plot_filtered_spikes(self, filter=None, window=0, step_size=1, max_range=None):
         trial = self
         trial.set_filter(filter=bin_filter, window=1, step_size=100)
-        plt.suptitle(config["image_labels"]["trial_spikes_title"])
+        plt.suptitle(config["image_labels"]["filtered_spikes_title"].format(trial.trial_timestamp[0]["trial_id"]))
         # plt.subplots_adjust(hspace=0)
         # pylab.yaxis.set_label_position(config["image_labels"]["trial_spikes_y1_left"])
-        plt.xlabel( config["image_labels"]["filtered_spikes_x1"].format(str(step_size)))
-        plt.ylabel(0.06, 0.5, config["image_labels"]["filtered_spikes_y1_left"])
-
+        plt.xlabel(config["image_labels"]["filtered_spikes_x1"].format(str(step_size)))
+        plt.ylabel(config["image_labels"]["filtered_spikes_y1_left"])
 
         summed_spikes = self.filtered_spikes.sum(axis=0)
-        x = np.arange(0,len(summed_spikes))
+        x = np.arange(0, len(summed_spikes))
         width = 1
-        plt.bar(x, height=summed_spikes, align='center', width=width)
-        plt.show(block=True)
-
+        # plt.bar(x, height=summed_spikes, align='center', width=width)
+        mu, sigma = 100, 15
+        x = mu + sigma * summed_spikes
+        plt.hist(x, len(summed_spikes), density=True, facecolor='g', alpha=0.75)
+        plt.show()
+        plt.close()
         pass
-
 
     def bin_spikes(self, binarize=False, binarize_threshold=None, bin_size=1):
         """ obsolete. to be removed"""
