@@ -12,6 +12,9 @@ import matplotlib.mlab as mlab
 import bisect
 
 
+
+
+
 def subtract_from_list(li, number):
     """
 
@@ -26,8 +29,8 @@ def subtract_from_list(li, number):
 
 
 class Slices:
-    def __init__(self):
-        self.container = []
+    def __init__(self, container=[]):
+        self.container = container
 
     def __getitem__(self, time_slice):
         return self.container[time_slice]
@@ -38,11 +41,14 @@ class Slices:
         self.container.append(slice)
 
     def get_all(self):
-        return self._container[:]
+        return self.container[:]
+
+    def __eq__(self, other):
+        return self.__dict__ == other.__dict__
 
     def get_nth_trial_in_each_phase(self, n):
         return_list = []
-        for i in range(0, len(self)):
+        for i in range(0, len(self.get_all())):
             slice = self[i].get_nth_trial(n)
             if slice is not None: return_list.append(slice)
         return return_list
@@ -55,7 +61,7 @@ class Slices:
 
         # plot trials
 
-        fig, axes = plt.subplots(nrows=len(self.trials), sharex=True, sharey=True)
+        fig, axes = plt.subplots(nrows=len(self.get_all()), sharex=True, sharey=True)
         plt.yticks([])
         plt.xticks([])
         plt.suptitle(config["image_labels"]["position_spikes_title"])
@@ -66,7 +72,7 @@ class Slices:
         fig.text(0.94, 0.5, config["image_labels"]["position_y1_left"], ha='center', va='center', rotation='vertical')
 
         for ind in range(0, len(axes)):
-            trial = self.trials[ind]
+            trial = self[ind]
 
             ax = axes[ind]
             data = trial.map_spikes_to_position([neuron_no])[0]
@@ -119,7 +125,7 @@ class Slices:
 
         # plot trials
 
-        fig, axes = plt.subplots(nrows=len(self), sharex=True, sharey=True)
+        fig, axes = plt.subplots(nrows=len(self.get_all()), sharex=True, sharey=True)
         plt.yticks([])
         plt.xticks([])
         plt.suptitle(config["image_labels"]["trial_spikes_title"])
@@ -152,7 +158,7 @@ class Slices:
         pass
 
     def filter_trials_by_well(self, start_well=None, end_well=None, well=None):
-        return [trial for trial in self if
+        return Slices([trial for trial in self if
                 (int(trial.trial_timestamp[0]["trial_lickwell"]) == start_well
                  or start_well == None
                  or int(trial.trial_timestamp[0]["trial_lickwell"]) == well)
@@ -160,9 +166,25 @@ class Slices:
                 (int(trial.trial_timestamp[1]["trial_lickwell"]) == end_well
                  or end_well == None
                  or int(trial.trial_timestamp[1]["trial_lickwell"]) == well)
-                ]
+                ])
 
 class Trial:
+
+
+    def __str__(self):
+        return str(self.__dict__)
+
+    def __eq__(self, other):
+        if  self.spikes == other.spikes  and self.licks == other.licks \
+                and np.array_equal(self.position_x,other.position_x) \
+                and np.array_equal(self.position_y ,other.position_y) \
+                and np.array_equal(self.speed ,other.speed) \
+                and self.trial_timestamp == other.trial_timestamp \
+                and self.start_time == other.start_time:
+            return True
+        else:
+            return False
+
     def set_filter(self, filter, window):
         self._filter = filter
         if filter is not None: self._convolve(window=window)
@@ -170,23 +192,14 @@ class Trial:
     def _convolve(self, window, step_size=1):
         n_bin_points = len(self.position_x) // step_size
         self.filtered_spikes = np.zeros((len(self.spikes), n_bin_points))
-        d = make_dense_np_matrix(self.spikes)
-        d = np.asarray(d, dtype=float)
         for n, one_neurone_spikes in enumerate(self.spikes):
-            for i in range(n_bin_points):
-                cursor = i * step_size
-                valid_spikes = one_neurone_spikes[bisect.bisect_left(one_neurone_spikes, cursor - window):]
-                valid_spikes = valid_spikes[bisect.bisect_right(valid_spikes,
-                                                                cursor + window):]  # [x for x in one_neurone_spikes if x < cursor + window and x > cursor - window]
-                s = 0
+            print(n)
+            for i, one_spike in enumerate(one_neurone_spikes):
+                valid_spikes = one_neurone_spikes[bisect.bisect_left(one_neurone_spikes, int(one_spike) - window):]
+                valid_spikes = valid_spikes[:bisect.bisect_left(valid_spikes,
+                                                                int(one_spike) + window)]  # [x for x in one_neurone_spikes if x < cursor + window and x > cursor - window]
                 for t in valid_spikes:
-                    delta = t - cursor
-                    s += self._filter(delta)
-                self.filtered_spikes[n][i] = s
-
-        # for i in range(0, len(self.spikes)):
-        #     self.filtered_spikes = np.convolve(self.spikes,
-        #                                        self._filter)  # TODO spikes would have to be dense here for proper convolution
+                    self.filtered_spikes[n][int(t)*step_size] += self._filter(t)
         self._is_convolved = True
         pass
 
@@ -238,7 +251,7 @@ class Trial:
             else:
                 start.append(0)
                 stop.append(None)
-        return [slice(start[ind], stop[ind]).slice_array(t) for ind, t in enumerate(self.spikes)]
+        return [self.slice_array(a=t, time_slice=slice(start[ind], stop[ind])) for ind, t in enumerate(self.spikes)]
 
     @property
     def is_convolved(self):
@@ -256,11 +269,11 @@ class Trial:
         start = time_slice.start - self.start_time
         normalized_slice = slice(start, stop)
         spikes = self.slice_spikes(time_slice)
-        licks = time_slice.slice_list_of_dict(self.licks)
-        position_x = normalized_slice.slice_array(self.position_x)
-        position_y = normalized_slice.slice_array(self.position_y )
-        speed = normalized_slice.slice_array(self.speed)
-        trial_timestamp =  time_slice.slice_list_of_dict(self.trial_timestamp)
+        licks = self.slice_list_of_dict(li=self.licks,time_slice=time_slice)
+        position_x = self.slice_array(self.position_x,normalized_slice)
+        position_y = self.slice_array(self.position_y,normalized_slice )
+        speed = self.slice_array(self.speed,normalized_slice)
+        trial_timestamp =  self.slice_list_of_dict(li=self.trial_timestamp,time_slice=time_slice)
         _filter = None
         return Slice(spikes=spikes, licks=licks, position_x=position_x, position_y=position_y, speed=speed,
                      trial_timestamp=trial_timestamp, _filter=_filter, start_time=time_slice.start)
@@ -350,6 +363,15 @@ class Slice(Trial):
         return cls(spikes, licks, position_x, position_y, speed,
                    trial_timestamp, start_time)
 
+    def slice_array(self, a, time_slice, sample_freq=1000):
+        start = int(time_slice.start * sample_freq / 1000)
+        if time_slice.stop is not None:
+            stop = int(time_slice.stop * sample_freq / 1000)
+        else:
+            stop = None
+        return a[start:stop]
+
+
     def get_nth_trial(self, n):
         if not isinstance(n, int):
             raise TypeError("Key must be an int, got {}".format(type(n)))
@@ -389,7 +411,7 @@ class Slice(Trial):
                 if stop is None or stop >= current_time or stop == -1:
                     s = slice(last_time, current_time)
                     return_array.append(self[s])
-        return return_array
+        return Slices(return_array)
 
     def get_all_trials(self):
         s = slice(0, None)
@@ -413,7 +435,7 @@ class Slice(Trial):
                 last_time = current_time
         final_slice = slice(current_time, time_slice.stop)
         return_array.append(self[final_slice])
-        return return_array
+        return Slices(return_array)
 
     def get_all_phases(self):
         s = slice(0, None)
@@ -439,27 +461,15 @@ class Slice(Trial):
             return_array.append(dense_spikes)
         return return_array
 
-    def slice_list_of_dict(self, li):
-        """
-        :param li: python list
-        :param time_slice: python slice
-        :return:
-        """
-        return [d for d in li if self.time_in_slice(d["time"])]
+    def slice_list_of_dict(self,li, time_slice):
+        return [d for d in li if self.time_in_slice(d["time"], time_slice)]
 
-    def slice_array(self, a, sample_freq=1000):
-        start = int(self.start * sample_freq / 1000)
-        if self.stop is not None:
-            stop = int(self.stop * sample_freq / 1000)
+    def time_in_slice(self, time, time_slice):
+        if time_slice.stop is None:
+            return time_slice.start <= time
         else:
-            stop = None
-        return a[start:stop]
+            return time_slice.start <= time <= time_slice.stop
 
-    def time_in_slice(self, time):
-        if self.stop is None:
-            return self.start <= time
-        else:
-            return self.start <= time <= self.stop
 
     def time_in_slice_list(self,time):
         return [x for ind, x in enumerate(time) if self.start < x < self.stop]
