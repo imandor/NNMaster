@@ -15,9 +15,11 @@ data_slice = Slice.from_path(load_from="data/pickle/slice.pkl")  # load a data s
 
 smaller_data_slice = data_slice[0:200000]  # slices first 200 seconds of session
 
-smaller_data_slice.set_filter(filter=bin_filter, window=1,step_size=2)  # convolves data into bins
+smaller_data_slice.set_filter(filter=bin_filter, window=1,step_size=100)  # convolves data into bins
+
 phases = data_slice.get_all_phases()  # gets all training phases as list of data slices
 trial = phases[0].get_nth_trial(0)  # gets first trial in first training phase
+trial.plot_filtered_spikes(filter=bin_filter, window=1,step_size=100)
 list_of_trials = data_slice.get_trials(
     slice(0, 200000))  # returns a list of trials in the first 200000 ms of session
 sub_list_of_trials = list_of_trials[0:10]  # slices first 10 entries in list of trials

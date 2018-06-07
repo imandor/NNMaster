@@ -9,6 +9,7 @@ from settings import config
 import plotly.plotly as py
 import tensorflow as tf
 import matplotlib.mlab as mlab
+from src.filters import bin_filter
 import bisect
 
 
@@ -150,9 +151,7 @@ class Slices:
         ax.set_yticks([])
         return ax
 
-    def plot_filtered_spikes(self, neuron_no, max_range=None):
 
-        pass
 
     def plot_time_x_trials(self, neuron_no, max_range=None):
         # find maximum range
@@ -227,10 +226,31 @@ class Trial:
                                                                 int(
                                                                     one_spike) + window)]  # [x for x in one_neurone_spikes if x < cursor + window and x > cursor - window]
                 for t in valid_spikes:
-                    self.filtered_spikes[n][int(t // step_size)] += self._filter(t)
+                    self.filtered_spikes[n][int(t // step_size)-1] += self._filter(t)
         self._is_convolved = True
-        asd = self.filtered_spikes[3][28000:29000]
         pass
+
+
+    def plot_filtered_spikes(self, filter = None, window = 0, step_size = 1,max_range=None):
+        plt.yticks([])
+        plt.xticks([])
+        trial = self
+        trial.set_filter(filter=bin_filter, window=1, step_size=100)
+        plt.suptitle(config["image_labels"]["trial_spikes_title"])
+        # plt.subplots_adjust(hspace=0)
+        # pylab.yaxis.set_label_position(config["image_labels"]["trial_spikes_y1_left"])
+        plt.xlabel( config["image_labels"]["filtered_spikes_x1"].format(str(step_size)))
+        plt.ylabel(0.06, 0.5, config["image_labels"]["filtered_spikes_y1_left"])
+
+
+        summed_spikes = self.filtered_spikes.sum(axis=0)
+        x = np.arange(0,len(summed_spikes))
+        width = 1
+        plt.bar(x, height=summed_spikes, align='center', width=width)
+        plt.show(block=True)
+
+        pass
+
 
     def bin_spikes(self, binarize=False, binarize_threshold=None, bin_size=1):
         """ obsolete. to be removed"""

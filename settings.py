@@ -33,7 +33,11 @@ config = dict(
         position_spikes_title="Spikes in trials by position",
         position_y1_left="trial id",
         position_y1_right="wells",
-        position_x1="position (cm)"
+        position_x1="position (cm)",
+        filtered_spikes_title = "Number of spikes in trial by time",
+        filtered_y1_left = "spikes",
+        filtered_y1_right = "",
+        filtered_x1 = "time ({} ms bins)"
     )
 
 )
