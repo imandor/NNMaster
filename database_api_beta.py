@@ -102,7 +102,7 @@ class Slices:
             ax.set_yticks([])
         save_path = config["paths"]["figure_path"] + "spike_positions_single_neuron_" + str(neuron_no) + "_" + ".png"
         plt.savefig(save_path, bbox_inches='tight')  # TODO add session date to session object and save image to file
-        plt.show(block=True)
+        # plt.show(block=True)
         plt.close(fig)
 
         pass
@@ -201,17 +201,24 @@ class Trial:
         if filter is not None: self._convolve(window=window, step_size=step_size)
 
     def _convolve(self, window, step_size=1):
-        n_bin_points = len(self.position_x) // step_size
-        self.filtered_spikes = np.zeros((len(self.spikes), n_bin_points))
+        n_bin_points = len(self.position_x) // step_size # +1 adds a left and right edge
+        self.filtered_spikes = np.zeros((len(self.spikes), n_bin_points+1))
         for n, one_neurone_spikes in enumerate(self.spikes):
             for i, one_spike in enumerate(one_neurone_spikes):
                 valid_spikes = one_neurone_spikes[bisect.bisect_left(one_neurone_spikes, int(one_spike) - window):]
                 valid_spikes = valid_spikes[:bisect.bisect_left(valid_spikes,
                                                                 int(
                                                                     one_spike) + window)]  # [x for x in one_neurone_spikes if x < cursor + window and x > cursor - window]
+                valid_spikes = np.asarray(valid_spikes)
+                valid_spikes = valid_spikes - self.start_time
                 for t in valid_spikes:
-                    print(n, " ",i, " ", t)
-                    self.filtered_spikes[n][int((t-self.start_time) // step_size) - 1 ] += self._filter(t)
+                    index = int(t // step_size)
+                    if index == n_bin_points+1: # all values larger than highest bin
+                        index = index - 1
+                    if index == 81856:
+                        asd = self.spikes[n][2807:]
+                        print("hier")
+                    self.filtered_spikes[n][index] += self._filter(t)
         self._is_convolved = True
         pass
 
@@ -227,10 +234,10 @@ class Trial:
         summed_spikes = self.filtered_spikes.sum(axis=0)
         x = np.arange(0, len(summed_spikes))
         width = 1
-        # plt.bar(x, height=summed_spikes, align='center', width=width)
-        mu, sigma = 100, 15
-        x = mu + sigma * summed_spikes
-        plt.hist(x, len(summed_spikes), density=True, facecolor='g', alpha=0.75)
+        plt.bar(x, height=summed_spikes, align='center', width=width)
+        # mu, sigma = 100, 15
+        # x = mu + sigma * summed_spikes
+        # plt.hist(x, len(summed_spikes), density=True, facecolor='g', alpha=0.75)
         plt.show()
         plt.close()
         pass
@@ -297,10 +304,11 @@ class Trial:
         if time_slice.stop is None:
             stop = None
         else:
-            stop = time_slice.stop - self.start_time
-        start = time_slice.start - self.start_time
+            stop = time_slice.stop + self.start_time
+        start = time_slice.start + self.start_time
         normalized_slice = slice(start, stop)
         spikes = self.slice_spikes(time_slice)
+        asd = find_max_time(spikes)
         licks = self.slice_list_of_dict(li=self.licks, time_slice=time_slice)
         position_x = self.slice_array(self.position_x, normalized_slice)
         position_y = self.slice_array(self.position_y, normalized_slice)
@@ -308,7 +316,7 @@ class Trial:
         trial_timestamp = self.slice_list_of_dict(li=self.trial_timestamp, time_slice=time_slice)
         _filter = None
         return Slice(spikes=spikes, licks=licks, position_x=position_x, position_y=position_y, speed=speed,
-                     trial_timestamp=trial_timestamp, _filter=_filter, start_time=time_slice.start)
+                     trial_timestamp=trial_timestamp, _filter=_filter, start_time=start)
 
     def write(self, path):
         pass
@@ -335,7 +343,7 @@ class Trial:
         # plt.xticks(y,x)
         plt.ylabel('values')
         plt.title('some plot')
-        plt.show(block=True)
+        # plt.show(block=True)
 
         # add some text for labels, title and axes ticks
         # ax.set_ylabel('Scores')
@@ -399,9 +407,9 @@ class Slice(Trial):
         start = int(time_slice.start * sample_freq / 1000)
         if time_slice.stop is not None:
             stop = int(time_slice.stop * sample_freq / 1000)
+            return a[start:stop]
         else:
-            stop = None
-        return a[start:stop]
+            return a[start:]
 
     def get_nth_trial(self, n):
         if not isinstance(n, int):

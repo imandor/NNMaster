@@ -4,7 +4,7 @@ from src import OpenEphys
 import scipy
 from settings import config
 from math import ceil
-
+import bisect
 def load_datafile(file_path):
     """ loads data from .dat file with numpy"""
     try:
@@ -157,6 +157,9 @@ def read_file():
     # spikes = spikes.astype(TimePoint)
     # session = Session(spikes=spikes, licks=licks, spikes_dense=spikes_dense, position_x=position_x,
     #                   position_y=position_y, speed=speed, trial_timestamp=trial_timestamp)
+    for i in range(len(spikes)):
+        spikes[i] = spikes[i][:bisect.bisect_left(spikes[i], len(position_x))] # the raw data contains spikes outside the session scope
+
     return_dict = dict(
         spikes=spikes, licks=licks, position_x=position_x,
         position_y=position_y, speed=speed, trial_timestamp=trial_timestamp)
