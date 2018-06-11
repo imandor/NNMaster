@@ -1,20 +1,17 @@
 from database_api_beta import Slice
-from src.networks import test_CNN,test_trials, test_phase
+from src.networks import test_full_session,test_trials, test_phase
 from src.filters import bin_filter
 # data_slice = Slice.from_path(save_as="slice.pkl")
 from numpy.random import seed
 import tdd_test
 
 seed(1)
-# tdd_test.save_test_objects()
-# tdd_test.compare_test_objects()
-seed(1)
-# test_CNN()
-# data_slice = Slice.from_path(save_as="slice.pkl")
-# test_trials()
-test_phase()
-test_CNN()
-
+bin_size = 1000
+units = 50
+epochs = 100
+test_phase(bin_size=bin_size,units=units,epochs=epochs)
+test_full_session(bin_size=bin_size,units=units,epochs=epochs)
+test_trials(bin_size=bin_size,units=units,epochs=epochs)
 data_slice = Slice.from_path(load_from="data/pickle/slice.pkl")  # load a data slice containing entire session
 
 

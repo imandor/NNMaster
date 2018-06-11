@@ -201,7 +201,9 @@ class Trial:
         if filter is not None: self._convolve(window=window, step_size=step_size)
 
     def _convolve(self, window, step_size=1):
-        n_bin_points = len(self.position_x) // step_size # +1 adds a left and right edge
+        max_spike = find_max_time(self.spikes)
+        min_spike = find_min_time(self.spikes)
+        n_bin_points = int(len(self.position_x) // step_size) # +1 adds a left and right edge
         self.filtered_spikes = np.zeros((len(self.spikes), n_bin_points+1))
         for n, one_neurone_spikes in enumerate(self.spikes):
             for i, one_spike in enumerate(one_neurone_spikes):
@@ -210,14 +212,13 @@ class Trial:
                                                                 int(
                                                                     one_spike) + window)]  # [x for x in one_neurone_spikes if x < cursor + window and x > cursor - window]
                 valid_spikes = np.asarray(valid_spikes)
-                valid_spikes = valid_spikes - self.start_time
+                valid_spikes = valid_spikes - self.start_time # normalize
                 for t in valid_spikes:
                     index = int(t // step_size)
                     if index == n_bin_points+1: # all values larger than highest bin
                         index = index - 1
-                    if index == 81856:
-                        asd = self.spikes[n][2807:]
-                        print("hier")
+                    # if index == 169:
+                    #     print("asd")
                     self.filtered_spikes[n][index] += self._filter(t)
         self._is_convolved = True
         pass
@@ -301,19 +302,21 @@ class Trial:
             raise TypeError("Key must be a slice, got {}".format(type(time_slice)))
 
         # normalize start/stop for dense parameters, which always start at index = 0:
+
+        start = time_slice.start + self.start_time
         if time_slice.stop is None:
             stop = None
         else:
             stop = time_slice.stop + self.start_time
-        start = time_slice.start + self.start_time
-        normalized_slice = slice(start, stop)
-        spikes = self.slice_spikes(time_slice)
+
+        offset_slice = slice(start, stop)
+        spikes = self.slice_spikes(offset_slice)
         asd = find_max_time(spikes)
-        licks = self.slice_list_of_dict(li=self.licks, time_slice=time_slice)
-        position_x = self.slice_array(self.position_x, normalized_slice)
-        position_y = self.slice_array(self.position_y, normalized_slice)
-        speed = self.slice_array(self.speed, normalized_slice)
-        trial_timestamp = self.slice_list_of_dict(li=self.trial_timestamp, time_slice=time_slice)
+        licks = self.slice_list_of_dict(li=self.licks, time_slice=offset_slice)
+        position_x = self.slice_array(self.position_x, time_slice)
+        position_y = self.slice_array(self.position_y, time_slice)
+        speed = self.slice_array(self.speed, time_slice)
+        trial_timestamp = self.slice_list_of_dict(li=self.trial_timestamp, time_slice=offset_slice)
         _filter = None
         return Slice(spikes=spikes, licks=licks, position_x=position_x, position_y=position_y, speed=speed,
                      trial_timestamp=trial_timestamp, _filter=_filter, start_time=start)
