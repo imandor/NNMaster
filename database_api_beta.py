@@ -232,7 +232,7 @@ class Trial:
         plt.xlabel(config["image_labels"]["filtered_spikes_x1"].format(str(step_size)))
         plt.ylabel(config["image_labels"]["filtered_spikes_y1_left"])
 
-        summed_spikes = self.filtered_spikes.sum(axis=0)
+        summed_spikes = (self.filtered_spikes)[0]#filtered_spikes.sum(axis=0)
         x = np.arange(0, len(summed_spikes))
         width = 1
         plt.bar(x, height=summed_spikes, align='center', width=width)

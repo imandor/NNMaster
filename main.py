@@ -6,12 +6,13 @@ from numpy.random import seed
 import tdd_test
 
 seed(1)
-bin_size = 1000
-units = 50
+bin_size = 700
+units = 500
 epochs = 100
-test_phase(bin_size=bin_size,units=units,epochs=epochs)
-test_full_session(bin_size=bin_size,units=units,epochs=epochs)
-test_trials(bin_size=bin_size,units=units,epochs=epochs)
+dropout=0.1
+test_phase(bin_size=bin_size,units=units,epochs=epochs,dropout=dropout)
+test_full_session(bin_size=bin_size,units=units,epochs=epochs,dropout=dropout)
+test_trials(bin_size=bin_size,units=units,epochs=epochs,dropout=dropout)
 data_slice = Slice.from_path(load_from="data/pickle/slice.pkl")  # load a data slice containing entire session
 
 
