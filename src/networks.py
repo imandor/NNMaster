@@ -61,7 +61,7 @@ def get_model_data(train_slice,test_slice,bin_size, file_name=None,save_as=None)
         return load_pickle(file_name)
     train_slice.set_filter(filter=bin_filter, window=bin_size, step_size=1)
     test_slice.set_filter(filter=bin_filter, window=1, step_size=bin_size)
-    test_slice.plot_filtered_spikes(filter=bin_filter, window=1, step_size=bin_size, max_range=None)
+    # test_slice.plot_filtered_spikes(filter=bin_filter, window=1, step_size=bin_size, max_range=None)
     y_train = list(zip(train_slice.position_x, train_slice.position_y))
     y_valid = list(zip(test_slice.position_x, test_slice.position_y))
 

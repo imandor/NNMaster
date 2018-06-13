@@ -8,7 +8,7 @@ import tdd_test
 seed(1)
 bin_size = 700
 units = 500
-epochs = 100
+epochs = 1
 dropout=0.1
 test_phase(bin_size=bin_size,units=units,epochs=epochs,dropout=dropout)
 test_full_session(bin_size=bin_size,units=units,epochs=epochs,dropout=dropout)
