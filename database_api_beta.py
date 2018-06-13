@@ -14,6 +14,10 @@ from src.filters import bin_filter
 import bisect
 
 
+well_to_color = {0: "#ff0000", 1: "#669900", 2: "#0066cc", 3: "#cc33ff", 4: "#003300", 5: "#996633"}
+
+
+
 def subtract_from_list(li, number):
     """
 
@@ -24,47 +28,87 @@ def subtract_from_list(li, number):
     return [x - number for x in li]
 
 
-class Slices:
-    """
-    list of Slice objects with custom methods
-    """
+class SliceList(list):
+    def __init__(self, *args, **kwargs):
+        list.__init__(self, *args)
 
-    def __init__(self, container=[]):
-        self.container = container
 
-    def __getitem__(self, time_slice):
-        return self.container[time_slice]
+class TrialList(SliceList):
+    def __init__(self, *args, **kwargs):
+        super().__init__(self, *args, **kwargs)
 
-    def add_slice(self, slice):
-        """
-        :param slice: Slice object
-        :return: adds object to list
-        """
-        self.container.append(slice)
+    def filter_trials_by_well(self, start_well=None, end_well=None, well=None):
+        return Slices([trial for trial in self if
+                       (int(trial.trial_timestamp[0]["trial_lickwell"]) == start_well
+                        or start_well == None
+                        or int(trial.trial_timestamp[0]["trial_lickwell"]) == well)
+                       and
+                       (int(trial.trial_timestamp[1]["trial_lickwell"]) == end_well
+                        or end_well == None
+                        or int(trial.trial_timestamp[1]["trial_lickwell"]) == well)
+                       ])
 
-    def get_all(self):
-        """
-        :return: returns entire list
-        """
-        return self.container[:]
 
-    def __eq__(self, other):
-        """
-        :param other: lists to be compared with
-        :return: True if both lists are identical, else false
-        """
-        return self.__dict__ == other.__dict__
+class PhaseList(SliceList):
+    def __init__(self, *args, **kwargs):
+        super().__init__(self, *args, **kwargs)
 
     def get_nth_trial_in_each_phase(self, n):
         """
         :param n: trial index in list of phases
         :return: list of nth trials
         """
-        return_list = []
-        for i in range(0, len(self.get_all())):
-            slice = self[i].get_nth_trial(n)
-            if slice is not None: return_list.append(slice)
-        return return_list
+        trials = TrialList()
+        for phase in self:
+            try:
+                trial = phase.get_nth_trial(n)
+                trials.append(trial)
+            except IndexError:
+                pass
+        return trials
+
+
+class Slices:
+    """
+    list of Slice objects with custom methods
+    """
+
+    ## def __init__(self, container=[]):
+    ##     self.container = container
+    #
+    ## def __getitem__(self, time_slice):
+    ##     return self.container[time_slice]
+    ##
+    ## def add_slice(self, slice):
+    ##     """
+    ##     :param slice: Slice object
+    ##     :return: adds object to list
+    ##     """
+    ##     self.container.append(slice)
+    ##
+    ## def get_all(self):
+    ##     """
+    ##     :return: returns entire list
+    ##     """
+    ##     return self.container[:]
+    ##
+    ## def __eq__(self, other):
+    ##     """
+    ##     :param other: lists to be compared with
+    ##     :return: True if both lists are identical, else false
+    ##     """
+    ##     return self.__dict__ == other.__dict__
+    ##
+    ## def get_nth_trial_in_each_phase(self, n):
+    ##     """
+    ##     :param n: trial index in list of phases
+    ##     :return: list of nth trials
+    ##     """
+    ##     return_list = []
+    ##     for i in range(0, len(self.get_all())):
+    ##         slice = self[i].get_nth_trial(n)
+    ##         if slice is not None: return_list.append(slice)
+    ##     return return_list
 
     def plot_positionx_x_trials(self, neuron_no, max_range=None):
         """
@@ -169,16 +213,16 @@ class Slices:
         plt.close(fig)
         pass
 
-    def filter_trials_by_well(self, start_well=None, end_well=None, well=None):
-        return Slices([trial for trial in self if
-                       (int(trial.trial_timestamp[0]["trial_lickwell"]) == start_well
-                        or start_well == None
-                        or int(trial.trial_timestamp[0]["trial_lickwell"]) == well)
-                       and
-                       (int(trial.trial_timestamp[1]["trial_lickwell"]) == end_well
-                        or end_well == None
-                        or int(trial.trial_timestamp[1]["trial_lickwell"]) == well)
-                       ])
+    ## def filter_trials_by_well(self, start_well=None, end_well=None, well=None):
+    ##     return Slices([trial for trial in self if
+    ##                    (int(trial.trial_timestamp[0]["trial_lickwell"]) == start_well
+    ##                     or start_well == None
+    ##                     or int(trial.trial_timestamp[0]["trial_lickwell"]) == well)
+    ##                    and
+    ##                    (int(trial.trial_timestamp[1]["trial_lickwell"]) == end_well
+    ##                     or end_well == None
+    ##                     or int(trial.trial_timestamp[1]["trial_lickwell"]) == well)
+    ##                    ])
 
 
 class Trial:
@@ -199,7 +243,8 @@ class Trial:
 
     def set_filter(self, filter, search_window_size, step_size=1):
         self._filter = filter
-        if filter is not None:
+        self._search_window_size = search_window_size
+        if filter is not None and search_window_size is not None:
             self._convolve(search_window_size=search_window_size, step_size=step_size)
         else:
             self._is_convolved = False
@@ -208,10 +253,10 @@ class Trial:
     def _convolve(self, search_window_size, step_size):
         if step_size > search_window_size:
             raise ValueError("step_size must be inferior to search_window_size")
-        n_bin_points = int(len(self.position_x) // step_size) # +1 adds a left and right edge
-        self.filtered_spikes = np.zeros((len(self.spikes), n_bin_points+1))
+        n_bin_points = int(len(self.position_x) // step_size)
+        self.filtered_spikes = np.zeros((len(self.spikes), n_bin_points + 1))
         for neuron_index, neuron_spikes in enumerate(self.spikes):
-            print("[{:4d}/{:4d}]".format(neuron_index + 1, self.n_neurons), end="\r")
+            print("[{:4d}/{:4d}] Convolving...".format(neuron_index + 1, self.n_neurons), end="\r")
             curr_search_window_min_bound = self.start_time - search_window_size / 2
             curr_search_window_max_bound = self.start_time + search_window_size / 2
             index_first_spike_in_window = 0
@@ -230,7 +275,12 @@ class Trial:
                         index_first_spike_in_window = spike_index
                         break
                 index_first_spike_in_window += index_first_spike_in_curr_window
+        print("")
         self._is_convolved = True
+
+    @property
+    def is_convolved(self):
+        return self._is_convolved
 
     def plot_filtered_spikes(self, ax, neuron_px_height=4, normalize_each_neuron=False, margin_px=2):
         if not self.is_convolved:
@@ -240,133 +290,63 @@ class Trial:
         for i, f in enumerate(self.filtered_spikes):
             n = (f - np.min(f)) / (np.max(f) - np.min(f)) if normalize_each_neuron else f
             image[i * (neuron_px_height + margin_px): (i + 1) * (neuron_px_height + margin_px) - margin_px] = n
-        ax.imshow(image, cmap='hot', interpolation='none')
+        ax.imshow(image, cmap='hot', interpolation='none', aspect='auto')
 
-    def bin_spikes(self, binarize=False, binarize_threshold=None, bin_size=1):
-        """ obsolete. to be removed"""
-        """ sets filtered_spikes to bins the range of the objects spike values and increases value of each bin by one
-        for each occurrence of the corresponding value in spikes. If binarize is True, all values are set to 0 or 1
-        depending on binarize_threshold"""
-        bin_amount = ceil(find_max_time(self.spikes) / bin_size)
-        if self._filter is None:
-            self.bin_index_spikes(bin_size=bin_size)
-        for i in range(0, len(self.filtered_spikes)):
-            new_spikes = np.zeros(bin_amount, dtype=int)
-            for j in range(0, len(self.filtered_spikes[i])):
-                new_spikes[self.filtered_spikes[i][j]] = new_spikes[self.filtered_spikes[i][j]] + 1
-            if binarize is True:
-                new_spikes = np.where(new_spikes > binarize_threshold, 1, 0)
-            self.filter = "bins"
-            self.filtered_spikes[i] = np.ndarray.tolist(new_spikes)
-            if self.filtered_spikes[i] is []: self.filtered_spikes = np.zeros(bin_amount, dtype=int)
-        pass
+    def plot_raw_spikes(self, ax):
+        for i, spike in enumerate(reversed(self.spikes)):
+            print("[{:4d}/{:4d}] Ploting raw spike data...".format(i + 1, self.n_neurons), end="\r")
+            for s in spike:
+                ax.vlines(s, i, i + 0.8)
+        print("")
 
-    def bin_index_spikes(self, bin_size=1):
-        """ obsolete. to be removed"""
-        """ sets filtered_spikes to the index of spikes in a binned list with len(spikes)/bin_size entries"""
-        max_time = (find_max_time(self.spikes))
-        min_time = int(find_min_time(self.spikes))
-        bins = np.arange(min_time, max_time, bin_size)
-        self.filtered_spikes = self.spikes
-        self.filter = "bin_index"
+    def plot(self, ax_filtered_spikes=None, ax_raw_spikes=None, ax_licks=None, ax_trial_timestamps=None, filtered_spikes_kwargs={}):
+        share_axis_set = set([ax_raw_spikes, ax_licks, ax_trial_timestamps])
+        share_axis_set.discard(None)
+        if len(share_axis_set) > 2:
+            reference_ax = share_axis_set.pop()
+            for other_ax in share_axis_set:
+                reference_ax.get_shared_x_axes().join(reference_ax, other_ax)
+        if ax_filtered_spikes is not None:
+            self.plot_filtered_spikes(ax_filtered_spikes, **filtered_spikes_kwargs)
+        if ax_raw_spikes is not None:
+            self.plot_raw_spikes(ax_raw_spikes)
+        if ax_licks is not None:
+            self.plot_licks(ax_licks)
+        if ax_trial_timestamps is not None:
+            self.plot_trial_timestamps(ax_trial_timestamps)
 
-        for i in range(0, len(self.spikes)):
-            new_spikes = np.digitize(self.spikes[i], bins)
-            new_spikes = [x - 1 for x in new_spikes]  # digitize moves index + 1 for some reason
-            self.filtered_spikes[i] = new_spikes
-        pass
+    def plot_licks(self, ax):
+        min_time = 1e10
+        max_time = -1
+        for d in self.licks:
+            well = d["lickwell"]
+            time = d["time"]
+            min_time = min_time if time > min_time else time
+            max_time = max_time if time < max_time else time
+            bbox = dict(boxstyle="circle", fc=well_to_color[well], ec="k")
+            ax.text(time, 0, str(well), bbox=bbox)
+        ax.hlines(0, min_time, max_time)
 
-    def slice_spikes(self, time_slice):
-        start = []
-        stop = []
-        for i in range(0, len(self.spikes)):
-            if self.spikes[i] != []:
-                start.append(
-                    next((ind for ind, v in enumerate(self.spikes[i]) if v >= time_slice.start), self.spikes[i][-1]))
-                if time_slice.stop == None:
-                    stop.append(None)
-                else:
-                    stop.append(next((ind for ind, v in enumerate(self.spikes[i]) if v > time_slice.stop), None))
-            else:
-                start.append(0)
-                stop.append(None)
-        return [self.slice_array(a=t, time_slice=slice(start[ind], stop[ind])) for ind, t in enumerate(self.spikes)]
+    def plot_trial_timestamps(self, ax):
+        min_time = 1e10
+        max_time = -1
+        for d in self.trial_timestamp:
+            well = d["trial_lickwell"]
+            time = d["time"]
+            min_time = min_time if time > min_time else time
+            max_time = max_time if time < max_time else time
+            bbox = dict(boxstyle="circle", fc=well_to_color[well], ec="k")
+            ax.text(time, 0, str(well), bbox=bbox)
+        ax.hlines(0, min_time, max_time)
 
-    @property
-    def is_convolved(self):
-        return self._is_convolved
-
-    def __getitem__(self, time_slice):
-        if not isinstance(time_slice, slice):
-            raise TypeError("Key must be a slice, got {}".format(type(time_slice)))
-
-        # normalize start/stop for dense parameters, which always start at index = 0:
-
-        start = time_slice.start + self.start_time
-        if time_slice.stop is None:
-            stop = None
-        else:
-            stop = time_slice.stop + self.start_time
-
-        offset_slice = slice(start, stop)
-        spikes = self.slice_spikes(offset_slice)
-        asd = find_max_time(spikes)
-        licks = self.slice_list_of_dict(li=self.licks, time_slice=offset_slice)
-        position_x = self.slice_array(self.position_x, time_slice)
-        position_y = self.slice_array(self.position_y, time_slice)
-        speed = self.slice_array(self.speed, time_slice)
-        trial_timestamp = self.slice_list_of_dict(li=self.trial_timestamp, time_slice=offset_slice)
-        _filter = None
-        return Slice(spikes=spikes, licks=licks, position_x=position_x, position_y=position_y, speed=speed,
-                     trial_timestamp=trial_timestamp, _filter=_filter, start_time=start)
-
-    def write(self, path):
-        pass
-
-    def to_frames(self, frame_size, frame_stride):
-        pass
-
-    def plot(self, ax1, ax2, args1, args2):
-        # plot spikes in ax1
-        self.plot_spikes(ax1, args1, args2)
-        # plot metadata in ax2
-        self.plot_metadata(ax1, args1, args2)
-        pass
-
-    def plot_spikes(self, filtered=False):
-        # if filtered = False, plot raw spikes else plot filtered spikes
-        if filtered is True:
-            y = self.filtered_spikes[8]
-        else:
-            y = self.spikes[8]
-        x = np.arange(len(self.position_x))
-        width = y[-1] / 400
-        plt.bar(y, height=1, align='center', width=width)
-        # plt.xticks(y,x)
-        plt.ylabel('values')
-        plt.title('some plot')
-        # plt.show(block=True)
-
-        # add some text for labels, title and axes ticks
-        # ax.set_ylabel('Scores')
-        # ax.set_title('Scores by group and gender')
-        # ax.set_xticks(ind + width / 2)
-        # ax.set_xticklabels(('G1', 'G2', 'G3', 'G4', 'G5'))
-
-        # ax.legend((rects1[0]), ('Men'))
-        # x = np.arange(y[0][0],y[0][-1])
-        # plt.plot(y[0], label='linear')
-        # plt.legend()
-        # plt.show(block=True)
-        pass
-
-    def plot_metadata(self, ax, args1, args2):
-        pass
+    def plot_metadata(self, ax1, ax2):
+        self.plot_licks(ax1)
+        self.plot_trial_timestamps(ax2)
 
 
 class Slice(Trial):
     def __init__(self, spikes, licks, position_x, position_y, speed,
-                 trial_timestamp, start_time):
+                 trial_timestamp, start_time, _filter=None, _search_window_size=None):
         # list for every neuron of lists of times at which a spike occured
         self.spikes = spikes
         self.n_neurons = len(self.spikes)
@@ -380,8 +360,49 @@ class Slice(Trial):
         # list of dictionaries {"time":float, "well":0/1/2/3/4/5} for every rewarded lick
         self.trial_timestamp = trial_timestamp
         self.start_time = start_time
-        self.set_filter(filter=None, search_window_size=0)
+        self.set_filter(filter=_filter, search_window_size=_search_window_size)
 
+    def time_in_slice(self, time, time_slice):
+        if time_slice.stop is None:
+            return time_slice.start <= time
+        else:
+            return time_slice.start <= time <= time_slice.stop
+
+    def slice_spikes(self, time_slice):
+        new_spikes = []
+        for spike in self.spikes:
+            new_spikes.append([i for i in
+                              dropwhile(lambda x: x < time_slice.start,
+                                        takewhile(lambda x: x <= time_slice.stop, spike))])
+        return new_spikes
+
+    def slice_list_of_dict(self, ld, time_slice):
+        return [d for d in ld if self.time_in_slice(d["time"], time_slice)]
+
+    def slice_array(self, a, time_slice, sample_freq=1000):
+        start = int(time_slice.start * sample_freq / 1000)
+        if time_slice.stop is not None:
+            stop = int(time_slice.stop * sample_freq / 1000)
+            return a[start:stop]
+        else:
+            return a[start:]
+
+    def __getitem__(self, time_slice):
+        if not isinstance(time_slice, slice):
+            raise TypeError("Key must be a slice, got {}".format(type(time_slice)))
+        # normalize start/stop for dense parameters, which always start at index = 0:
+        start = time_slice.start + self.start_time
+        stop = None if time_slice.stop is None else time_slice.stop + self.start_time
+        offset_slice = slice(start, stop)
+        spikes = self.slice_spikes(offset_slice)
+        licks = self.slice_list_of_dict(self.licks, offset_slice)
+        position_x = self.slice_array(self.position_x, time_slice)
+        position_y = self.slice_array(self.position_y, time_slice)
+        speed = self.slice_array(self.speed, time_slice)
+        trial_timestamp = self.slice_list_of_dict(self.trial_timestamp, offset_slice)
+        _filter = self._filter
+        return Slice(spikes, licks, position_x, position_y, speed, trial_timestamp, start,
+                     _filter=_filter, _search_window_size=self._search_window_size)
 
     @classmethod
     def from_path(cls, load_from=None, save_as=None):
@@ -403,35 +424,21 @@ class Slice(Trial):
         return cls(spikes, licks, position_x, position_y, speed,
                    trial_timestamp, start_time)
 
-    def slice_array(self, a, time_slice, sample_freq=1000):
-        start = int(time_slice.start * sample_freq / 1000)
-        if time_slice.stop is not None:
-            stop = int(time_slice.stop * sample_freq / 1000)
-            return a[start:stop]
-        else:
-            return a[start:]
-
     def get_nth_trial(self, n):
         if not isinstance(n, int):
             raise TypeError("Key must be an int, got {}".format(type(n)))
-
-        try:
-            start = self.trial_timestamp[n]["time"]
-            stop = self.trial_timestamp[n + 1]["time"]
-        except IndexError:
-            print("Warning: Slice does not contain " + str(n) + "th trial")
-            return None
-
-        # start_well = self.trial_timestamp[trial_id - 1]["trial_lickwell"]
-        # stop_well = self.trial_timestamp[trial_id - 1]["trial_lickwell"]
+        if n + 1 >= len(self.trial_timestamp):
+            raise IndexError("Slice does not contain {} trials but only {}".format(n, len(self.trial_timestamp) - 1))
+        start = self.trial_timestamp[n]["time"]
+        stop = self.trial_timestamp[n + 1]["time"]
         return self[start:stop]
 
-    def get_trial_by_time(self, trial_time):
-        # TODO must be updated to new trial timestamp format
-        start = np.argmax(self.trial_timestamp[..., 1] > trial_time)
-        trial_id = np.where(self.trial_timestamp[..., 1] >= start)
-        trial_id = trial_id[0][0]
-        return self.get_nth_trial(trial_id)
+    ## def get_trial_by_time(self, trial_time):
+    ##     # TODO must be updated to new trial timestamp format
+    ##     start = np.argmax(self.trial_timestamp[..., 1] > trial_time)
+    ##     trial_id = np.where(self.trial_timestamp[..., 1] >= start)
+    ##     trial_id = trial_id[0][0]
+    ##     return self.get_nth_trial(trial_id)
 
     def get_trials(self, time_slice):
         """ returns a list of Trial objects corresponding to the trials contained in that slice """
@@ -486,28 +493,10 @@ class Slice(Trial):
         position_x = self.position_x
         start_time = int(self.start_time)
         max_position = int(np.amax(position_x))
-        return_array = []
-        if neuron_nos is None or []:
-            i_range = range(0, len(spikes))
-        else:
-            i_range = neuron_nos
-        for i in i_range:
-            dense_spikes = [0] * max_position
+        return_array = np.zeros((self.n_neurons, max_position))
+        neuron_nos = neuron_nos if neuron_nos is not None else range(self.n_neurons)
+        for i in neuron_nos:
             for j in range(0, len(spikes[i])):
                 pos = int(position_x[int(spikes[i][j] - start_time)]) - 1
-                dense_spikes[pos] = dense_spikes[pos] + 1
-            # np.trim_zeros(dense_spikes, trim='b') # remove trailing zeros
-            return_array.append(dense_spikes)
+                return_array[i][pos] += 1
         return return_array
-
-    def slice_list_of_dict(self, li, time_slice):
-        return [d for d in li if self.time_in_slice(d["time"], time_slice)]
-
-    def time_in_slice(self, time, time_slice):
-        if time_slice.stop is None:
-            return time_slice.start <= time
-        else:
-            return time_slice.start <= time <= time_slice.stop
-
-    def time_in_slice_list(self, time):
-        return [x for ind, x in enumerate(time) if self.start < x < self.stop]

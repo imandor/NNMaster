@@ -8,11 +8,14 @@ def f(x):
 
 
 fig = plt.figure()
-ax = fig.add_subplot(1, 1, 1)
+ax_filtered_spikes = fig.add_subplot(1, 2, 2)
+ax_raw_spikes = fig.add_subplot(2, 2, 1)
+ax_licks = fig.add_subplot(4, 2, 5)
+ax_trial_timestamps = fig.add_subplot(4, 2, 7)
 
 data_slice = api.Slice.from_path(load_from="data/pickle/slice.pkl")
+data_slice = data_slice[0:5000]
 data_slice.set_filter(f, search_window_size=700, step_size=700)
-data_slice.plot_filtered_spikes(ax, neuron_px_height=20, normalize_each_neuron=True)
+data_slice.plot(ax_filtered_spikes=ax_filtered_spikes, ax_raw_spikes=ax_raw_spikes, ax_licks=ax_licks, ax_trial_timestamps=ax_trial_timestamps)
 
-fig.show()
-time.sleep(10)
+plt.show()
