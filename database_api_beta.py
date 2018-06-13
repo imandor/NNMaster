@@ -1,17 +1,9 @@
 import numpy as np
-from math import ceil
-from session_loader import read_file, find_max_time, find_min_time
+from session_loader import read_file
 from settings import save_as_pickle, load_pickle
-from session_loader import make_dense_np_matrix
 import matplotlib.pyplot as plt
-import matplotlib.ticker as mticker
 from settings import config
 from itertools import takewhile, dropwhile
-import plotly.plotly as py
-import tensorflow as tf
-import matplotlib.mlab as mlab
-from src.filters import bin_filter
-import bisect
 
 
 well_to_color = {0: "#ff0000", 1: "#669900", 2: "#0066cc", 3: "#cc33ff", 4: "#003300", 5: "#996633"}
@@ -20,7 +12,6 @@ well_to_color = {0: "#ff0000", 1: "#669900", 2: "#0066cc", 3: "#cc33ff", 4: "#00
 
 def subtract_from_list(li, number):
     """
-
     :param li: python list
     :param number: a number
     :return: list with number subtracted from each list entry
@@ -38,6 +29,13 @@ class TrialList(SliceList):
         super().__init__(self, *args, **kwargs)
 
     def filter_trials_by_well(self, start_well=None, end_well=None, well=None):
+        """
+        removes all trials which don't fit the input
+        :param start_well: keep all trials containing start_well
+        :param end_well:  keep all trials containing end_well
+        :param well: keep all trials containing well
+        :return: Slices object containing all trials fitting input
+        """
         return Slices([trial for trial in self if
                        (int(trial.trial_timestamp[0]["trial_lickwell"]) == start_well
                         or start_well == None
@@ -115,41 +113,27 @@ class Slices:
         Plotting function, creates subplots containing trials by time
         :param neuron_no: neuron to be plotted
         :param max_range: length of shown range in plot
-        :return:
+        :return: None
         """
-        # find maximum range
-        trial_spike_list = []
-
-        # plot trials
-
         fig, axes = plt.subplots(nrows=len(self.get_all()), sharex=True, sharey=True)
         plt.yticks([])
         plt.xticks([])
         plt.suptitle(config["image_labels"]["position_spikes_title"])
-        # plt.subplots_adjust(hspace=0)
-        # pylab.yaxis.set_label_position(config["image_labels"]["trial_spikes_y1_left"])
         fig.text(0.5, 0.04, config["image_labels"]["position_x1"], ha='center', va='center')
         fig.text(0.06, 0.5, config["image_labels"]["position_y1_left"], ha='center', va='center', rotation='vertical')
         fig.text(0.94, 0.5, config["image_labels"]["position_y1_left"], ha='center', va='center', rotation='vertical')
 
         for ind in range(0, len(axes)):
             trial = self[ind]
-
             ax = axes[ind]
             data = trial.map_spikes_to_position([neuron_no])[0]
-
-            # ax.set_xlim(left=0)
             ax.set_ylabel(trial.trial_timestamp[0]["trial_id"], rotation="horizontal", labelpad=10,
                           verticalalignment="center")
-            # ax.vlines(data, 0, 1)
             ax.bar(range(len(data)), data, width=1, align='center', color='black', zorder=3)
-            # ax.grid(b=True, which='major', color='b', linestyle='-')
             ax.set_yticks([])
         save_path = config["paths"]["figure_path"] + "spike_positions_single_neuron_" + str(neuron_no) + "_" + ".png"
         plt.savefig(save_path, bbox_inches='tight')  # TODO add session date to session object and save image to file
-        # plt.show(block=True)
         plt.close(fig)
-
         pass
 
     def range_of_longest_trial(self):
@@ -168,7 +152,16 @@ class Slices:
         return max_range
 
     def set_trial_ax(self, data, trial, ind, axes, xmin, xmax):
+        """
 
+        :param data:
+        :param trial:
+        :param ind:
+        :param axes:
+        :param xmin:
+        :param xmax:
+        :return:
+        """
         ax = axes[ind]
 
         start_lick = trial.trial_timestamp[0]["time"] - xmin
@@ -183,19 +176,20 @@ class Slices:
         return ax
 
     def plot_time_x_trials(self, neuron_no, max_range=None):
-        # find maximum range
-        trial_spike_list = []
+        """
+        :param neuron_no:
+        :param max_range:
+        :return:
+        """
+        # find maximum range for image size adjusting
         if max_range is None:
             max_range = self.range_of_longest_trial()
 
         # plot trials
-
         fig, axes = plt.subplots(nrows=len(self.get_all()), sharex=True, sharey=True)
         plt.yticks([])
         plt.xticks([])
         plt.suptitle(config["image_labels"]["trial_spikes_title"])
-        # plt.subplots_adjust(hspace=0)
-        # pylab.yaxis.set_label_position(config["image_labels"]["trial_spikes_y1_left"])
         fig.text(0.5, 0.04, config["image_labels"]["trial_spikes_x1"], ha='center', va='center')
         fig.text(0.06, 0.5, config["image_labels"]["trial_spikes_y1_left"], ha='center', va='center',
                  rotation='vertical')
@@ -441,7 +435,11 @@ class Slice(Trial):
     ##     return self.get_nth_trial(trial_id)
 
     def get_trials(self, time_slice):
-        """ returns a list of Trial objects corresponding to the trials contained in that slice """
+        """
+        returns a list of Trial objects corresponding to the trials contained in that slice
+        :param time_slice: Slice object
+        :return: Slices object containing all trials in time_slice
+        """
         if not isinstance(time_slice, slice):
             raise TypeError("Key must be a slice, got {}".format(type(time_slice)))
         start = time_slice.start
@@ -450,9 +448,6 @@ class Slice(Trial):
         for ind in range(1, len(self.trial_timestamp)):  # trial finishing in slice is also valid
             last_time = self.trial_timestamp[ind - 1]["time"]
             current_time = self.trial_timestamp[ind]["time"]
-            # last_well = self.trial_timestamp[ind - 1]["trial_lickwell"]
-            # current_well = self.trial_timestamp[ind]["trial_lickwell"]
-            # trial_id = ind - 1
             if start <= last_time or start is None:
                 if stop is None or stop >= current_time or stop == -1:
                     s = slice(last_time, current_time)
@@ -488,7 +483,11 @@ class Slice(Trial):
         return self.get_phases(s)
 
     def map_spikes_to_position(self, neuron_nos=None):
-        """ returns an array containing the positions corresponding to each spike for each neuron. if neuron_nos is given, only the given neurons are returned"""
+        """
+        returns an array containing the positions corresponding to each spike for each neuron.
+        :param neuron_nos: if neuron_nos is given, only the given neurons are returned
+        :return: list of number of spikes for each position
+        """
         spikes = self.spikes
         position_x = self.position_x
         start_time = int(self.start_time)
