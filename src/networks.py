@@ -8,6 +8,16 @@ from src.filters import bin_filter
 import timeit
 from session_loader import find_max_time, find_min_time
 
+
+
+
+
+
+
+
+
+
+
 def get_R2(y_test, y_test_pred):
     R2_list = []  # Initialize a list that will contain the R2s for all the outputs
     for i in range(y_test.shape[1]):  # Loop through outputs
@@ -20,14 +30,7 @@ def get_R2(y_test, y_test_pred):
 
 
 def process_input(X_train):
-    return_list = []
-    for i in range(0, len(X_train[0])):
-        neuron_list = np.asarray([])
-        for j in range(0, len(X_train)):
-            neuron_list = np.append(neuron_list,X_train[j][i])
-        neuron_list = np.expand_dims(neuron_list,axis=1)
-        return_list.append(neuron_list)
-    return return_list
+    return np.expand_dims(X_train.T,axis=2)
 
 
 def process_output(y,bin_size, max_x, max_y, min_x,min_y):
@@ -56,11 +59,11 @@ def process_output(y,bin_size, max_x, max_y, min_x,min_y):
 
 
 
-def get_model_data(train_slice,test_slice,bin_size, file_name=None,save_as=None):
+def get_model_data(train_slice,test_slice,bin_size, step_size,file_name=None,save_as=None):
     if file_name is not None:
         return load_pickle(file_name)
-    train_slice.set_filter(filter=bin_filter, window=bin_size, step_size=1)
-    test_slice.set_filter(filter=bin_filter, window=1, step_size=bin_size)
+    train_slice.set_filter(filter=bin_filter, search_window_size=bin_size, step_size=step_size)
+    test_slice.set_filter(filter=bin_filter, search_window_size=bin_size, step_size=step_size)
     # test_slice.plot_filtered_spikes(filter=bin_filter, window=1, step_size=bin_size, max_range=None)
     y_train = list(zip(train_slice.position_x, train_slice.position_y))
     y_valid = list(zip(test_slice.position_x, test_slice.position_y))
@@ -106,7 +109,7 @@ def make_predictions(model_lstm,X_train,X_valid,y_train,y_valid):
     print('R2s of validation set:', R2s_lstm)
     pass
 
-def test_trials(bin_size,units,epochs,dropout=None):
+def test_trials(bin_size,step_size,units,epochs,dropout=None):
     data_slice = Slice.from_path(load_from="data/pickle/slice.pkl")
     trials = data_slice.get_all_trials()
     trials = trials.filter_trials_by_well(
@@ -120,7 +123,7 @@ def test_trials(bin_size,units,epochs,dropout=None):
         test_slice = trials_2[i]
 
         start = timeit.default_timer()
-        model_data = get_model_data(train_slice=train_slice,test_slice=test_slice,bin_size=bin_size)
+        model_data = get_model_data(train_slice=train_slice,test_slice=test_slice,bin_size=bin_size,step_size=step_size)
         X_train = model_data["X_train"]
         X_valid = model_data["X_valid"]
         y_train = model_data["y_train"]
@@ -134,12 +137,12 @@ def test_trials(bin_size,units,epochs,dropout=None):
     print("")
     pass
 
-def test_full_session(bin_size,units,epochs,dropout=None):
+def test_full_session(bin_size,step_size,units,epochs,dropout=None):
     data_slice = Slice.from_path(load_from="data/pickle/slice.pkl")
     size = len(data_slice.position_x)
     train_slice = data_slice[0:int(size / 2)]
     test_slice = data_slice[int(size / 2):]
-    model_data = get_model_data(train_slice=train_slice, test_slice=test_slice, bin_size=bin_size)
+    model_data = get_model_data(train_slice=train_slice, test_slice=test_slice, bin_size=bin_size,step_size=step_size)
     X_train = model_data["X_train"]
     X_valid = model_data["X_valid"]
     y_train = model_data["y_train"]
@@ -155,13 +158,13 @@ def test_full_session(bin_size,units,epochs,dropout=None):
     print("")
     pass
 
-def test_phase(bin_size,units,epochs,dropout = None):
+def test_phase(bin_size,step_size,units,epochs,dropout = None):
     data_slice = Slice.from_path(load_from="data/pickle/slice.pkl")
     data_slice = data_slice.get_all_phases()[3]
     size = len(data_slice.position_x)
     train_slice = data_slice[0:int(size / 2)]
     test_slice = data_slice[int(size / 2):]
-    model_data = get_model_data(train_slice=train_slice, test_slice=test_slice, bin_size=bin_size)
+    model_data = get_model_data(train_slice=train_slice, test_slice=test_slice, bin_size=bin_size,step_size=step_size)
     X_train = model_data["X_train"]
     X_valid = model_data["X_valid"]
     y_train = model_data["y_train"]
