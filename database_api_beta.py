@@ -6,6 +6,7 @@ from session_loader import make_dense_np_matrix
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mticker
 from settings import config
+from itertools import takewhile
 import plotly.plotly as py
 import tensorflow as tf
 import matplotlib.mlab as mlab
@@ -199,6 +200,29 @@ class Trial:
     def set_filter(self, filter, window=0, step_size=1):
         self._filter = filter
         if filter is not None: self._convolve(window=window, step_size=step_size)
+
+    def _convolve(self, search_window_size, step_size=1):
+        if step_size >= search_window_size:
+            raise ValueError("step_size must be inferior to search_window_size")
+        max_spike = find_max_time(self.spikes)
+        min_spike = find_min_time(self.spikes)
+        n_bin_points = int(len(self.position_x) // step_size) # +1 adds a left and right edge
+        self.filtered_spikes = np.zeros((len(self.spikes), n_bin_points+1))
+        curr_search_window_min_bound = self.start_time - search_window_size / 2
+        curr_search_window_max_bound = self.start_time + search_window_size / 2
+        index_first_spike_in_window = 0
+        for index in range(n_bin_points):
+            curr_spikes_in_search_window = [i for i in
+                                            takewhile(lambda x: x < curr_search_window_max_bound and
+                                                                x >= curr_search_window_min_bound,
+                                                      self.spikes[index_first_spike_in_window:])]
+            self.filtered_spikes[index] = sum(map(self._filter, curr_spikes_in_search_window))
+            curr_search_window_min_bound += step_size
+            curr_search_window_max_bound += step_size
+            index_first_spike_in_curr_window = next(x[0] for x in enumerate(curr_spikes_in_search_window)
+                                                    if x[1] >= curr_search_window_min_bound)
+            index_first_spike_in_window += index_first_spike_in_curr_window
+        self._is_convolved = True
 
     def _convolve(self, window, step_size=1):
         max_spike = find_max_time(self.spikes)
