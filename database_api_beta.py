@@ -6,7 +6,7 @@ from session_loader import make_dense_np_matrix
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mticker
 from settings import config
-from itertools import takewhile
+from itertools import takewhile, dropwhile
 import plotly.plotly as py
 import tensorflow as tf
 import matplotlib.mlab as mlab
@@ -197,75 +197,50 @@ class Trial:
         else:
             return False
 
-    def set_filter(self, filter, window=0, step_size=1):
+    def set_filter(self, filter, search_window_size, step_size=1):
         self._filter = filter
-        if filter is not None: self._convolve(window=window, step_size=step_size)
+        if filter is not None:
+            self._convolve(search_window_size=search_window_size, step_size=step_size)
+        else:
+            self._is_convolved = False
+            self.filtered_spikes = None
 
-    def _convolve(self, search_window_size, step_size=1):
-        if step_size >= search_window_size:
+    def _convolve(self, search_window_size, step_size):
+        if step_size > search_window_size:
             raise ValueError("step_size must be inferior to search_window_size")
-        max_spike = find_max_time(self.spikes)
-        min_spike = find_min_time(self.spikes)
         n_bin_points = int(len(self.position_x) // step_size) # +1 adds a left and right edge
         self.filtered_spikes = np.zeros((len(self.spikes), n_bin_points+1))
-        curr_search_window_min_bound = self.start_time - search_window_size / 2
-        curr_search_window_max_bound = self.start_time + search_window_size / 2
-        index_first_spike_in_window = 0
-        for index in range(n_bin_points):
-            curr_spikes_in_search_window = [i for i in
-                                            takewhile(lambda x: x < curr_search_window_max_bound and
-                                                                x >= curr_search_window_min_bound,
-                                                      self.spikes[index_first_spike_in_window:])]
-            self.filtered_spikes[index] = sum(map(self._filter, curr_spikes_in_search_window))
-            curr_search_window_min_bound += step_size
-            curr_search_window_max_bound += step_size
-            index_first_spike_in_curr_window = next(x[0] for x in enumerate(curr_spikes_in_search_window)
-                                                    if x[1] >= curr_search_window_min_bound)
-            index_first_spike_in_window += index_first_spike_in_curr_window
+        for neuron_index, neuron_spikes in enumerate(self.spikes):
+            print("[{:4d}/{:4d}]".format(neuron_index + 1, self.n_neurons), end="\r")
+            curr_search_window_min_bound = self.start_time - search_window_size / 2
+            curr_search_window_max_bound = self.start_time + search_window_size / 2
+            index_first_spike_in_window = 0
+            for index in range(n_bin_points):
+                curr_spikes_in_search_window = dropwhile(lambda x: x < curr_search_window_min_bound,
+                                                         takewhile(lambda x: x < curr_search_window_max_bound,
+                                                                   neuron_spikes[index_first_spike_in_window:]))
+                self.filtered_spikes[neuron_index][index] = sum(map(
+                    lambda x: self._filter(x - index * step_size - self.start_time),
+                    curr_spikes_in_search_window))
+                curr_search_window_min_bound += step_size
+                curr_search_window_max_bound += step_size
+                index_first_spike_in_curr_window = 0
+                for spike_index, spike in enumerate(curr_spikes_in_search_window):
+                    if spike >= curr_search_window_min_bound:
+                        index_first_spike_in_window = spike_index
+                        break
+                index_first_spike_in_window += index_first_spike_in_curr_window
         self._is_convolved = True
 
-    def _convolve(self, window, step_size=1):
-        max_spike = find_max_time(self.spikes)
-        min_spike = find_min_time(self.spikes)
-        n_bin_points = int(len(self.position_x) // step_size) # +1 adds a left and right edge
-        self.filtered_spikes = np.zeros((len(self.spikes), n_bin_points+1))
-        for n, one_neurone_spikes in enumerate(self.spikes):
-            for i, one_spike in enumerate(one_neurone_spikes):
-                valid_spikes = one_neurone_spikes[bisect.bisect_left(one_neurone_spikes, int(one_spike) - window):]
-                valid_spikes = valid_spikes[:bisect.bisect_left(valid_spikes,
-                                                                int(
-                                                                    one_spike) + window)]  # [x for x in one_neurone_spikes if x < cursor + window and x > cursor - window]
-                valid_spikes = np.asarray(valid_spikes)
-                valid_spikes = valid_spikes - self.start_time # normalize
-                for t in valid_spikes:
-                    index = int(t // step_size)
-                    if index == n_bin_points+1: # all values larger than highest bin
-                        index = index - 1
-                    # if index == 169:
-                    #     print("asd")
-                    self.filtered_spikes[n][index] += self._filter(t)
-        self._is_convolved = True
-        pass
-
-    def plot_filtered_spikes(self, filter=None, window=0, step_size=1, max_range=None):
-        trial = self
-        trial.set_filter(filter=bin_filter, window=1, step_size=100)
-        plt.suptitle(config["image_labels"]["filtered_spikes_title"].format(trial.trial_timestamp[0]["trial_id"]))
-        # plt.subplots_adjust(hspace=0)
-        # pylab.yaxis.set_label_position(config["image_labels"]["trial_spikes_y1_left"])
-        plt.xlabel(config["image_labels"]["filtered_spikes_x1"].format(str(step_size)))
-        plt.ylabel(config["image_labels"]["filtered_spikes_y1_left"])
-
-        summed_spikes = (self.filtered_spikes)[0]#filtered_spikes.sum(axis=0)
-        x = np.arange(0, len(summed_spikes))
-        width = 1
-        plt.bar(x, height=summed_spikes, align='center', width=width)
-        # mu, sigma = 100, 15
-        # x = mu + sigma * summed_spikes
-        # plt.hist(x, len(summed_spikes), density=True, facecolor='g', alpha=0.75)
-        plt.show()
-        plt.close()
-        pass
+    def plot_filtered_spikes(self, ax, neuron_px_height=4, normalize_each_neuron=False, margin_px=2):
+        if not self.is_convolved:
+            raise ValueError("This slice is not convolved. First set a filter please.")
+        n_bins = self.filtered_spikes.shape[1]
+        image = np.zeros((self.n_neurons * (neuron_px_height + margin_px) - margin_px, n_bins))
+        for i, f in enumerate(self.filtered_spikes):
+            n = (f - np.min(f)) / (np.max(f) - np.min(f)) if normalize_each_neuron else f
+            image[i * (neuron_px_height + margin_px): (i + 1) * (neuron_px_height + margin_px) - margin_px] = n
+        ax.imshow(image, cmap='hot', interpolation='none')
 
     def bin_spikes(self, binarize=False, binarize_threshold=None, bin_size=1):
         """ obsolete. to be removed"""
@@ -391,9 +366,10 @@ class Trial:
 
 class Slice(Trial):
     def __init__(self, spikes, licks, position_x, position_y, speed,
-                 trial_timestamp, start_time, _filter=None):
+                 trial_timestamp, start_time):
         # list for every neuron of lists of times at which a spike occured
         self.spikes = spikes
+        self.n_neurons = len(self.spikes)
         # list of dictionaries each dict being:
         # {"time_detection":float, "time":float, "well":0/1/2/3/4/5, "correct":True/False}
         self.licks = licks
@@ -404,11 +380,8 @@ class Slice(Trial):
         # list of dictionaries {"time":float, "well":0/1/2/3/4/5} for every rewarded lick
         self.trial_timestamp = trial_timestamp
         self.start_time = start_time
-        if _filter is None:
-            self.filtered_spikes = None
-            self.set_filter(filter=None, window=0)
-        else:
-            self.set_filter(filter)
+        self.set_filter(filter=None, search_window_size=0)
+
 
     @classmethod
     def from_path(cls, load_from=None, save_as=None):
