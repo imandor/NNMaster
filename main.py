@@ -10,17 +10,23 @@ step_size=700
 units = 500
 epochs = 10
 dropout=0.1
-test_objects()
+
+
+
 data_slice = Slice.from_path(load_from="data/pickle/slice.pkl")  # load a data slice containing entire session
-run_network_test(data_slice=data_slice)
-data_slice = Slice.from_path(load_from="data/pickle/slice.pkl")  # load a data slice containing entire session
+phases = data_slice.get_all_phases()
+phases = phases[0:2]
+run_network_test(data_slice,bin_size=bin_size,step_size=step_size)
+# smaller_data_slice = data_slice[0:200]
+# run_network_test(data_slice=data_slice)
+# data_slice = Slice.from_path(load_from="data/pickle/slice.pkl")  # load a data slice containing entire session
 
 
 # smaller_data_slice = data_slice[0:200000]  # slices first 200 seconds of session
 #
 # # smaller_data_slice.set_filter(filter=bin_filter, window=1,step_size=100)  # convolves data into bins
 #
-# phases = data_slice.get_all_phases()  # gets all training phases as list of data slices
+phases = data_slice.get_all_phases()  # gets all training phases as list of data slices
 # trial = phases[0].get_nth_trial(0)  # gets first trial in first training phase
 #
 # list_of_trials = data_slice.get_trials(

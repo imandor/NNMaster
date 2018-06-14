@@ -17,56 +17,59 @@ def subtract_from_list(li, number):
     return [x - number for x in li]
 
 
-class SliceList: # TODO: getitem returns a regular list here
-    # def __init__(self, *args):
-    #     list.__init__(self, *args)
+class SliceList(list): # TODO: getitem returns a regular list here
+    def __init__(self, *args):
+        list.__init__(self, *args)
 
-    def __init__(self, container=[]): #TODO: check problems with commenting this
-        self.container = container
+    def __getitem__(self, list_slice):
+        return SliceList(list.__getitem__(self, list_slice))
 
-    def __getitem__(self, time_slice):
-        return self.container[time_slice]
+    # def __init__(self, container=[]): #TODO: check problems with commenting this
+    #     self.container = container
+    #
+    # def __getitem__(self, time_slice):
+    #     return self.container[time_slice]
 
-    def add_slice(self, slice):
-        """
-        :param slice: Slice object
-        :return: adds object to list
-        """
-        self.container.append(slice)
-
-    def get_all(self):
-        """
-        :return: returns entire list
-        """
-        return self.container[:]
-
-    def __eq__(self, other):
-        """
-        :param other: lists to be compared with
-        :return: True if both lists are identical, else false
-        """
-        return self.__dict__ == other.__dict__
-
-
-    def add_slice(self, slice):
-        """
-        :param slice: Slice object
-        :return: adds object to list
-        """
-        self.container.append(slice)
-
-    def get_all(self):
-        """
-        :return: returns entire list
-        """
-        return self.container[:]
-
-    def __eq__(self, other):
-        """
-        :param other: lists to be compared with
-        :return: True if both lists are identical, else false
-        """
-        return self.__dict__ == other.__dict__
+    # def add_slice(self, slice):
+    #     """
+    #     :param slice: Slice object
+    #     :return: adds object to list
+    #     """
+    #     self.container.append(slice)
+    #
+    # def get_all(self):
+    #     """
+    #     :return: returns entire list
+    #     """
+    #     return self.container[:]
+    #
+    # def __eq__(self, other):
+    #     """
+    #     :param other: lists to be compared with
+    #     :return: True if both lists are identical, else false
+    #     """
+    #     return self.__dict__ == other.__dict__
+    #
+    #
+    # def add_slice(self, slice):
+    #     """
+    #     :param slice: Slice object
+    #     :return: adds object to list
+    #     """
+    #     self.container.append(slice)
+    #
+    # def get_all(self):
+    #     """
+    #     :return: returns entire list
+    #     """
+    #     return self.container[:]
+    #
+    # def __eq__(self, other):
+    #     """
+    #     :param other: lists to be compared with
+    #     :return: True if both lists are identical, else false
+    #     """
+    #     return self.__dict__ == other.__dict__
 
     def filter_trials_by_well(self, start_well=None, end_well=None, well=None):
         """
@@ -280,7 +283,7 @@ class Trial:
         n_bin_points = int(len(self.position_x) // step_size)
         self.filtered_spikes = np.zeros((len(self.spikes), n_bin_points + 1))
         for neuron_index, neuron_spikes in enumerate(self.spikes):
-            print("[{:4d}/{:4d}] Convolving...".format(neuron_index + 1, self.n_neurons), end="\r")
+            print("[{:4d}/{:4d}] Convolving...".format(neuron_index + 1, self.n_neurons))
             curr_search_window_min_bound = self.start_time - search_window_size / 2
             curr_search_window_max_bound = self.start_time + search_window_size / 2
             index_first_spike_in_window = 0
@@ -299,7 +302,7 @@ class Trial:
                         index_first_spike_in_window = spike_index
                         break
                 index_first_spike_in_window += index_first_spike_in_curr_window
-        print("")
+        # print("")
         self._is_convolved = True
 
     @property
@@ -318,7 +321,7 @@ class Trial:
 
     def plot_raw_spikes(self, ax):
         for i, spike in enumerate(reversed(self.spikes)):
-            print("[{:4d}/{:4d}] Ploting raw spike data...".format(i + 1, self.n_neurons), end="\r")
+            print("[{:4d}/{:4d}] Ploting raw spike data...".format(i + 1, self.n_neurons))
             for s in spike:
                 ax.vlines(s, i, i + 0.8)
         print("")

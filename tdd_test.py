@@ -8,7 +8,7 @@ def test_objects():
     seed(1)
     # test_CNN()
     # data_slice = Slice.from_path(save_as="slice.pkl")
-
+    data_slice = Slice.from_path()
     data_slice = Slice.from_path(load_from="data/pickle/slice.pkl")  # load a data slice containing entire session
 
     smaller_data_slice = data_slice[0:200000]  # slices first 200 seconds of session

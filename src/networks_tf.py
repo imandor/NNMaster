@@ -20,20 +20,20 @@ def get_model_data(train_slice, test_slice, bin_size, step_size, load_from=None,
     min_x_valid = np.amin(test_slice.position_x)
     min_y_train = np.amin(train_slice.position_y)
     min_y_valid = np.amin(test_slice.position_y)
+    #
+    # model_data = dict(
+    #     X_train=X_train,
+    #     X_valid=X_valid,
+    #     y_train=y_train,
+    #     y_valid=y_valid
+    # )
 
-    model_data = dict(
-        X_train=X_train,
-        X_valid=X_valid,
-        y_train=y_train,
-        y_valid=y_valid
-    )
-
-    if save_as is not None:
-        save_as_pickle(save_as, model_data)
-    return model_data
+    # if save_as is not None:
+    #     save_as_pickle(save_as, model_data)
+    # return model_data
 
 
-def run_network_test(data_slice):
+def run_network_test(data_slice,bin_size,step_size):
     """
 
     :param bin_size:
