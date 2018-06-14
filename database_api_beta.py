@@ -23,6 +23,9 @@ class SliceList(list):
     def __init__(self, *args, **kwargs):
         list.__init__(self, *args)
 
+    def __getitem__(self, list_slice):
+        return SliceList(list.__getitem__(list_slice))
+
 
 class TrialList(SliceList):
     def __init__(self, *args, **kwargs):
