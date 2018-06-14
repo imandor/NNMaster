@@ -1,21 +1,9 @@
-from src.models import SimpleRNNDecoder, LSTMDecoder
-from session_loader import make_dense_np_matrix
+from src.models import LSTMDecoder
 from database_api_beta import Slice
 import numpy as np
-from settings import save_as_pickle, load_pickle
-from keras.models import load_model
+from src.settings import save_as_pickle, load_pickle
 from src.filters import bin_filter
 import timeit
-from session_loader import find_max_time, find_min_time
-
-
-
-
-
-
-
-
-
 
 
 def get_R2(y_test, y_test_pred):

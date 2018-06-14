@@ -1,7 +1,7 @@
-from database_api_beta import Slice, Trial
-from settings import save_as_pickle, load_pickle
+from database_api_beta import Slice
+from src.settings import save_as_pickle, load_pickle
 from numpy.random import seed
-from settings import config
+from src.settings import config
 from src.filters import bin_filter
 
 def test_objects():
@@ -13,9 +13,10 @@ def test_objects():
 
     smaller_data_slice = data_slice[0:200000]  # slices first 200 seconds of session
 
-    smaller_data_slice.set_filter(filter=bin_filter,window=1) # convolves data into bins
+    # smaller_data_slice.set_filter(filter=bin_filter,search_window_size=1) # convolves data into bins
     phases = data_slice.get_all_phases()  # gets all training phases as list of data slices
-    trial = phases[0].get_nth_trial(0)  # gets first trial in first training phase
+    one_phase = phases[0]
+    trial = one_phase.get_nth_trial(0)  # gets first trial in first training phase
     list_of_trials = data_slice.get_trials(
         slice(0, 200000))  # returns a list of trials in the first 200000 ms of session
     sub_list_of_trials = list_of_trials[0:10]  # slices first 10 entries in list of trials

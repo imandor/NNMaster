@@ -2,7 +2,7 @@
 import numpy as np
 from src import OpenEphys
 import scipy
-from settings import config
+from src.settings import config
 from math import ceil
 import bisect
 def load_datafile(file_path):

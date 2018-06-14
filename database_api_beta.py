@@ -1,13 +1,11 @@
 import numpy as np
 from session_loader import read_file
-from settings import save_as_pickle, load_pickle
+from src.settings import save_as_pickle, load_pickle
 import matplotlib.pyplot as plt
-from settings import config
+from src.settings import config
 from itertools import takewhile, dropwhile
 
-
 well_to_color = {0: "#ff0000", 1: "#669900", 2: "#0066cc", 3: "#cc33ff", 4: "#003300", 5: "#996633"}
-
 
 
 def subtract_from_list(li, number):
@@ -19,14 +17,56 @@ def subtract_from_list(li, number):
     return [x - number for x in li]
 
 
-class SliceList(list):
-    def __init__(self, *args, **kwargs):
-        list.__init__(self, *args)
+class SliceList: # TODO: getitem returns a regular list here
+    # def __init__(self, *args):
+    #     list.__init__(self, *args)
+
+    def __init__(self, container=[]): #TODO: check problems with commenting this
+        self.container = container
+
+    def __getitem__(self, time_slice):
+        return self.container[time_slice]
+
+    def add_slice(self, slice):
+        """
+        :param slice: Slice object
+        :return: adds object to list
+        """
+        self.container.append(slice)
+
+    def get_all(self):
+        """
+        :return: returns entire list
+        """
+        return self.container[:]
+
+    def __eq__(self, other):
+        """
+        :param other: lists to be compared with
+        :return: True if both lists are identical, else false
+        """
+        return self.__dict__ == other.__dict__
 
 
-class TrialList(SliceList):
-    def __init__(self, *args, **kwargs):
-        super().__init__(self, *args, **kwargs)
+    def add_slice(self, slice):
+        """
+        :param slice: Slice object
+        :return: adds object to list
+        """
+        self.container.append(slice)
+
+    def get_all(self):
+        """
+        :return: returns entire list
+        """
+        return self.container[:]
+
+    def __eq__(self, other):
+        """
+        :param other: lists to be compared with
+        :return: True if both lists are identical, else false
+        """
+        return self.__dict__ == other.__dict__
 
     def filter_trials_by_well(self, start_well=None, end_well=None, well=None):
         """
@@ -36,77 +76,22 @@ class TrialList(SliceList):
         :param well: keep all trials containing well
         :return: Slices object containing all trials fitting input
         """
-        return Slices([trial for trial in self if
-                       (int(trial.trial_timestamp[0]["trial_lickwell"]) == start_well
-                        or start_well == None
-                        or int(trial.trial_timestamp[0]["trial_lickwell"]) == well)
-                       and
-                       (int(trial.trial_timestamp[1]["trial_lickwell"]) == end_well
-                        or end_well == None
-                        or int(trial.trial_timestamp[1]["trial_lickwell"]) == well)
-                       ])
+        return TrialList([trial for trial in self if
+                          (int(trial.trial_timestamp[0]["trial_lickwell"]) == start_well
+                           or start_well == None
+                           or int(trial.trial_timestamp[0]["trial_lickwell"]) == well)
+                          and
+                          (int(trial.trial_timestamp[1]["trial_lickwell"]) == end_well
+                           or end_well == None
+                           or int(trial.trial_timestamp[1]["trial_lickwell"]) == well)
+                          ])
 
 
-class PhaseList(SliceList):
-    def __init__(self, *args, **kwargs):
-        super().__init__(self, *args, **kwargs)
-
-    def get_nth_trial_in_each_phase(self, n):
-        """
-        :param n: trial index in list of phases
-        :return: list of nth trials
-        """
-        trials = TrialList()
-        for phase in self:
-            try:
-                trial = phase.get_nth_trial(n)
-                trials.append(trial)
-            except IndexError:
-                pass
-        return trials
+class TrialList(SliceList):
+    def __init__(self, *args):
+        super().__init__(*args)
 
 
-class Slices:
-    """
-    list of Slice objects with custom methods
-    """
-
-    ## def __init__(self, container=[]):
-    ##     self.container = container
-    #
-    ## def __getitem__(self, time_slice):
-    ##     return self.container[time_slice]
-    ##
-    ## def add_slice(self, slice):
-    ##     """
-    ##     :param slice: Slice object
-    ##     :return: adds object to list
-    ##     """
-    ##     self.container.append(slice)
-    ##
-    ## def get_all(self):
-    ##     """
-    ##     :return: returns entire list
-    ##     """
-    ##     return self.container[:]
-    ##
-    ## def __eq__(self, other):
-    ##     """
-    ##     :param other: lists to be compared with
-    ##     :return: True if both lists are identical, else false
-    ##     """
-    ##     return self.__dict__ == other.__dict__
-    ##
-    ## def get_nth_trial_in_each_phase(self, n):
-    ##     """
-    ##     :param n: trial index in list of phases
-    ##     :return: list of nth trials
-    ##     """
-    ##     return_list = []
-    ##     for i in range(0, len(self.get_all())):
-    ##         slice = self[i].get_nth_trial(n)
-    ##         if slice is not None: return_list.append(slice)
-    ##     return return_list
 
     def plot_positionx_x_trials(self, neuron_no, max_range=None):
         """
@@ -207,16 +192,61 @@ class Slices:
         plt.close(fig)
         pass
 
-    ## def filter_trials_by_well(self, start_well=None, end_well=None, well=None):
-    ##     return Slices([trial for trial in self if
-    ##                    (int(trial.trial_timestamp[0]["trial_lickwell"]) == start_well
-    ##                     or start_well == None
-    ##                     or int(trial.trial_timestamp[0]["trial_lickwell"]) == well)
-    ##                    and
-    ##                    (int(trial.trial_timestamp[1]["trial_lickwell"]) == end_well
-    ##                     or end_well == None
-    ##                     or int(trial.trial_timestamp[1]["trial_lickwell"]) == well)
-    ##                    ])
+
+class PhaseList(SliceList):
+    def __init__(self,*args):
+        super().__init__(*args)
+
+
+    def get_nth_trial_in_each_phase(self, n):
+        """
+        :param n: trial index in list of phases
+        :return: list of nth trials
+        """
+        trials = TrialList()
+        for phase in self:
+            try:
+                trial = phase.get_nth_trial(n)
+                trials.append(trial)
+            except IndexError:
+                pass
+        return trials
+    ## def __init__(self, container=[]): #TODO: check problems with commenting this
+    ##     self.container = container
+    #
+    ## def __getitem__(self, time_slice):
+    ##     return self.container[time_slice]
+    ##
+    ## def add_slice(self, slice):
+    ##     """
+    ##     :param slice: Slice object
+    ##     :return: adds object to list
+    ##     """
+    ##     self.container.append(slice)
+    ##
+    ## def get_all(self):
+    ##     """
+    ##     :return: returns entire list
+    ##     """
+    ##     return self.container[:]
+    ##
+    ## def __eq__(self, other):
+    ##     """
+    ##     :param other: lists to be compared with
+    ##     :return: True if both lists are identical, else false
+    ##     """
+    ##     return self.__dict__ == other.__dict__
+    ##
+    ## def get_nth_trial_in_each_phase(self, n):
+    ##     """
+    ##     :param n: trial index in list of phases
+    ##     :return: list of nth trials
+    ##     """
+    ##     return_list = []
+    ##     for i in range(0, len(self.get_all())):
+    ##         slice = self[i].get_nth_trial(n)
+    ##         if slice is not None: return_list.append(slice)
+    ##     return return_list
 
 
 class Trial:
@@ -293,7 +323,8 @@ class Trial:
                 ax.vlines(s, i, i + 0.8)
         print("")
 
-    def plot(self, ax_filtered_spikes=None, ax_raw_spikes=None, ax_licks=None, ax_trial_timestamps=None, filtered_spikes_kwargs={}):
+    def plot(self, ax_filtered_spikes=None, ax_raw_spikes=None, ax_licks=None, ax_trial_timestamps=None,
+             filtered_spikes_kwargs={}):
         share_axis_set = set([ax_raw_spikes, ax_licks, ax_trial_timestamps])
         share_axis_set.discard(None)
         if len(share_axis_set) > 2:
@@ -364,10 +395,13 @@ class Slice(Trial):
 
     def slice_spikes(self, time_slice):
         new_spikes = []
+        start = time_slice.start
+        stop = time_slice.stop
+        if stop is None: stop = np.inf
         for spike in self.spikes:
             new_spikes.append([i for i in
-                              dropwhile(lambda x: x < time_slice.start,
-                                        takewhile(lambda x: x <= time_slice.stop, spike))])
+                               dropwhile(lambda x: x < start,
+                                         takewhile(lambda x: x <= stop, spike))])
         return new_spikes
 
     def slice_list_of_dict(self, ld, time_slice):
@@ -452,7 +486,7 @@ class Slice(Trial):
                 if stop is None or stop >= current_time or stop == -1:
                     s = slice(last_time, current_time)
                     return_array.append(self[s])
-        return Slices(return_array)
+        return SliceList(return_array)
 
     def get_all_trials(self):
         s = slice(0, None)
@@ -476,7 +510,7 @@ class Slice(Trial):
                 last_time = current_time
         final_slice = slice(current_time, time_slice.stop)
         return_array.append(self[final_slice])
-        return Slices(return_array)
+        return PhaseList(return_array)
 
     def get_all_phases(self):
         s = slice(0, None)
