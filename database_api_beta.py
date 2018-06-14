@@ -20,16 +20,16 @@ def subtract_from_list(li, number):
 
 
 class SliceList(list):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args):
         list.__init__(self, *args)
 
     def __getitem__(self, list_slice):
-        return SliceList(list.__getitem__(list_slice))
+        return SliceList(list.__getitem__(self, list_slice))
 
 
 class TrialList(SliceList):
     def __init__(self, *args, **kwargs):
-        super().__init__(self, *args, **kwargs)
+        super().__init__(*args)
 
     def filter_trials_by_well(self, start_well=None, end_well=None, well=None):
         """
@@ -52,7 +52,7 @@ class TrialList(SliceList):
 
 class PhaseList(SliceList):
     def __init__(self, *args, **kwargs):
-        super().__init__(self, *args, **kwargs)
+        super().__init__(*args)
 
     def get_nth_trial_in_each_phase(self, n):
         """
@@ -368,9 +368,9 @@ class Slice(Trial):
     def slice_spikes(self, time_slice):
         new_spikes = []
         for spike in self.spikes:
-            new_spikes.append([i for i in
-                              dropwhile(lambda x: x < time_slice.start,
-                                        takewhile(lambda x: x <= time_slice.stop, spike))])
+            until_stop = takewhile(lambda x: x <= time_slice.stop, spike) if time_slice.stop is not None else spike
+            from_start = dropwhile(lambda x: x < time_slice.start, until_stop)
+            new_spikes.append(list(from_start))
         return new_spikes
 
     def slice_list_of_dict(self, ld, time_slice):
@@ -447,15 +447,15 @@ class Slice(Trial):
             raise TypeError("Key must be a slice, got {}".format(type(time_slice)))
         start = time_slice.start
         stop = time_slice.stop
-        return_array = []
+        trials = TrialList()
         for ind in range(1, len(self.trial_timestamp)):  # trial finishing in slice is also valid
             last_time = self.trial_timestamp[ind - 1]["time"]
             current_time = self.trial_timestamp[ind]["time"]
             if start <= last_time or start is None:
                 if stop is None or stop >= current_time or stop == -1:
                     s = slice(last_time, current_time)
-                    return_array.append(self[s])
-        return Slices(return_array)
+                    trials.append(self[s])
+        return trials
 
     def get_all_trials(self):
         s = slice(0, None)
@@ -465,7 +465,7 @@ class Slice(Trial):
         """ returns a list of slices corresponding to the training phases contained in that slice """
         if not isinstance(time_slice, slice):
             raise TypeError("Key must be a slice, got {}".format(type(time_slice)))
-        return_array = []
+        phases = PhaseList()
         current_time = 0
         last_time = self.trial_timestamp[0]["time"]
         for ind in range(0,
@@ -475,11 +475,11 @@ class Slice(Trial):
             if current_starting_point != next_starting_point:
                 current_time = self.trial_timestamp[ind + 2]["time"]
                 s = slice(last_time, current_time)
-                return_array.append(self[s])
+                phases.append(self[s])
                 last_time = current_time
         final_slice = slice(current_time, time_slice.stop)
-        return_array.append(self[final_slice])
-        return Slices(return_array)
+        phases.append(self[final_slice])
+        return phases
 
     def get_all_phases(self):
         s = slice(0, None)
