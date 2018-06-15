@@ -3,16 +3,14 @@ from src.networks import test_full_session,test_trials, test_phase
 from numpy.random import seed
 from tdd_test import test_objects
 from src.networks_tf import run_network_test
-
+import test_convolution_threading
 seed(1)
 bin_size = 700
 step_size=700
 units = 500
 epochs = 10
 dropout=0.1
-
-
-
+test_convolution_threading
 data_slice = Slice.from_path(load_from="data/pickle/slice.pkl")  # load a data slice containing entire session
 phases = data_slice.get_all_phases()
 phases = phases[0:2]

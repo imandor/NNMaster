@@ -4,7 +4,7 @@ from src.settings import save_as_pickle, load_pickle
 import matplotlib.pyplot as plt
 from src.settings import config
 from itertools import takewhile, dropwhile
-
+from src.thread_convolution import _set_convolution_queue
 well_to_color = {0: "#ff0000", 1: "#669900", 2: "#0066cc", 3: "#cc33ff", 4: "#003300", 5: "#996633"}
 
 
@@ -321,7 +321,7 @@ class Trial:
 
     def plot_raw_spikes(self, ax):
         for i, spike in enumerate(reversed(self.spikes)):
-            print("[{:4d}/{:4d}] Ploting raw spike data...".format(i + 1, self.n_neurons))
+            print("[{:4d}/{:4d}] Plotting raw spike data...".format(i + 1, self.n_neurons))
             for s in spike:
                 ax.vlines(s, i, i + 0.8)
         print("")
