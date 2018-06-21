@@ -7,7 +7,7 @@ def f(x):
 
 data_slice = api.Slice.from_path(load_from="data/pickle/slice.pkl")
 data_slice = data_slice[0:100000]
-_set_convolution_queue(data_slice, search_window_size=700, step_size=700, num_threads=10, queue_size=20)
+data_slice = _set_convolution_queue(data_slice, search_window_size=700, step_size=700, num_threads=10)
 
 data_slice.set_filter(f, search_window_size=700, step_size=700)
 print("finn")

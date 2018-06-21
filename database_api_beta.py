@@ -268,6 +268,8 @@ class Trial:
         else:
             return False
 
+
+
     def set_filter(self, filter, search_window_size, step_size=1):
         self._filter = filter
         self._search_window_size = search_window_size
@@ -389,6 +391,19 @@ class Slice(Trial):
         self.trial_timestamp = trial_timestamp
         self.start_time = start_time
         self.set_filter(filter=_filter, search_window_size=_search_window_size)
+
+    def __add__(self, other):
+        spikes = self.spikes + other.spikes
+        licks = self.licks + other.licks
+        position_x = self.position_x + other.position_x
+        position_y = self.position_y + other.position_y
+        speed = self.speed + other.speed
+        trial_timestamp = self.trial_timestamp + other.trial_timestamp
+        start_time = min(self.start_time,other.start_time)
+        return_slice = Slice(spikes, licks, position_x, position_y, speed,
+                     trial_timestamp, start_time)
+        return_slice.set_filter(filter=self._filter, search_window_size=self._search_window_size)
+        return return_slice
 
     def time_in_slice(self, time, time_slice):
         if time_slice.stop is None:
