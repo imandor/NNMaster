@@ -4,7 +4,10 @@ from src.settings import save_as_pickle, load_pickle
 import matplotlib.pyplot as plt
 from src.settings import config
 from itertools import takewhile, dropwhile
-from src.thread_convolution import _set_convolution_queue
+# from src.thread_convolution import set_convolution_queue
+from multiprocessing.pool import ThreadPool
+import itertools
+from src.filters import bin_filter
 well_to_color = {0: "#ff0000", 1: "#669900", 2: "#0066cc", 3: "#cc33ff", 4: "#003300", 5: "#996633"}
 
 
@@ -269,8 +272,12 @@ class Trial:
             return False
 
 
+    def multi_process_convolution(work, search_window_size, step_size):
+        # print("Beginning process")
+        work.set_filter(filter=bin_filter, search_window_size=search_window_size, step_size=step_size)
+        return work
 
-    def set_filter(self, filter, search_window_size, step_size=1):
+    def set_filter(self, filter, search_window_size, step_size=1,num_threads = 1):
         self._filter = filter
         self._search_window_size = search_window_size
         if filter is not None and search_window_size is not None:
@@ -285,7 +292,7 @@ class Trial:
         n_bin_points = int(len(self.position_x) // step_size)
         self.filtered_spikes = np.zeros((len(self.spikes), n_bin_points + 1))
         for neuron_index, neuron_spikes in enumerate(self.spikes):
-            print("[{:4d}/{:4d}] Convolving...".format(neuron_index + 1, self.n_neurons))
+            # print("[{:4d}/{:4d}] Convolving...".format(neuron_index + 1, self.n_neurons))
             curr_search_window_min_bound = self.start_time - search_window_size / 2
             curr_search_window_max_bound = self.start_time + search_window_size / 2
             index_first_spike_in_window = 0
@@ -293,6 +300,7 @@ class Trial:
                 curr_spikes_in_search_window = dropwhile(lambda x: x < curr_search_window_min_bound,
                                                          takewhile(lambda x: x < curr_search_window_max_bound,
                                                                    neuron_spikes[index_first_spike_in_window:]))
+                curr_spikes_in_search_window = list(curr_spikes_in_search_window)
                 self.filtered_spikes[neuron_index][index] = sum(map(
                     lambda x: self._filter(x - index * step_size - self.start_time),
                     curr_spikes_in_search_window))
@@ -400,9 +408,13 @@ class Slice(Trial):
         speed = self.speed + other.speed
         trial_timestamp = self.trial_timestamp + other.trial_timestamp
         start_time = min(self.start_time,other.start_time)
-        return_slice = Slice(spikes, licks, position_x, position_y, speed,
-                     trial_timestamp, start_time)
-        return_slice.set_filter(filter=self._filter, search_window_size=self._search_window_size)
+        if not self.is_convolved == other.is_convolved:
+            raise ValueError("Error: The Slices to be joined do not have the same convolution state")
+        filtered_spikes = self.filtered_spikes + other.filtered_spikes
+        return_slice = Slice(spikes=spikes, licks=licks, position_x=position_x, position_y=position_y, speed=speed,
+                     trial_timestamp=trial_timestamp, start_time=start_time)
+        return_slice._is_convolved = True
+        return_slice.filtered_spikes=filtered_spikes
         return return_slice
 
     def time_in_slice(self, time, time_slice):

@@ -2,15 +2,22 @@ from database_api_beta import Slice
 from src.networks import test_full_session,test_trials, test_phase
 from numpy.random import seed
 from tdd_test import test_objects
+from src.multi_processing import bin_slices_spikes
 from src.networks_tf import run_network_test
-import test_convolution_threading
+from src.filters import bin_filter
+
 seed(1)
 bin_size = 700
 step_size=700
 units = 500
 epochs = 10
-dropout=0.1
-test_convolution_threading
+data_slice = Slice.from_path(load_from="data/pickle/slice.pkl")  # load a data slice containing entire session
+# data_slice = data_slice[0:100000]
+data_slice = bin_slices_spikes(data_slice, search_window_size=700, step_size=700, num_threads=20)
+# dropout=0.1
+# data_slice = Slice.from_path(load_from="data/pickle/slice.pkl")  # load a data slice containing entire session
+# smaller_data_slice = data_slice[0:100000]
+# smaller_data_slice.set_filter(filter=bin_filter, window=1,step_size=100)
 data_slice = Slice.from_path(load_from="data/pickle/slice.pkl")  # load a data slice containing entire session
 phases = data_slice.get_all_phases()
 phases = phases[0:2]
