@@ -9,14 +9,16 @@ def f(x):
 
 
 fig = plt.figure()
-ax_filtered_spikes = fig.add_subplot(1, 2, 2)
-ax_raw_spikes = fig.add_subplot(2, 2, 1)
+ax_position_x = fig.add_subplot(1, 2, 2)
+ax_speed = fig.add_subplot(2, 2, 1)
 ax_licks = fig.add_subplot(4, 2, 5)
 ax_trial_timestamps = fig.add_subplot(4, 2, 7)
 
 data_slice = api.Slice.from_path(load_from="data/pickle/slice.pkl")
 data_slice = data_slice[0:100000]
 data_slice = bin_slices_spikes(data_slice, search_window_size=700, step_size=700, num_threads=20)
-data_slice.plot(ax_filtered_spikes=ax_filtered_spikes, ax_raw_spikes=ax_raw_spikes, ax_licks=ax_licks, ax_trial_timestamps=ax_trial_timestamps)
+data_slice.plot_velocity(ax_position_x=ax_position_x, ax_speed=ax_speed, ax_licks=ax_licks, ax_trial_timestamps=None,
+             ax_speed_kwargs={})
+
 
 plt.show()

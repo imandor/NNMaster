@@ -382,6 +382,30 @@ class Trial:
         self.plot_trial_timestamps(ax2)
 
 
+    def plot_velocity(self, ax_position_x=None, ax_position_y=None, ax_speed=None, ax_licks=None, ax_trial_timestamps=None,
+             ax_speed_kwargs={}):
+        share_axis_set = set([ax_speed, ax_licks, ax_trial_timestamps])
+        share_axis_set.discard(None)
+        if len(share_axis_set) > 2:
+            reference_ax = share_axis_set.pop()
+            for other_ax in share_axis_set:
+                reference_ax.get_shared_x_axes().join(reference_ax, other_ax)
+        if ax_speed is not None:
+            self.plot_ax_speed(ax_speed, **ax_speed_kwargs)
+        # if ax_position_x is not None:
+        #     self.plot_raw_spikes(ax_raw_spikes)
+        # if ax_licks is not None:
+        #     self.plot_licks(ax_licks)
+        # if ax_trial_timestamps is not None:
+        #     self.plot_trial_timestamps(ax_trial_timestamps)
+
+    def plot_ax_speed(self, ax, neuron_px_height=4, normalize_each_neuron=False, margin_px=2):
+        if not self.is_convolved:
+            raise ValueError("This slice is not convolved. First set a filter please.")
+        n_bins = self.speed.shape
+        ax.imshow(self.speed, cmap='hot', interpolation='none', aspect='auto')
+
+
 class Slice(Trial):
     def __init__(self, spikes, licks, position_x, position_y, speed,
                  trial_timestamp, start_time, _filter=None, _search_window_size=None):

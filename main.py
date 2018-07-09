@@ -12,8 +12,8 @@ step_size=700
 units = 500
 epochs = 10
 data_slice = Slice.from_path(load_from="data/pickle/slice.pkl")  # load a data slice containing entire session
-# data_slice = data_slice[0:100000]
-data_slice = bin_slices_spikes(data_slice, search_window_size=700, step_size=700, num_threads=20)
+data_slice = data_slice[0:100000]
+data_slice.test_convolve()
 # dropout=0.1
 # data_slice = Slice.from_path(load_from="data/pickle/slice.pkl")  # load a data slice containing entire session
 # smaller_data_slice = data_slice[0:100000]
