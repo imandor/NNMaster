@@ -2,7 +2,6 @@ from database_api_beta import Slice
 from src.networks import test_full_session,test_trials, test_phase
 from numpy.random import seed
 from tdd_test import test_objects
-from src.multi_processing import bin_slices_spikes
 from src.networks_tf import run_network_test
 from src.filters import bin_filter
 

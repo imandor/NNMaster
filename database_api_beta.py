@@ -8,6 +8,7 @@ from itertools import takewhile, dropwhile
 from multiprocessing.pool import ThreadPool
 import itertools
 from src.filters import bin_filter
+
 well_to_color = {0: "#ff0000", 1: "#669900", 2: "#0066cc", 3: "#cc33ff", 4: "#003300", 5: "#996633"}
 
 
@@ -20,7 +21,7 @@ def subtract_from_list(li, number):
     return [x - number for x in li]
 
 
-class SliceList(list): # TODO: getitem returns a regular list here
+class SliceList(list):  # TODO: getitem returns a regular list here
     def __init__(self, *args):
         list.__init__(self, *args)
 
@@ -96,8 +97,6 @@ class SliceList(list): # TODO: getitem returns a regular list here
 class TrialList(SliceList):
     def __init__(self, *args):
         super().__init__(*args)
-
-
 
     def plot_positionx_x_trials(self, neuron_no, max_range=None):
         """
@@ -200,9 +199,8 @@ class TrialList(SliceList):
 
 
 class PhaseList(SliceList):
-    def __init__(self,*args):
+    def __init__(self, *args):
         super().__init__(*args)
-
 
     def get_nth_trial_in_each_phase(self, n):
         """
@@ -217,42 +215,6 @@ class PhaseList(SliceList):
             except IndexError:
                 pass
         return trials
-    ## def __init__(self, container=[]): #TODO: check problems with commenting this
-    ##     self.container = container
-    #
-    ## def __getitem__(self, time_slice):
-    ##     return self.container[time_slice]
-    ##
-    ## def add_slice(self, slice):
-    ##     """
-    ##     :param slice: Slice object
-    ##     :return: adds object to list
-    ##     """
-    ##     self.container.append(slice)
-    ##
-    ## def get_all(self):
-    ##     """
-    ##     :return: returns entire list
-    ##     """
-    ##     return self.container[:]
-    ##
-    ## def __eq__(self, other):
-    ##     """
-    ##     :param other: lists to be compared with
-    ##     :return: True if both lists are identical, else false
-    ##     """
-    ##     return self.__dict__ == other.__dict__
-    ##
-    ## def get_nth_trial_in_each_phase(self, n):
-    ##     """
-    ##     :param n: trial index in list of phases
-    ##     :return: list of nth trials
-    ##     """
-    ##     return_list = []
-    ##     for i in range(0, len(self.get_all())):
-    ##         slice = self[i].get_nth_trial(n)
-    ##         if slice is not None: return_list.append(slice)
-    ##     return return_list
 
 
 class Trial:
@@ -271,38 +233,53 @@ class Trial:
         else:
             return False
 
-
     def multi_process_convolution(work, search_window_size, step_size):
         # print("Beginning process")
         work.set_filter(filter=bin_filter, search_window_size=search_window_size, step_size=step_size)
         return work
 
-    def set_filter(self, filter, search_window_size, step_size=1,num_threads = 1):
+    def set_filter(self, filter, search_window_size, step_size=1, num_threads=1):
         self._filter = filter
         self._search_window_size = search_window_size
         if filter is not None and search_window_size is not None:
-            self._convolve(search_window_size=search_window_size, step_size=step_size)
+            self._convolve(search_window_size=search_window_size, step_size=step_size, num_threads=num_threads)
         else:
             self._is_convolved = False
             self.filtered_spikes = None
 
-    def _convolve(self, search_window_size, step_size):
+    def _convolve(self, search_window_size, step_size, num_threads=1):
+        data_slice = self
         if step_size > search_window_size:
             raise ValueError("step_size must be inferior to search_window_size")
-        n_bin_points = int(len(self.position_x) // step_size)
-        self.filtered_spikes = np.zeros((len(self.spikes), n_bin_points + 1))
-        for neuron_index, neuron_spikes in enumerate(self.spikes):
+        n_bin_points = int(len(data_slice.position_x) // step_size)
+
+        n = len(data_slice.position_x) // num_threads  # size of chunks
+        work = [data_slice[i:i + n] for i in range(0, len(data_slice.position_x), n)]
+        pool = ThreadPool(processes=num_threads)
+        args = list(
+            zip(work, itertools.repeat(search_window_size, num_threads), itertools.repeat(n_bin_points, num_threads),
+                itertools.repeat(step_size, num_threads)))  # zips all arguments for each process instance
+        pool.starmap(data_slice._convolve_subprocess, args)
+        return_slice = sum(work[1:], work[0])
+        self.filtered_spikes = return_slice.filtered_spikes
+        self._is_convolved = True
+
+
+    def _convolve_subprocess(self, work, search_window_size, n_bin_points, step_size):
+        n_bin_points = int(len(work.position_x) // step_size)
+        work.filtered_spikes = np.zeros((len(work.spikes), n_bin_points + 1))
+        for neuron_index, neuron_spikes in enumerate(work.spikes):
             # print("[{:4d}/{:4d}] Convolving...".format(neuron_index + 1, self.n_neurons))
-            curr_search_window_min_bound = self.start_time - search_window_size / 2
-            curr_search_window_max_bound = self.start_time + search_window_size / 2
+            curr_search_window_min_bound = work.start_time - search_window_size / 2
+            curr_search_window_max_bound = work.start_time + search_window_size / 2
             index_first_spike_in_window = 0
             for index in range(n_bin_points):
                 curr_spikes_in_search_window = dropwhile(lambda x: x < curr_search_window_min_bound,
                                                          takewhile(lambda x: x < curr_search_window_max_bound,
                                                                    neuron_spikes[index_first_spike_in_window:]))
                 curr_spikes_in_search_window = list(curr_spikes_in_search_window)
-                self.filtered_spikes[neuron_index][index] = sum(map(
-                    lambda x: self._filter(x - index * step_size - self.start_time),
+                work.filtered_spikes[neuron_index][index] = sum(map(
+                    lambda x: work._filter(x - index * step_size - work.start_time),
                     curr_spikes_in_search_window))
                 curr_search_window_min_bound += step_size
                 curr_search_window_max_bound += step_size
@@ -312,21 +289,28 @@ class Trial:
                         index_first_spike_in_window = spike_index
                         break
                 index_first_spike_in_window += index_first_spike_in_curr_window
-        # print("")
-        self._is_convolved = True
+        return work.filtered_spikes
 
     @property
     def is_convolved(self):
         return self._is_convolved
 
-    def plot_filtered_spikes(self, ax, neuron_px_height=4, normalize_each_neuron=False, margin_px=2):
+    def plot_filtered_spikes(self, ax, neuron_px_height=4, normalize_each_neuron=False, margin_px=0,sharex = False):
+        ax.set_xlabel('time (ms, binned)')
+        ax.set_ylabel('neuron_no')
         if not self.is_convolved:
             raise ValueError("This slice is not convolved. First set a filter please.")
         n_bins = self.filtered_spikes.shape[1]
-        image = np.zeros((self.n_neurons * (neuron_px_height + margin_px) - margin_px, n_bins))
+        if sharex is True:
+            bin_range = int(len(self.position_x)/n_bins)
+        else:
+            bin_range = 1
+        image = np.zeros((self.n_neurons * (neuron_px_height + margin_px) - margin_px, n_bins*bin_range))
         for i, f in enumerate(self.filtered_spikes):
-            n = (f - np.min(f)) / (np.max(f) - np.min(f)) if normalize_each_neuron else f
+            n = np.ndarray.tolist((f - np.min(f)) / (np.max(f) - np.min(f))) if normalize_each_neuron else np.ndarray.tolist(f)
+            n = [x for x in n for _ in range(0, bin_range)]#duplicates list entries so range of n fits image width'
             image[i * (neuron_px_height + margin_px): (i + 1) * (neuron_px_height + margin_px) - margin_px] = n
+        ax.set_yticks([])
         ax.imshow(image, cmap='hot', interpolation='none', aspect='auto')
 
     def plot_raw_spikes(self, ax):
@@ -381,29 +365,69 @@ class Trial:
         self.plot_licks(ax1)
         self.plot_trial_timestamps(ax2)
 
-
-    def plot_velocity(self, ax_position_x=None, ax_position_y=None, ax_speed=None, ax_licks=None, ax_trial_timestamps=None,
-             ax_speed_kwargs={}):
-        share_axis_set = set([ax_speed, ax_licks, ax_trial_timestamps])
-        share_axis_set.discard(None)
-        if len(share_axis_set) > 2:
-            reference_ax = share_axis_set.pop()
-            for other_ax in share_axis_set:
-                reference_ax.get_shared_x_axes().join(reference_ax, other_ax)
+    def plot_2(self, ax_speed=None, ax_position_x=None, ax_filtered_spikes = None,ax_filtered_spikes_sum=None,sharex = False):
         if ax_speed is not None:
-            self.plot_ax_speed(ax_speed, **ax_speed_kwargs)
-        # if ax_position_x is not None:
-        #     self.plot_raw_spikes(ax_raw_spikes)
-        # if ax_licks is not None:
-        #     self.plot_licks(ax_licks)
-        # if ax_trial_timestamps is not None:
-        #     self.plot_trial_timestamps(ax_trial_timestamps)
+            self.plot_velocity_wrt_time(ax_speed)
+        if ax_position_x is not None:
+            self.plot_position_x_wrt_time(ax_position_x)
+        if ax_filtered_spikes is not None:
+            self.plot_filtered_spikes(ax_filtered_spikes, sharex=sharex)
+            if ax_filtered_spikes_sum is not None:
+                self.plot_filtered_spikes_sum(ax_filtered_spikes_sum)
 
-    def plot_ax_speed(self, ax, neuron_px_height=4, normalize_each_neuron=False, margin_px=2):
-        if not self.is_convolved:
-            raise ValueError("This slice is not convolved. First set a filter please.")
-        n_bins = self.speed.shape
-        ax.imshow(self.speed, cmap='hot', interpolation='none', aspect='auto')
+    def plot_filtered_spikes_sum(self,ax_filtered_spikes_sum):
+        sum_spikes = [0]*len(self.position_x)
+        bin_width = int(len(self.position_x)/len(self.filtered_spikes[0]))
+        ax_filtered_spikes_sum.set_xlabel('time (ms)')
+        ax_filtered_spikes_sum.set_ylabel('total spikes')
+        for i in range(len(self.filtered_spikes)):
+            for j in range(len(self.filtered_spikes[0])):
+                a = sum_spikes[j*bin_width] + self.filtered_spikes[i][j]
+                sum_spikes[j*bin_width:(j+1)*bin_width] = sum_spikes[j*bin_width:(j+1)*bin_width] + self.filtered_spikes[i][j]
+        ax_filtered_spikes_sum.plot(sum_spikes, 'g')
+
+    def plot_velocity_wrt_time(self, ax_speed, show_labels=True):
+
+        min_time = 1e10
+        max_time = -1
+        if show_labels is True:
+            # ax_speed.set_title('speed with respect to time')
+            ax_speed.set_xlabel('time (ms)')
+            ax_speed.set_ylabel('speed (m/s)')
+        for d in self.licks:
+            well = d["lickwell"]
+            time = d["time"]
+            min_time = min_time if time > min_time else time
+            max_time = max_time if time < max_time else time
+            bbox = dict(boxstyle="circle", fc=well_to_color[well], ec="k")
+            ax_speed.text(time, 0, str(well), bbox=bbox)
+        ax_speed.hlines(0, min_time, max_time)
+        ax_speed.set_yticks([])
+        ax_speed.plot(self.speed, 'b')
+
+
+    def plot_position_x_wrt_time(self, ax,show_labels = True):
+        min_time = 1e10
+        max_time = -1
+        if show_labels is True:
+            # ax.set_title('position with respect to time')
+            ax.set_xlabel('time (ms)')
+            ax.set_ylabel('position')
+        for d in self.licks:
+            well = d["lickwell"]
+            time = d["time"]
+            min_time = min_time if time > min_time else time
+            max_time = max_time if time < max_time else time
+            bbox = dict(boxstyle="circle", fc=well_to_color[well], ec="k")
+            ax.text(time, 0, str(well), bbox=bbox)
+        ax.axhline(y=20,linewidth=1, color=well_to_color[1])
+        ax.axhline(y=70, linewidth=1, color=well_to_color[2])
+        ax.axhline(y=115, linewidth=1, color=well_to_color[3])
+        ax.axhline(y=160, linewidth=1, color=well_to_color[4])
+        ax.axhline(y=205, linewidth=1, color=well_to_color[5])
+        ax.set_yticks([])
+        ax.hlines(0, min_time, max_time)
+        ax.plot(self.position_x, 'r')
 
 
 class Slice(Trial):
@@ -431,15 +455,27 @@ class Slice(Trial):
         position_y = self.position_y + other.position_y
         speed = self.speed + other.speed
         trial_timestamp = self.trial_timestamp + other.trial_timestamp
-        start_time = min(self.start_time,other.start_time)
-        if not self.is_convolved == other.is_convolved:
-            raise ValueError("Error: The Slices to be joined do not have the same convolution state")
+        start_time = min(self.start_time, other.start_time)
+        # if not self.is_convolved == other.is_convolved:
+        #     raise ValueError("Error: The Slices to be joined do not have the same convolution state")
         filtered_spikes = self.filtered_spikes + other.filtered_spikes
         return_slice = Slice(spikes=spikes, licks=licks, position_x=position_x, position_y=position_y, speed=speed,
-                     trial_timestamp=trial_timestamp, start_time=start_time)
+                             trial_timestamp=trial_timestamp, start_time=start_time)
         return_slice._is_convolved = True
-        return_slice.filtered_spikes=filtered_spikes
+        return_slice.filtered_spikes = filtered_spikes
         return return_slice
+
+    def neuron_filter(self, minimum_spikes):
+        """
+        removes neurons from spikes that contain less than a given number of spikes
+        :param spikes: list of spikes from raw data
+        :param minimum_spikes: minimum spikes
+        :return: new spikes list
+        """
+        for i in range(len(self.spikes) - 1, -1, -1):
+            if len(self.spikes[i]) < minimum_spikes:
+                del self.spikes[i]
+        self.n_neurons = len(self.spikes)
 
     def time_in_slice(self, time, time_slice):
         if time_slice.stop is None:
@@ -483,8 +519,10 @@ class Slice(Trial):
         speed = self.slice_array(self.speed, time_slice)
         trial_timestamp = self.slice_list_of_dict(self.trial_timestamp, offset_slice)
         _filter = self._filter
-        return Slice(spikes, licks, position_x, position_y, speed, trial_timestamp, start,
-                     _filter=_filter, _search_window_size=self._search_window_size)
+        return_slice = Slice(spikes, licks, position_x, position_y, speed, trial_timestamp, start,
+                             _filter=None, _search_window_size=self._search_window_size)
+        return_slice._filter = _filter
+        return return_slice
 
     @classmethod
     def from_path(cls, load_from=None, save_as=None):

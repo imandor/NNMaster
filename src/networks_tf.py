@@ -1,7 +1,6 @@
 import numpy as np
 from src.settings import load_pickle,save_as_pickle
 from src.filters import bin_filter
-from src.multi_processing import bin_slices_spikes
 
 
 
