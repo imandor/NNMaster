@@ -25,9 +25,15 @@ class SliceList(list):  # TODO: getitem returns a regular list here
     def __init__(self, *args):
         list.__init__(self, *args)
 
-    def __getitem__(self, list_slice):
-        return SliceList(list.__getitem__(self, list_slice))
+    def __getitem__(self, item):
+        result = list.__getitem__(self, item)
+        try:
+            return SliceList(result)
+        except TypeError:
+            return result
 
+    def __add__(self, rhs):
+        return SliceList(list.__add__(self, rhs))
     # def __init__(self, container=[]): #TODO: check problems with commenting this
     #     self.container = container
     #
@@ -260,7 +266,8 @@ class Trial:
             zip(work, itertools.repeat(search_window_size, num_threads), itertools.repeat(n_bin_points, num_threads),
                 itertools.repeat(step_size, num_threads)))  # zips all arguments for each process instance
         pool.starmap(data_slice._convolve_subprocess, args)
-        return_slice = sum(work[1:], work[0])
+        return_slice = sum(work[1:-1], work[0])
+        return_slice = return_slice + work[-1]
         self.filtered_spikes = return_slice.filtered_spikes
         self._is_convolved = True
 
@@ -451,14 +458,20 @@ class Slice(Trial):
     def __add__(self, other):
         spikes = self.spikes + other.spikes
         licks = self.licks + other.licks
-        position_x = self.position_x + other.position_x
-        position_y = self.position_y + other.position_y
-        speed = self.speed + other.speed
+        position_x = np.concatenate([self.position_x,other.position_x])
+        position_y = np.concatenate([self.position_y,other.position_y])
+        speed = position_x = np.concatenate([self.speed,other.speed])
         trial_timestamp = self.trial_timestamp + other.trial_timestamp
         start_time = min(self.start_time, other.start_time)
         # if not self.is_convolved == other.is_convolved:
         #     raise ValueError("Error: The Slices to be joined do not have the same convolution state")
-        filtered_spikes = self.filtered_spikes + other.filtered_spikes
+        if other.filtered_spikes is None:
+            filtered_spikes = self.filtered_spikes
+        else:
+            if self.filtered_spikes is None:
+                filtered_spikes = other.filtered_spikes
+            else:
+                filtered_spikes = np.concatenate([self.filtered_spikes,other.filtered_spikes])
         return_slice = Slice(spikes=spikes, licks=licks, position_x=position_x, position_y=position_y, speed=speed,
                              trial_timestamp=trial_timestamp, start_time=start_time)
         return_slice._is_convolved = True
@@ -549,8 +562,9 @@ class Slice(Trial):
             raise TypeError("Key must be an int, got {}".format(type(n)))
         if n + 1 >= len(self.trial_timestamp):
             raise IndexError("Slice does not contain {} trials but only {}".format(n, len(self.trial_timestamp) - 1))
-        start = self.trial_timestamp[n]["time"]
-        stop = self.trial_timestamp[n + 1]["time"]
+        start = self.trial_timestamp[n]["time"] - self.start_time
+        stop = self.trial_timestamp[n + 1]["time"] - self.start_time
+        asd = self[start:stop]
         return self[start:stop]
 
     ## def get_trial_by_time(self, trial_time):
@@ -570,15 +584,16 @@ class Slice(Trial):
             raise TypeError("Key must be a slice, got {}".format(type(time_slice)))
         start = time_slice.start
         stop = time_slice.stop
-        return_array = []
+        if stop is None: stop = -1
+        return_array = SliceList([])
         for ind in range(1, len(self.trial_timestamp)):  # trial finishing in slice is also valid
             last_time = self.trial_timestamp[ind - 1]["time"]
             current_time = self.trial_timestamp[ind]["time"]
             if start <= last_time or start is None:
                 if stop is None or stop >= current_time or stop == -1:
-                    s = slice(last_time, current_time)
+                    s = slice(last_time - self.start_time, current_time - self.start_time)
                     return_array.append(self[s])
-        return SliceList(return_array)
+        return return_array
 
     def get_all_trials(self):
         s = slice(0, None)

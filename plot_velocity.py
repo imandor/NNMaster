@@ -17,11 +17,11 @@ ax_filtered_spikes_sum = fig.add_subplot(4,1,4,sharex=ax_position_x) # TODO Scal
 # ax_trial_timestamps = fig.add_subplot(4, 2, 6)
 
 data_slice = api.Slice.from_path(load_from="data/pickle/slice.pkl")
-# for i in range(len(data_slice.licks)):
-#     t = int(data_slice.licks[i]["time"])
-#     l = data_slice.licks[i]["lickwell"]
-#     p = int(data_slice.position_x[int(t)])
-#     print("lickwell ",l,",   position ", p, "cm,   time ",t,"ms")
+for i in range(len(data_slice.licks)):
+    t = int(data_slice.licks[i]["time"])
+    l = data_slice.licks[i]["lickwell"]
+    p = int(data_slice.position_x[int(t)])
+    print("lickwell ",l,",   position ", p, "cm,   time ",t,"ms")
 data_slice = data_slice[0:300000]
 data_slice.neuron_filter(300)
 data_slice.set_filter(filter=bin_filter, search_window_size=500, step_size=500, num_threads=1)
