@@ -266,9 +266,10 @@ class Trial:
             zip(work, itertools.repeat(search_window_size, num_threads), itertools.repeat(n_bin_points, num_threads),
                 itertools.repeat(step_size, num_threads)))  # zips all arguments for each process instance
         pool.starmap(data_slice._convolve_subprocess, args)
-        return_slice = sum(work[1:-1], work[0])
-        return_slice = return_slice + work[-1]
-        self.filtered_spikes = return_slice.filtered_spikes
+        # return_spikes = [sum(spike[1:-1], spike[0]) for spike in work.filtered_spikes]
+        # return_slice = return_spikes + work[-1]
+        spike_list =[work_i.filtered_spikes for work_i in work]
+        self.filtered_spikes = np.concatenate((spike_list[0:-1]),axis=1)
         self._is_convolved = True
 
 
@@ -465,17 +466,9 @@ class Slice(Trial):
         start_time = min(self.start_time, other.start_time)
         # if not self.is_convolved == other.is_convolved:
         #     raise ValueError("Error: The Slices to be joined do not have the same convolution state")
-        if other.filtered_spikes is None:
-            filtered_spikes = self.filtered_spikes
-        else:
-            if self.filtered_spikes is None:
-                filtered_spikes = other.filtered_spikes
-            else:
-                filtered_spikes = np.concatenate([self.filtered_spikes,other.filtered_spikes])
         return_slice = Slice(spikes=spikes, licks=licks, position_x=position_x, position_y=position_y, speed=speed,
                              trial_timestamp=trial_timestamp, start_time=start_time)
         return_slice._is_convolved = True
-        return_slice.filtered_spikes = filtered_spikes
         return return_slice
 
     def neuron_filter(self, minimum_spikes):

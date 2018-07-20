@@ -4,32 +4,9 @@ from src.filters import bin_filter
 from database_api_beta import Slice
 from tmp.estimators import cnn_model_fn
 import tensorflow as tf
+import random
+tf.logging.set_verbosity(tf.logging.INFO)
 
-
-
-def process_output(y,bin_size, max_x, max_y, min_x,min_y):
-    """
-    processes the output position to fit the input size by averaging over the rats position in each time and normalizes
-
-    :param y: list of tuples (position_x, position_y)
-    :param bin_size: size of each time-bin
-    :return: binned list
-    """
-    n_bin_points = len(y) // bin_size
-    return_list = np.zeros((n_bin_points+1, 2))
-    counter = np.zeros((n_bin_points+1,2))
-    for i, current_pos in enumerate(y):
-        index = i // bin_size
-        if (index) > n_bin_points:
-            print(i // bin_size)
-        return_list[index] += current_pos
-        counter[i // bin_size ] += 1
-    return_list = return_list / counter
-
-    # normalize
-    return_list = return_list - [min_x,min_y]
-    return_list = return_list / [max_x,max_y]
-    return return_list
 
 
 def get_next_lickwell_list(data_slice):
@@ -49,8 +26,8 @@ def get_next_lickwell_list(data_slice):
                 k = k + 1
         y_list[i-data_slice.start_time] = current_lickwell
     return_array = np.array([])
-    bin_size = int(len(data_slice.position_x) / len(data_slice.filtered_spikes))
-    for bin_no in range(len(data_slice.filtered_spikes)):
+    bin_size = int(len(data_slice.position_x) / len(data_slice.filtered_spikes[0]))
+    for bin_no in range(len(data_slice.filtered_spikes[0])):
         return_array = np.append(return_array,y_list[bin_size*bin_no])
     return return_array
 
@@ -59,23 +36,37 @@ def get_model_data(data_slice, search_window_size, step_size, load_from=None, sa
     if load_from is not None:
         return load_pickle(load_from)
     size = len(data_slice.position_x)
-    train_range = slice(0,int(size / 2))
-    valid_range = slice(int(size / 2),size)
+    testing_ratio =  int(size - size/2)
+
+    train_range = slice(0,testing_ratio)
+    eval_range = slice(testing_ratio,size)
+
+    # # Test: shuffle data
+    # random.shuffle(data_slice)
+
     train_slice = data_slice[train_range]
-    valid_slice = data_slice[valid_range]
+    eval_slice = data_slice[eval_range]
     train_slice.set_filter(filter=bin_filter, search_window_size=search_window_size, step_size= step_size, num_threads=20)
-    valid_slice.set_filter(filter=bin_filter, search_window_size=search_window_size, step_size= step_size, num_threads=20)
+    eval_slice.set_filter(filter=bin_filter, search_window_size=search_window_size, step_size= step_size, num_threads=20)
 
-    X_train = np.expand_dims(train_slice.filtered_spikes.T,axis=2)
-    X_valid = np.expand_dims(valid_slice.filtered_spikes.T,axis=2)
-    y_train = get_next_lickwell_list(train_slice)
-    y_valid = get_next_lickwell_list(valid_slice)
+    train_data = np.expand_dims(train_slice.filtered_spikes.T,axis=2)
+    eval_data = np.expand_dims(eval_slice.filtered_spikes.T,axis=2)
+    train_labels = get_next_lickwell_list(train_slice)
+    eval_labels = get_next_lickwell_list(eval_slice)
+    eval_data = [e for i, e in enumerate(eval_data) if eval_labels[i] != 0]
+    eval_labels = [e for i, e in enumerate(eval_labels) if eval_labels[i] != 0]
 
+
+# Test: remove well 1
+    eval_data = [e for i, e in enumerate(eval_data) if eval_labels[i] != 1]
+    eval_labels = [e for i, e in enumerate(eval_labels) if eval_labels[i] != 1]
+    train_data = [e for i, e in enumerate(train_data) if train_labels[i] != 1]
+    train_labels = [e for i, e in enumerate(train_labels) if train_labels[i] != 1]
     model_data = dict(
-        X_train=X_train,
-        X_valid=X_valid,
-        y_train=y_train,
-        y_valid=y_valid
+        train_data=train_data,
+        eval_data=eval_data,
+        train_labels=train_labels,
+        eval_labels=eval_labels
     )
 
     if save_as is not None:
@@ -86,21 +77,89 @@ def get_model_data(data_slice, search_window_size, step_size, load_from=None, sa
 # Network Parameters
 
 data_slice = Slice.from_path(load_from="slice.pkl")
-search_window_size = 700
-step_size = 700
+# data_slice.neuron_filter(300)
+
+search_window_size = 300
+step_size = 300
 
 # Load model data
 
-model_data = get_model_data(data_slice, search_window_size, step_size, load_from="test_network_18-7-18.pkl", save_as=None)
-train_data = model_data["X_train"]
-train_labels = model_data["y_train"]
-valid_data = model_data["X_valid"]
-valid_labels = model_data["y_valid"]
+model_data = get_model_data(data_slice, search_window_size, step_size, load_from="test_network_18-7-18.pkl")
+eval_labels = np.int32(model_data["eval_labels"])
+train_labels = np.int32(model_data["train_labels"])
+eval_data = model_data["eval_data"]
+train_data = model_data["train_data"]
+eval_data = np.float32(np.squeeze(eval_data,axis=2))
+train_data = np.float32(np.squeeze(train_data,axis=2))
+
 
 # Create Estimator
 
-network_classifier = tf.estimator.Estimator(model_fn=cnn_model_fn,model_dir="test_network_18-7_model")
+network_classifier = tf.estimator.Estimator(model_fn=cnn_model_fn,model_dir="test_network_19-7_model_11")
 
-# TODO logging hook
+# Create logging hook
+
+tensors_to_log = {"probabilities": "softmax_tensor"}
+logging_hook = tf.train.LoggingTensorHook(tensors=tensors_to_log,every_n_iter=50)
+
+
+# Train model
+
+train_input_fn = tf.estimator.inputs.numpy_input_fn(
+    x={"x": train_data},
+    y=train_labels,
+    batch_size=100,
+    num_epochs=None,
+    shuffle=True)
+
+network_classifier.train(
+    input_fn=train_input_fn,
+    steps=10000,
+    hooks=[logging_hook]
+)
+
+
+eval_input_fn = tf.estimator.inputs.numpy_input_fn(
+    x={"x":train_data},
+    y=train_labels,
+    num_epochs=1,
+    shuffle=False)
+
+
+eval_results = network_classifier.evaluate(input_fn=eval_input_fn)
+print("Training set: ",eval_results)
+
+eval_input_fn = tf.estimator.inputs.numpy_input_fn(
+    x={"x":eval_data},
+    y=eval_labels,
+    num_epochs=1,
+    shuffle=False)
+
+
+eval_results = network_classifier.evaluate(input_fn=eval_input_fn)
+print("Evaluation set: ",eval_results)
+
+
+
+
+for i in range(0,6):
+
+    eval_data_1 = [e for j, e in enumerate(eval_data) if eval_labels[j] == i]
+    eval_labels_1 = [e for j, e in enumerate(eval_labels) if eval_labels[j] == i]
+    eval_data_1 = np.float32(np.squeeze(eval_data_1,axis=2))
+    eval_labels_1 = np.int32(eval_labels_1)
+    eval_input_fn = tf.estimator.inputs.numpy_input_fn(
+        x={"x": eval_data_1},
+        y=eval_labels_1,
+        num_epochs=1,
+        shuffle=False)
+
+    if len(eval_data_1)>0:
+        eval_results = network_classifier.evaluate(input_fn=eval_input_fn)
+        print("lickwell", i, ": sample size: ", len(eval_data_1))
+        print("results: ", eval_results)
+
+
+
 print("fin")
 
