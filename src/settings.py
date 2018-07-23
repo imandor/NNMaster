@@ -9,7 +9,15 @@ all_channels_path = path_to_session + "all_channels.events"
 spiketracker_path = path_to_session + "probe1/session1/spike_tracker_data.mat"
 figure_path = "data/figures/"
 unit_test_path = "data/pickle/unit_testing/"
+
+
+lickwell_list = [1,2,3,4,5]
+
 config = dict(
+    setup = dict(
+        lickwell_list=lickwell_list
+
+    ),
     paths = dict(
     path_to_session = path_to_session,
     foster_path = foster_path,
@@ -24,7 +32,8 @@ config = dict(
     sub_list_of_trials= unit_test_path +"sub_list_of_trials.pkl",
     nth_trial_list= unit_test_path +"nth_trial_list.pkl",
     all_trials_in_second_phase= unit_test_path +"all_trials_in_second_phase.pkl"
-    ),
+
+),
     image_labels = dict(
         trial_spikes_title = "Spikes in trials by time",
         trial_spikes_y1_left = "trial id",

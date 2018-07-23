@@ -5,10 +5,10 @@ from database_api_beta import Slice
 from tmp.estimators import cnn_model_fn
 import tensorflow as tf
 import random
-
-
+from src.settings import config
+tf.logging.set_verbosity(tf.logging.INFO)
 def get_slices_around_licks(data_slice, time_range, train_validation_ratio, search_window_size, step_size,
-                            include_unsuccessful_licks=True, load_from=None, save_as=None):
+                            include_unsuccessful_licks=True, normalize_stations=True, load_from=None, save_as=None):
     """
     Returns list of slices in the time_range around the licks
     """
@@ -35,14 +35,43 @@ def get_slices_around_licks(data_slice, time_range, train_validation_ratio, sear
                                 num_threads=20)
             bin_list.append(data_bit.filtered_spikes)
 
-    # Randomly assign list elements to training or validation
 
     shuffle_list = list(zip(bin_list, lickwell_list, position_list, speed_list))
+
+    # Normalize the amount of stations in training and testing set
+
+    if normalize_stations is True:
+
+        # Set up list
+
+        shuffle_list = [shuffle_list[i] for j in config["setup"]["lickwell_list"] for i, e in enumerate(shuffle_list) if shuffle_list[i][1] == j]
+        occurrence_counter = np.zeros(len(config["setup"]["lickwell_list"]))
+
+        # Determine minimum amount of occurrences
+        for le in (shuffle_list):
+            occurrence_counter[le[1]-1] = occurrence_counter[le[1]-1] + 1
+        minimum_occurrence = np.inf
+        for k in occurrence_counter:
+            if minimum_occurrence> k and k != 0:
+                minimum_occurrence = k
+
+        # Remove surplus entries from ordered list
+
+        for lickwell in config["setup"]["lickwell_list"]:
+            # Remove surplus
+            for j in range(0, int(occurrence_counter[lickwell-1] - minimum_occurrence)):
+                print(j)
+                # Find index
+                item_index = next((i for i, v in enumerate(shuffle_list) if lickwell == v[1]), None) # Amount of licks add up to short runtimes
+                if item_index is not None:
+                    del(shuffle_list[item_index])
+
+    # Randomly assign list elements to training or validation
+
     random.shuffle(shuffle_list)
+
     bin_list, lickwell_list, position_list, speed_list = zip(*shuffle_list)
     train_validation_index = int(len(bin_list)* train_validation_ratio)
-    asd = np.expand_dims(bin_list[:train_validation_index],axis=3)
-    asd = np.float32(asd)
     return_dict = dict(
         X_train=np.float32(np.expand_dims(bin_list[:train_validation_index],axis=3)), # flattens neuron activity in bins
         X_valid=np.float32(np.expand_dims(bin_list[train_validation_index:],axis=3)),
@@ -63,13 +92,13 @@ def get_slices_around_licks(data_slice, time_range, train_validation_ratio, sear
 
 # Network Parameters
 
-data_slice = Slice.from_path(load_from="slice.pkl")[0:500000]
+data_slice = Slice.from_path(load_from="slice.pkl")
 # data_slice.neuron_filter(300)
-search_window_size = 300
-step_size = 300
+search_window_size = 50
+step_size = 50
 
-lick_slices = get_slices_around_licks(data_slice=data_slice, time_range=1000, train_validation_ratio=0.5, search_window_size=100, step_size=100,
-                            include_unsuccessful_licks=True,  save_as="lick_slices.pkl")
+lick_slices = get_slices_around_licks(data_slice=data_slice, time_range=1000, train_validation_ratio=0.5, search_window_size=search_window_size, step_size=step_size,
+                            include_unsuccessful_licks=True,  load_from="lick_slices.pkl")
 
 
 X_train = (lick_slices["X_train"])
@@ -79,7 +108,7 @@ y_valid = lick_slices["y_licks_valid"]
 
 # Create Estimator
 
-network_classifier = tf.estimator.Estimator(model_fn=cnn_model_fn,model_dir="test_network_20-7_model_2")
+network_classifier = tf.estimator.Estimator(model_fn=cnn_model_fn,model_dir="lick_cnn_23-07-18_4")
 
 # Create logging hook
 
@@ -98,7 +127,7 @@ train_input_fn = tf.estimator.inputs.numpy_input_fn(
 
 network_classifier.train(
     input_fn=train_input_fn,
-    steps=10000,
+    steps=20000,
     hooks=[logging_hook]
 )
 
@@ -118,5 +147,27 @@ eval_input_fn = tf.estimator.inputs.numpy_input_fn(
     y=y_valid,
     num_epochs=1,
     shuffle=False)
+
+eval_results = network_classifier.evaluate(input_fn=eval_input_fn)
+print("Evaluation set: ",eval_results)
+
+
+for i in range(0,6):
+
+    eval_data_1 = [e for j, e in enumerate(X_valid) if y_valid[j] == i]
+    eval_labels_1 = [e for j, e in enumerate(y_valid) if y_valid[j] == i]
+    eval_data_1 = np.float32(np.squeeze(eval_data_1,axis=2))
+    eval_labels_1 = np.int32(eval_labels_1)
+    eval_input_fn = tf.estimator.inputs.numpy_input_fn(
+        x={"x": eval_data_1},
+        y=eval_labels_1,
+        num_epochs=1,
+        shuffle=False)
+
+    if len(eval_data_1)>0:
+        eval_results = network_classifier.evaluate(input_fn=eval_input_fn)
+        print("lickwell", i, ": sample size: ", len(eval_data_1))
+        print("results: ", eval_results)
+
 
 print("fin")

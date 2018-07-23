@@ -5,29 +5,29 @@ import numpy as np
 
 def cnn_model_fn(features, labels,mode):
     # Input
-    input_layer = tf.reshape(features["x"],  [-1, 166,38, 1])
+    input_layer = features["x"]#"#tf.reshape(features["x"],  [-1, 166,38, 1])
 # TODO vermutlich große Fehlerursache
 
 
     # Convolutional layer 1
 
-    conv1 = tf.layers.conv2d(inputs = input_layer,filters = 256, kernel_size=[10,166],padding="same", activation=tf.nn.relu)
+    conv1 = tf.layers.conv2d(inputs = input_layer,filters = 256, kernel_size=[166,12],padding="valid", activation=tf.nn.relu)
 
     # Pooling layer 1
 
-    pool1 = tf.layers.max_pooling2d(inputs = conv1, pool_size=[2, 1], strides=2)
+    pool1 = tf.layers.max_pooling2d(inputs = conv1, pool_size=[1, 2], strides=2)
 
     # Convolutional layer 2
 
-    conv2 = tf.layers.conv2d(inputs = pool1, filters = 64, kernel_size=[5,1], padding="same",activation=tf.nn.relu)
+    conv2 = tf.layers.conv2d(inputs = pool1, filters = 64, kernel_size=[1,5], padding="valid",activation=tf.nn.relu)
 
     # Pooling layer 2
 
-    pool2 = tf.layers.max_pooling2d(inputs=conv2,pool_size=[2,1],strides=2)
+    pool2 = tf.layers.max_pooling2d(inputs=conv2,pool_size=[1,2],strides=2)
 
     # Dense layer
 
-    pool2_flat = tf.reshape(pool2,[-1,41*1*64]) # T # 166->41, 84->21, 136-> 24
+    pool2_flat = tf.reshape(pool2,[-1,576]) # T # 166->41, 84->21, 136-> 24
     dense = tf.layers.dense(inputs=pool2_flat,units=1024, activation=tf.nn.relu)
     dropout = tf.layers.dropout(inputs=dense,rate=0.4,training=mode ==tf.estimator.ModeKeys.TRAIN)
 
@@ -39,7 +39,7 @@ def cnn_model_fn(features, labels,mode):
 
     predictions = {
         "classes": tf.argmax(input=logits,axis=1),
-        "probabilities": tf.nn.softmax(logits,name="softmax_tensor")
+        "probabilities": tf.nn.softmax(logits,name="softmax_tensor"),
     }
 
     if mode == tf.estimator.ModeKeys.PREDICT:
