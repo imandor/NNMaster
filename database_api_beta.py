@@ -255,8 +255,8 @@ class Trial:
 
     def _convolve(self, search_window_size, step_size, num_threads=1):
         data_slice = self
-        if step_size > search_window_size:
-            raise ValueError("step_size must be inferior to search_window_size")
+        # if step_size > search_window_size:
+        #     raise ValueError("step_size must be inferior to search_window_size")
         n_bin_points = int(len(data_slice.position_x) // step_size)
 
         n = len(data_slice.position_x) // num_threads  # size of chunks

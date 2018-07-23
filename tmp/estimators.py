@@ -5,13 +5,13 @@ import numpy as np
 
 def cnn_model_fn(features, labels,mode):
     # Input
-    input_layer = features["x"]#"#tf.reshape(features["x"],  [-1, 166,38, 1])
+    input_layer = tf.reshape(features["x"],  [-1, 166,38, 1])
 # TODO vermutlich große Fehlerursache
 
 
     # Convolutional layer 1
 
-    conv1 = tf.layers.conv2d(inputs = input_layer,filters = 256, kernel_size=[166,12],padding="valid", activation=tf.nn.relu)
+    conv1 = tf.layers.conv2d(inputs = input_layer,filters = 128, kernel_size=[166,12],padding="valid", activation=tf.nn.relu)
 
     # Pooling layer 1
 
@@ -27,7 +27,7 @@ def cnn_model_fn(features, labels,mode):
 
     # Dense layer
 
-    pool2_flat = tf.reshape(pool2,[-1,576]) # T # 166->41, 84->21, 136-> 24
+    pool2_flat = tf.reshape(pool2,[-1,256]) # T # 166->41, 84->21, 136-> 24
     dense = tf.layers.dense(inputs=pool2_flat,units=1024, activation=tf.nn.relu)
     dropout = tf.layers.dropout(inputs=dense,rate=0.4,training=mode ==tf.estimator.ModeKeys.TRAIN)
 
@@ -39,10 +39,11 @@ def cnn_model_fn(features, labels,mode):
 
     predictions = {
         "classes": tf.argmax(input=logits,axis=1),
-        "probabilities": tf.nn.softmax(logits,name="softmax_tensor"),
+        "probabilities": tf.nn.softmax(logits,name="softmax_tensor")
     }
 
     if mode == tf.estimator.ModeKeys.PREDICT:
+
         return tf.estimator.EstimatorSpec(mode=mode,predictions=predictions)
 
     # Calculate Loss(TRAIN,EVAL)

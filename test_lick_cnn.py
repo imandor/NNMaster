@@ -7,6 +7,7 @@ import tensorflow as tf
 import random
 from src.settings import config
 tf.logging.set_verbosity(tf.logging.INFO)
+
 def get_slices_around_licks(data_slice, time_range, train_validation_ratio, search_window_size, step_size,
                             include_unsuccessful_licks=True, normalize_stations=True, load_from=None, save_as=None):
     """
@@ -60,7 +61,6 @@ def get_slices_around_licks(data_slice, time_range, train_validation_ratio, sear
         for lickwell in config["setup"]["lickwell_list"]:
             # Remove surplus
             for j in range(0, int(occurrence_counter[lickwell-1] - minimum_occurrence)):
-                print(j)
                 # Find index
                 item_index = next((i for i, v in enumerate(shuffle_list) if lickwell == v[1]), None) # Amount of licks add up to short runtimes
                 if item_index is not None:
@@ -84,21 +84,17 @@ def get_slices_around_licks(data_slice, time_range, train_validation_ratio, sear
     )
     if save_as is not None:
         save_as_pickle(save_as, return_dict)
-
     return return_dict
-
-
-
 
 # Network Parameters
 
 data_slice = Slice.from_path(load_from="slice.pkl")
 # data_slice.neuron_filter(300)
 search_window_size = 50
-step_size = 50
+step_size = 100
 
 lick_slices = get_slices_around_licks(data_slice=data_slice, time_range=1000, train_validation_ratio=0.5, search_window_size=search_window_size, step_size=step_size,
-                            include_unsuccessful_licks=True,  load_from="lick_slices.pkl")
+                            include_unsuccessful_licks=True,  normalize_stations=True,load_from="lick_slices.pkl")
 
 
 X_train = (lick_slices["X_train"])
@@ -108,7 +104,7 @@ y_valid = lick_slices["y_licks_valid"]
 
 # Create Estimator
 
-network_classifier = tf.estimator.Estimator(model_fn=cnn_model_fn,model_dir="lick_cnn_23-07-18_4")
+network_classifier = tf.estimator.Estimator(model_fn=cnn_model_fn,model_dir="lick_cnn_23-07-18_15")
 
 # Create logging hook
 
@@ -117,19 +113,19 @@ logging_hook = tf.train.LoggingTensorHook(tensors=tensors_to_log,every_n_iter=50
 
 
 # Train model
-
-train_input_fn = tf.estimator.inputs.numpy_input_fn(
-    x={"x": X_train},
-    y=y_train,
-    batch_size=1,
-    num_epochs=None,
-    shuffle=True)
-
-network_classifier.train(
-    input_fn=train_input_fn,
-    steps=20000,
-    hooks=[logging_hook]
-)
+#
+# train_input_fn = tf.estimator.inputs.numpy_input_fn(
+#     x={"x": X_train},
+#     y=y_train,
+#     batch_size=1,
+#     num_epochs=None,
+#     shuffle=True)
+#
+# network_classifier.train(
+#     input_fn=train_input_fn,
+#     steps=7000,
+#     hooks=[logging_hook]
+# )
 
 
 eval_input_fn = tf.estimator.inputs.numpy_input_fn(
