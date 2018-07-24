@@ -10,7 +10,7 @@ def cnn_model_fn(features, labels,mode):
 
     # Convolutional layer 1
 
-    conv1 = tf.layers.conv2d(inputs = input_layer,filters = 128, kernel_size=[166,5],padding="valid", activation=tf.nn.relu)
+    conv1 = tf.layers.conv2d(inputs = input_layer,filters = 256, kernel_size=[166,5],padding="valid", activation=tf.nn.relu)
 
     # Pooling layer 1
 
@@ -26,19 +26,19 @@ def cnn_model_fn(features, labels,mode):
 
     # Dense layer
 
-    pool2_flat = tf.reshape(pool2,[-1,11*64]) # T # 166->41, 84->21, 136-> 24
+    pool2_flat = tf.reshape(pool2,[-1,384]) # T # 166->41, 84->21, 136-> 24
     dense = tf.layers.dense(inputs=pool2_flat,units=1024, activation=tf.nn.relu)
     dropout = tf.layers.dropout(inputs=dense,rate=0.4,training=mode ==tf.estimator.ModeKeys.TRAIN)
 
     # Logits layer
 
-    logits = tf.layers.dense(inputs=dropout,units=6)
+    logits = tf.reshape(tf.layers.dense(inputs=dropout,units=1),[-1,])
 
     # Generate predictions for PREDICT and EVAL
 
     predictions = {
-        "classes": tf.argmax(input=logits,axis=1),
-        "probabilities": tf.nn.softmax(logits,name="softmax_tensor")
+        "classes": logits,
+        "probabilities": logits
     }
 
     if mode == tf.estimator.ModeKeys.PREDICT:
@@ -70,6 +70,9 @@ def cnn_model_fn(features, labels,mode):
     #     tf.initialize_all_variables().run()
     #     print("logits:",logits.eval())
     #     print("asd")
-    return tf.estimator.EstimatorSpec(mode=mode, loss=loss, eval_metric_ops=eval_metric_ops)
+    tensors_to_log = {"probabilities": logits}
+    logging_hook = tf.train.LoggingTensorHook({"loss": loss,
+                                               "accuracy": logits}, every_n_iter=50)
+    return tf.estimator.EstimatorSpec(mode=mode, loss=loss, eval_metric_ops=eval_metric_ops,training_hooks=logging_hook)
 
 
