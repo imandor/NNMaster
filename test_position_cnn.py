@@ -5,6 +5,7 @@ from database_api_beta import Slice
 from networks.position_cnn import cnn_model_fn
 import tensorflow as tf
 import random
+import matplotlib.pyplot as plt
 from src.settings import config
 from networks.lick_cnn import lick_cnn_model
 import os
@@ -35,7 +36,7 @@ def get_data_slices(data_slice, time_range,  search_window_size, step_size,train
         position_list.append(data_slice.position_x[time_of_lick])
         speed_list.append(data_slice.speed[time_of_lick])
         data_bit.set_filter(filter=bin_filter, search_window_size=search_window_size, step_size=step_size,
-                            num_threads=20)
+                            num_threads=1)
         bin_list.append(data_bit.filtered_spikes)
 
     shuffle_list = list(zip(bin_list, lickwell_list, position_list, speed_list))
@@ -53,8 +54,8 @@ def get_data_slices(data_slice, time_range,  search_window_size, step_size,train
         X_valid=np.float32(np.expand_dims(bin_list[train_validation_index:], axis=3)),
         y_licks_train=np.int32(lickwell_list[:train_validation_index]),
         y_licks_valid=np.int32(lickwell_list[train_validation_index:]),
-        y_position_train=np.int32(position_list[:train_validation_index]),
-        y_position_valid=np.int32(position_list[train_validation_index:]),
+        y_position_train=np.float32(position_list[:train_validation_index]),
+        y_position_valid=np.float32(position_list[train_validation_index:]),
         y_speed_train=speed_list[:train_validation_index],
         y_speed_valid=speed_list[train_validation_index:],
     )
@@ -65,18 +66,20 @@ def get_data_slices(data_slice, time_range,  search_window_size, step_size,train
 
 
 
-data_slice = Slice.from_path(load_from="slice.pkl")[0:10000]
+data_slice = Slice.from_path(load_from="slice.pkl")
 # data_slice.neuron_filter(300)
-search_window_size = 25
-step_size = 50
-number_of_training_steps=20000
+search_window_size = 10
+step_size = 20
+number_of_training_steps=200
 train_validation_ratio=0.8
-time_range = 500
-# lick_slices = get_slices_around_licks(data_slice=data_slice, time_range=1000, train_validation_ratio=train_validation_ratio, search_window_size=search_window_size, step_size=step_size,
-#                             include_unsuccessful_licks=True,  normalize_stations=True,save_as="lick_slices.pkl")
-
-lick_slices = get_data_slices(data_slice=data_slice, time_range=1000, train_validation_ratio=train_validation_ratio, search_window_size=search_window_size, step_size=step_size,
-                            save_as="lick_slices.pkl")
+time_range = 2000
+load = True
+if load is True:
+    lick_slices = get_data_slices(data_slice=data_slice, time_range=time_range, train_validation_ratio=train_validation_ratio, search_window_size=search_window_size, step_size=step_size,
+                            load_from="lick_slices.pkl")
+else:
+    lick_slices = get_data_slices(data_slice=data_slice, time_range=time_range, train_validation_ratio=train_validation_ratio, search_window_size=search_window_size, step_size=step_size,
+                                save_as="lick_slices.pkl")
 
 X_train = (lick_slices["X_train"])
 X_valid = lick_slices["X_valid"]
@@ -85,11 +88,11 @@ y_valid = lick_slices["y_position_valid"]
 
 # Create Estimator
 
-network_classifier = tf.estimator.Estimator(model_fn=cnn_model_fn,model_dir="position_cnn_24-07-18_4")
+network_classifier = tf.estimator.Estimator(model_fn=cnn_model_fn,model_dir="/tmp/position_cnn_25-07-18_6")
 
 # Create logging hook
 
-tensors_to_log = {}
+tensors_to_log = {"distance":"logits"}
 logging_hook = tf.train.LoggingTensorHook(tensors=tensors_to_log,every_n_iter=50)
 
 
@@ -125,24 +128,22 @@ eval_input_fn = tf.estimator.inputs.numpy_input_fn(
     num_epochs=1,
     shuffle=False)
 
-eval_results = network_classifier.evaluate(input_fn=eval_input_fn,hooks=[eval_hook])
-print("Evaluation set: ",eval_results)
+# eval_results = network_classifier.evaluate(input_fn=eval_input_fn,hooks=[eval_hook])
+predict_results = network_classifier.predict(input_fn=eval_input_fn)
+# print("Evaluation set: ",eval_results)
 
 
-for i in range(0,6):
+predicted_classes = [p["classes"] for p in predict_results]
+x  = np.arange(0,len(predicted_classes))
+plt.bar(x, predicted_classes, alpha=0.7)
+plt.bar(x, y_valid, alpha=0.7)
+plt.legend(['predicted position', 'actual position'], loc='upper left')
+plt.show()
+import matplotlib.pyplot as plt
+# print(
+#     "New Samples, Class Predictions:    {}\n"
+#     .format(predicted_classes))
 
-    X_single_lickwell = np.float32([e for j, e in enumerate(X_valid) if y_valid[j] == i])
-    y_single_lickwell = np.int32([e for j, e in enumerate(y_valid) if y_valid[j] == i])
-
-    if len(X_single_lickwell)>0:
-        eval_input_fn = tf.estimator.inputs.numpy_input_fn(
-            x={"x": X_single_lickwell},
-            y=y_single_lickwell,
-            num_epochs=1,
-            shuffle=False)
-        eval_results = network_classifier.evaluate(input_fn=eval_input_fn,hooks=[eval_hook])
-        print("lickwell", i, ": sample size: ", len(y_single_lickwell))
-        print("results: ", eval_results)
 
 
 print("fin")

@@ -199,5 +199,9 @@ for i in range(0,6):
         print("lickwell", i, ": sample size: ", len(y_single_lickwell))
         print("results: ", eval_results)
 
-
+    # sess = tf.InteractiveSession()
+    # with sess.as_default():
+    #     tf.initialize_all_variables().run()
+    #     print("logits:",logits.eval())
+    #     print("asd")
 print("fin")

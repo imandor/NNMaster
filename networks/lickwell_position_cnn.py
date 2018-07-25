@@ -10,7 +10,7 @@ def cnn_model_fn(features, labels,mode):
 
     # Convolutional layer 1
 
-    conv1 = tf.layers.conv2d(inputs = input_layer,filters = 256, kernel_size=[166,5],padding="valid", activation=tf.nn.relu)
+    conv1 = tf.layers.conv2d(inputs = input_layer,filters = 128, kernel_size=[166,5],padding="valid", activation=tf.nn.relu)
 
     # Pooling layer 1
 
@@ -26,19 +26,19 @@ def cnn_model_fn(features, labels,mode):
 
     # Dense layer
 
-    pool2_flat = tf.reshape(pool2,[-1,1408])
+    pool2_flat = tf.reshape(pool2,[-1,11*64]) # T # 166->41, 84->21, 136-> 24
     dense = tf.layers.dense(inputs=pool2_flat,units=1024, activation=tf.nn.relu)
     dropout = tf.layers.dropout(inputs=dense,rate=0.4,training=mode ==tf.estimator.ModeKeys.TRAIN)
 
     # Logits layer
 
-    logits = tf.reshape(tf.layers.dense(inputs=dropout,units=1),[-1,])
+    logits = tf.layers.dense(inputs=dropout,units=6)
 
     # Generate predictions for PREDICT and EVAL
 
     predictions = {
-        "classes": logits,
-        "distance": tf.identity(logits, name="logits")
+        "classes": tf.argmax(input=logits,axis=1),
+        "probabilities": tf.nn.softmax(logits,name="softmax_tensor")
     }
 
     if mode == tf.estimator.ModeKeys.PREDICT:
@@ -47,16 +47,12 @@ def cnn_model_fn(features, labels,mode):
 
     # Calculate Loss(TRAIN,EVAL)
 
-    loss = tf.losses.mean_squared_error(
-    labels=labels,
-    predictions=logits
-    )
-
+    loss = tf.losses.sparse_softmax_cross_entropy(labels=labels, logits=logits)
 
     # Configure Training (TRAIN)
 
     if mode == tf.estimator.ModeKeys.TRAIN:
-        optimizer = tf.train.RMSPropOptimizer(learning_rate=0.001)
+        optimizer = tf.train.GradientDescentOptimizer(learning_rate=0.001)
         train_op = optimizer.minimize(
             loss=loss,
             global_step=tf.train.get_global_step()
@@ -74,7 +70,6 @@ def cnn_model_fn(features, labels,mode):
     #     tf.initialize_all_variables().run()
     #     print("logits:",logits.eval())
     #     print("asd")
-
     return tf.estimator.EstimatorSpec(mode=mode, loss=loss, eval_metric_ops=eval_metric_ops)
 
 

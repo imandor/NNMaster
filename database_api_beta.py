@@ -254,6 +254,7 @@ class Trial:
             self.filtered_spikes = None
 
     def _convolve(self, search_window_size, step_size, num_threads=1):
+        num_threads = min(num_threads,int(len(self.position_x) // step_size)) # number of threads should be at least one bin point
         data_slice = self
         # if step_size > search_window_size:
         #     raise ValueError("step_size must be inferior to search_window_size")
@@ -269,7 +270,10 @@ class Trial:
         # return_spikes = [sum(spike[1:-1], spike[0]) for spike in work.filtered_spikes]
         # return_slice = return_spikes + work[-1]
         spike_list =[work_i.filtered_spikes for work_i in work]
-        self.filtered_spikes = np.concatenate((spike_list[0:-1]),axis=1)
+        if num_threads!=1:
+            self.filtered_spikes = np.concatenate((spike_list[0:-1]),axis=1)
+        else:
+            self.filtered_spikes = spike_list[0]
         self._is_convolved = True
 
 
