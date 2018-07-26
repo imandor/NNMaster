@@ -125,7 +125,7 @@ data_slice = Slice.from_path(load_from="slice.pkl")
 # data_slice.neuron_filter(300)
 search_window_size = 25
 step_size = 50
-number_of_training_steps=20000
+number_of_training_steps=200
 train_validation_ratio=None
 # lick_slices = get_slices_around_licks(data_slice=data_slice, time_range=1000, train_validation_ratio=train_validation_ratio, search_window_size=search_window_size, step_size=step_size,
 #                             include_unsuccessful_licks=True,  normalize_stations=True,save_as="lick_slices.pkl")
@@ -140,7 +140,7 @@ y_valid = lick_slices["y_licks_valid"]
 
 # Create Estimator
 
-network_classifier = tf.estimator.Estimator(model_fn=cnn_model_fn,model_dir="lick_cnn_24-07-18_4")
+network_classifier = tf.estimator.Estimator(model_fn=cnn_model_fn,model_dir="lick_cnn_24-07-18_6")
 
 # Create logging hook
 

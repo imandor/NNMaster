@@ -1,75 +1,231 @@
-import tensorflow as tf
-
 import numpy as np
+from src.settings import load_pickle, save_as_pickle
+from src.filters import bin_filter
+from database_api_beta import Slice
+from networks.lickwell_position_cnn import lickwell_position_model_fn
+import tensorflow as tf
+import random
+import matplotlib.pyplot as plt
+from src.settings import config
+from networks.lick_cnn import lick_cnn_model
+from networks.lickwell_position_dense import lickwell_position_dense_model_fn
+import os
+from math import isclose
 
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+tf.logging.set_verbosity(tf.logging.INFO)
 
-def cnn_model_fn(features, labels,mode):
-    # Input
-    input_layer = tf.reshape(features["x"],  [-1, features["x"].shape[1],features["x"].shape[2], features["x"].shape[3]])
+def get_data_slices(data_slice, time_range,  search_window_size, step_size,train_validation_ratio ,
+                             load_from=None, normalize_stations= True,save_as=None,eval_set_minimum_size=20):
+    """
+    Returns list of slices in the time_range around the licks
+    """
+    if load_from is not None:
+        return load_pickle(load_from)
 
+    # Slice data_slice into even parts
 
-    # Convolutional layer 1
+    data_slice_list,time_slice_list, lickwell_list, position_list, speed_list, bin_list = [], [], [], [], [],[]
+    data_slice_c = data_slice
+    c = 0
+    abs_tol = 5
+    while c < len(data_slice_c.position_x):
+        current_lickwell = 0
+        current_position = data_slice_c.position_x[c]
+        if isclose(current_position,30,abs_tol=abs_tol):
+            current_lickwell = 1
+        if isclose(current_position,67,abs_tol=abs_tol):
+            current_lickwell = 2
+        if isclose(current_position,113,abs_tol=abs_tol):
+            current_lickwell = 3
+        if isclose(current_position,161,abs_tol=abs_tol):
+            current_lickwell = 4
+        if isclose(current_position,203,abs_tol=abs_tol):
+            current_lickwell = 5
 
-    conv1 = tf.layers.conv2d(inputs = input_layer,filters = 128, kernel_size=[166,5],padding="valid", activation=tf.nn.relu)
+        if current_lickwell != 0:
+            if c + time_range < len(data_slice_c.position_x): # exclude last slice if its size is smaller than one time_range
+                lickwell_list.append(current_lickwell)
+                data_slice_list.append(data_slice_c[c:c+time_range])
+            c = c + time_range
+        else:
+            c = c + 1
 
-    # Pooling layer 1
+    # Get relevant data from slices for input/output
 
-    pool1 = tf.layers.max_pooling2d(inputs = conv1, pool_size=[1, 2], strides=2)
+    for data_bit in data_slice_list:
+        print("processing data_bit ",data_bit.start_time)
+        time_of_lick = data_bit.start_time
 
-    # Convolutional layer 2
+        position_list.append(data_slice.position_x[time_of_lick])
+        speed_list.append(data_slice.speed[time_of_lick])
+        data_bit.set_filter(filter=bin_filter, search_window_size=search_window_size, step_size=step_size,
+                            num_threads=1)
+        bin_list.append(data_bit.filtered_spikes)
 
-    conv2 = tf.layers.conv2d(inputs = pool1, filters = 64, kernel_size=[1,5], padding="valid",activation=tf.nn.relu)
+    shuffle_list = list(zip(bin_list, lickwell_list, position_list, speed_list))
+    random.shuffle(shuffle_list)
 
-    # Pooling layer 2
+    if normalize_stations is True:
 
-    pool2 = tf.layers.max_pooling2d(inputs=conv2,pool_size=[1,2],strides=2)
+        # Set up list
 
-    # Dense layer
+        shuffle_list = [shuffle_list[i] for j in config["setup"]["lickwell_list"] for i, e in enumerate(shuffle_list) if
+                        shuffle_list[i][1] == j]
+        occurrence_counter = np.zeros(len(config["setup"]["lickwell_list"]))
 
-    pool2_flat = tf.reshape(pool2,[-1,33]) # T # 166->41, 84->21, 136-> 24
-    dense = tf.layers.dense(inputs=pool2_flat,units=1024, activation=tf.nn.relu)
-    dropout = tf.layers.dropout(inputs=dense,rate=0.4,training=mode ==tf.estimator.ModeKeys.TRAIN)
+        # Determine minimum amount of occurrences
 
-    # Logits layer
+        for le in (shuffle_list):
+            occurrence_counter[le[1] - 1] = occurrence_counter[le[1] - 1] + 1
+        minimum_occurrence = np.inf
+        for k in occurrence_counter:
+            if minimum_occurrence > k and k != 0:
+                minimum_occurrence = k
 
-    logits = tf.layers.dense(inputs=dropout,units=6)
+        # Remove surplus entries from ordered list
 
-    # Generate predictions for PREDICT and EVAL
+        eval_list = []
+        for lickwell in config["setup"]["lickwell_list"]:
+            # Remove surplus
+            max_val = max(int(occurrence_counter[lickwell - 1] - minimum_occurrence),eval_set_minimum_size)
+            for j in range(0, max_val):
+                # Find index
+                item_index = next((i for i, v in enumerate(shuffle_list) if lickwell == v[1]),
+                                  None)  # Amount of licks add up to short runtimes
+                if item_index is not None:
+                    eval_list.append(shuffle_list[item_index])
+                    del (shuffle_list[item_index])
 
-    predictions = {
-        "classes": tf.argmax(input=logits,axis=1),
-        "probabilities": tf.nn.softmax(logits,name="softmax_tensor")
-    }
+    # Assign list elements to training or validation
 
-    if mode == tf.estimator.ModeKeys.PREDICT:
+    random.shuffle(shuffle_list)
 
-        return tf.estimator.EstimatorSpec(mode=mode,predictions=predictions)
+    bin_list, lickwell_list, position_list, speed_list = zip(*shuffle_list)
 
-    # Calculate Loss(TRAIN,EVAL)
-
-    loss = tf.losses.sparse_softmax_cross_entropy(labels=labels, logits=logits)
-
-    # Configure Training (TRAIN)
-
-    if mode == tf.estimator.ModeKeys.TRAIN:
-        optimizer = tf.train.GradientDescentOptimizer(learning_rate=0.001)
-        train_op = optimizer.minimize(
-            loss=loss,
-            global_step=tf.train.get_global_step()
+    if train_validation_ratio is not None: # random assignment
+        train_validation_index = int(len(bin_list) * train_validation_ratio)
+        return_dict = dict(
+            X_train=np.float32(np.expand_dims(bin_list[:train_validation_index], axis=3)),
+            # flattens neuron activity in bins
+            X_valid=np.float32(np.expand_dims(bin_list[train_validation_index:], axis=3)),
+            y_licks_train=np.int32(lickwell_list[:train_validation_index]),
+            y_licks_valid=np.int32(lickwell_list[train_validation_index:]),
+            y_position_train=position_list[:train_validation_index],
+            y_position_valid=position_list[train_validation_index:],
+            y_speed_train=speed_list[:train_validation_index],
+            y_speed_valid=speed_list[train_validation_index:],
         )
-        return tf.estimator.EstimatorSpec(mode=mode, loss=loss, train_op=train_op)
+    else: # surplus is used as evaluation set
+        bin_list_valid, lickwell_list_valid, position_list_valid, speed_list_valid = zip(*eval_list)
 
-    # Add evaluation metrics (EVAL)
+        return_dict = dict(
+            X_train=np.float32(np.expand_dims(bin_list, axis=3)),
+            # flattens neuron activity in bins
+            X_valid=np.float32(np.expand_dims(bin_list_valid, axis=3)),
+            y_licks_train=np.int32(lickwell_list),
+            y_licks_valid=np.int32(lickwell_list_valid),
+            y_position_train=position_list,
+            y_position_valid=position_list_valid,
+            y_speed_train=speed_list,
+            y_speed_valid=speed_list_valid,
+        )
 
-    eval_metric_ops = {
-        "accuracy": tf.metrics.accuracy(
-            labels=labels, predictions=predictions["classes"])
-    }
+    if save_as is not None:
+        save_as_pickle(save_as, return_dict)
+    return return_dict
+
+
+
+data_slice = Slice.from_path(load_from="slice.pkl")
+# data_slice.neuron_filter(300)
+search_window_size = 25
+step_size = 50
+number_of_training_steps=3500
+train_validation_ratio=None
+time_range = 1000
+load = True
+train = False
+if load is True:
+    lick_slices = get_data_slices(data_slice=data_slice, time_range=time_range, train_validation_ratio=train_validation_ratio, search_window_size=search_window_size, step_size=step_size,
+                            load_from="lick_slices.pkl")
+else:
+    lick_slices = get_data_slices(data_slice=data_slice, time_range=time_range, train_validation_ratio=train_validation_ratio, search_window_size=search_window_size, step_size=step_size,
+                                save_as="lick_slices.pkl")
+
+X_train = (lick_slices["X_train"])
+X_valid = lick_slices["X_valid"]
+y_train = lick_slices["y_licks_train"]
+y_valid = lick_slices["y_licks_valid"]
+
+#  Create Estimator
+network_classifier = tf.estimator.Estimator(model_fn=lickwell_position_dense_model_fn,model_dir="lickwell_position_fcn_25-07-18_4")
+
+# Create logging hook
+
+tensors_to_log = {"probabilities": "softmax_tensor"}
+logging_hook = tf.train.LoggingTensorHook(tensors=tensors_to_log,every_n_iter=50)
+
+
+# Train model
+
+if train is True:
+    train_input_fn = tf.estimator.inputs.numpy_input_fn(
+        x={"x": X_train},
+        y=y_train,
+        batch_size=1,
+        num_epochs=None,
+        shuffle=True)
+
+    network_classifier.train(
+        input_fn=train_input_fn,
+        steps=number_of_training_steps,
+        hooks=[logging_hook]
+    )
+
+eval_hook = tf.train.LoggingTensorHook(tensors=tensors_to_log,every_n_iter=1)
+
+eval_input_fn = tf.estimator.inputs.numpy_input_fn(
+    x={"x":X_train},
+    y=y_train,
+    num_epochs=1,
+    batch_size=1,
+    shuffle=False)
+
+
+eval_results = network_classifier.evaluate(input_fn=eval_input_fn,hooks=[eval_hook])
+print("Training set: ",eval_results)
+
+eval_input_fn = tf.estimator.inputs.numpy_input_fn(
+    x={"x":X_valid},
+    y=y_valid,
+    num_epochs=1,
+    batch_size = 1,
+    shuffle=False)
+
+eval_results = network_classifier.evaluate(input_fn=eval_input_fn,hooks=[eval_hook])
+print("Evaluation set: ",eval_results)
+
+run_opts = tf.RunOptions(report_tensor_allocations_upon_oom = True)
+for i in range(0,6):
+
+    X_single_lickwell = np.float32([e for j, e in enumerate(X_valid) if y_valid[j] == i])
+    y_single_lickwell = np.int32([e for j, e in enumerate(y_valid) if y_valid[j] == i])
+
+    if len(X_single_lickwell)>0:
+        eval_input_fn = tf.estimator.inputs.numpy_input_fn(
+            x={"x": X_single_lickwell},
+            y=y_single_lickwell,
+            num_epochs=1,
+            batch_size=1,
+            shuffle=False)
+        eval_results = network_classifier.evaluate(input_fn=eval_input_fn,hooks=[eval_hook])
+        print("lickwell", i, ": sample size: ", len(y_single_lickwell))
+        print("results: ", eval_results)
+
     # sess = tf.InteractiveSession()
     # with sess.as_default():
     #     tf.initialize_all_variables().run()
     #     print("logits:",logits.eval())
     #     print("asd")
-    return tf.estimator.EstimatorSpec(mode=mode, loss=loss, eval_metric_ops=eval_metric_ops)
-
-
+print("fin")

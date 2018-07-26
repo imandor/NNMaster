@@ -3,36 +3,42 @@ import tensorflow as tf
 import numpy as np
 
 
-def lickwell_position_model_fn(features, labels,mode):
+def lickwell_position_dense_model_fn(features, labels,mode):
     # Input
+
     input_layer = tf.reshape(features["x"],  [-1, features["x"].shape[1],features["x"].shape[2], features["x"].shape[3]])
 
+    # Dense layer 1
 
-    # Convolutional layer 1
+    dense1 = tf.layers.dense(inputs=input_layer, units=1024, activation=tf.nn.relu)
 
-    conv1 = tf.layers.conv2d(inputs = input_layer,filters = 128, kernel_size=[5,5],padding="valid", activation=tf.nn.relu)
+    #  Dropout layer 1
 
-    # Pooling layer 1
+    dropout1 = tf.layers.dropout(inputs=dense1, rate=0.25, training=mode == tf.estimator.ModeKeys.TRAIN)
 
-    pool1 = tf.layers.max_pooling2d(inputs = conv1, pool_size=[1, 2], strides=2)
+    # Dense layer 2
 
-    # Convolutional layer 2
+    dense2 = tf.layers.dense(inputs=dropout1, units=1024, activation=tf.nn.relu)
 
-    conv2 = tf.layers.conv2d(inputs = pool1, filters = 64, kernel_size=[1,5], padding="valid",activation=tf.nn.relu)
+    #  Dropout layer 2
 
-    # Pooling layer 2
+    dropout2 = tf.layers.dropout(inputs=dense2, rate=0.25, training=mode == tf.estimator.ModeKeys.TRAIN)
 
-    pool2 = tf.layers.max_pooling2d(inputs=conv2,pool_size=[1,2],strides=2)
+    # Dense layer 2
 
-    # Dense layer
+    dense3 = tf.layers.dense(inputs=dropout2, units=1024, activation=tf.nn.relu)
 
-    pool2_flat = tf.reshape(pool2,[-1,pool2.shape[1]*pool2.shape[2]*pool2.shape[3]]) # T # 166->41, 84->21, 136-> 24
-    dense = tf.layers.dense(inputs=pool2_flat,units=1024, activation=tf.nn.relu)
-    dropout = tf.layers.dropout(inputs=dense,rate=0.4,training=mode ==tf.estimator.ModeKeys.TRAIN)
+    #  Dropout layer 2
+
+    dropout3 = tf.layers.dropout(inputs=dense3, rate=0.25, training=mode == tf.estimator.ModeKeys.TRAIN)
+
+    # Flatten
+
+    dropout_flat = tf.reshape(dropout3, [-1, dropout3.shape[1] * dropout3.shape[2] * dropout3.shape[3]])
 
     # Logits layer
 
-    logits = tf.layers.dense(inputs=dropout,units=6)
+    logits = tf.layers.dense(inputs=dropout_flat,units=6)
 
     # Generate predictions for PREDICT and EVAL
 
