@@ -152,7 +152,7 @@ def read_file():
 
     spikes = clean_spikes(spikes)
     # spikes = None, filter = None, filtered_spikes = None, metadata = None, enriched_metadata = None
-    spikes_dense = make_dense_np_matrix(spikes)
+    # spikes_dense = make_dense_np_matrix(spikes)
     # spikes = spikes.astype(TimePoint)
     # session = Session(spikes=spikes, licks=licks, spikes_dense=spikes_dense, position_x=position_x,
     #                   position_y=position_y, speed=speed, trial_timestamp=trial_timestamp)

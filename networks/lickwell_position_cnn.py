@@ -10,7 +10,7 @@ def lickwell_position_model_fn(features, labels,mode):
 
     # Convolutional layer 1
 
-    conv1 = tf.layers.conv2d(inputs = input_layer,filters = 128, kernel_size=[5,5],padding="valid", activation=tf.nn.relu)
+    conv1 = tf.layers.conv2d(inputs = input_layer,filters = 256, kernel_size=[166,5],padding="valid", activation=tf.nn.relu)
 
     # Pooling layer 1
 
@@ -18,7 +18,7 @@ def lickwell_position_model_fn(features, labels,mode):
 
     # Convolutional layer 2
 
-    conv2 = tf.layers.conv2d(inputs = pool1, filters = 64, kernel_size=[1,5], padding="valid",activation=tf.nn.relu)
+    conv2 = tf.layers.conv2d(inputs = pool1, filters = 128, kernel_size=[1,5], padding="valid",activation=tf.nn.relu)
 
     # Pooling layer 2
 

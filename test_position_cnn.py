@@ -10,6 +10,10 @@ from src.settings import config
 from networks.lick_cnn import lick_cnn_model
 import os
 
+# Setup network parameters
+
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+tf.logging.set_verbosity(tf.logging.INFO)
 
 def get_data_slices(data_slice, time_range,  search_window_size, step_size,train_validation_ratio ,
                              load_from=None, save_as=None):
@@ -66,11 +70,11 @@ def get_data_slices(data_slice, time_range,  search_window_size, step_size,train
 
 
 
-data_slice = Slice.from_path(load_from="slice.pkl")
+data_slice = Slice.from_path(load_from="hippocampus_session.pkl")
 # data_slice.neuron_filter(300)
 search_window_size = 10
 step_size = 20
-number_of_training_steps=200
+number_of_training_steps=20000
 train_validation_ratio=0.8
 time_range = 2000
 load = True
@@ -88,7 +92,7 @@ y_valid = lick_slices["y_position_valid"]
 
 # Create Estimator
 
-network_classifier = tf.estimator.Estimator(model_fn=cnn_model_fn,model_dir="/tmp/position_cnn_25-07-18_6")
+network_classifier = tf.estimator.Estimator(model_fn=cnn_model_fn,model_dir="/tmp/position_cnn_26-07-18_1")
 
 # Create logging hook
 

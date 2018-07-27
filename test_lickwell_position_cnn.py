@@ -15,6 +15,7 @@ from math import isclose
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 tf.logging.set_verbosity(tf.logging.INFO)
 
+
 def get_data_slices(data_slice, time_range,  search_window_size, step_size,train_validation_ratio ,
                              load_from=None, normalize_stations= True,save_as=None,eval_set_minimum_size=20):
     """
@@ -62,6 +63,8 @@ def get_data_slices(data_slice, time_range,  search_window_size, step_size,train
         data_bit.set_filter(filter=bin_filter, search_window_size=search_window_size, step_size=step_size,
                             num_threads=1)
         bin_list.append(data_bit.filtered_spikes)
+
+
 
     shuffle_list = list(zip(bin_list, lickwell_list, position_list, speed_list))
     random.shuffle(shuffle_list)
@@ -141,17 +144,17 @@ data_slice = Slice.from_path(load_from="slice.pkl")
 # data_slice.neuron_filter(300)
 search_window_size = 25
 step_size = 50
-number_of_training_steps=3500
+number_of_training_steps=16500
 train_validation_ratio=None
-time_range = 1000
-load = True
-train = False
+time_range = 2000
+load = False
+train = True
 if load is True:
     lick_slices = get_data_slices(data_slice=data_slice, time_range=time_range, train_validation_ratio=train_validation_ratio, search_window_size=search_window_size, step_size=step_size,
-                            load_from="lick_slices.pkl")
+                            load_from="lick_slices_1.pkl")
 else:
     lick_slices = get_data_slices(data_slice=data_slice, time_range=time_range, train_validation_ratio=train_validation_ratio, search_window_size=search_window_size, step_size=step_size,
-                                save_as="lick_slices.pkl")
+                                save_as="lick_slices_1.pkl")
 
 X_train = (lick_slices["X_train"])
 X_valid = lick_slices["X_valid"]
@@ -159,7 +162,8 @@ y_train = lick_slices["y_licks_train"]
 y_valid = lick_slices["y_licks_valid"]
 
 #  Create Estimator
-network_classifier = tf.estimator.Estimator(model_fn=lickwell_position_dense_model_fn,model_dir="lickwell_position_fcn_25-07-18_4")
+
+network_classifier = tf.estimator.Estimator(model_fn=lickwell_position_model_fn,model_dir="lickwell_position_cnn_26-07-18_4")
 
 # Create logging hook
 

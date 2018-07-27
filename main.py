@@ -8,9 +8,9 @@ units = 500
 epochs = 10
 
 
-data_slice = Slice.from_path(load_from="data/pickle/slice.pkl")  # load a data slice containing entire session
+data_slice = Slice.from_path(load_from="data/pickle/hippocampus_session.pkl")  # load a data slice containing entire session
 
-smaller_data_slice = data_slice[0:200000]  # slices first 200 seconds of session
+smaller_data_slice = data_slice[0:2000000]  # slices first 200 seconds of session
 
 phases = data_slice.get_all_phases()  # gets all training phases as list of data slices
 

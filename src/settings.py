@@ -3,14 +3,19 @@ import pickle
 # import dill as pickle
 import json
 """ paths and filenames"""
-path_to_session = "C:/Users/NN/Desktop/Master/sample_data/2018-04-09_14-39-52/"
-foster_path = path_to_session + "2018-04-09_14-39-53_fostertask.dat"
+# path_to_session = "C:/Users/NN/Desktop/Master/sample_data/2018-04-09_14-39-52/"
+# foster_path = path_to_session + "2018-04-09_14-39-53_fostertask.dat"
+# all_channels_path = path_to_session + "all_channels.events"
+# spiketracker_path = path_to_session + "probe1/session1/spike_tracker_data.mat"
+# figure_path = "data/figures/"
+# unit_test_path = "data/pickle/unit_testing/"
+
+path_to_session = "C:/Users/NN/PycharmProjects/NNMaster/data/2018-05-16_17-13-37/"
+foster_path = path_to_session + "2018-05-16_17-13-37_fostertask.dat"
 all_channels_path = path_to_session + "all_channels.events"
 spiketracker_path = path_to_session + "probe1/session1/spike_tracker_data.mat"
 figure_path = "data/figures/"
 unit_test_path = "data/pickle/unit_testing/"
-
-
 lickwell_list = [1,2,3,4,5]
 
 config = dict(

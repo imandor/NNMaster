@@ -10,7 +10,7 @@ def cnn_model_fn(features, labels,mode):
 
     # Convolutional layer 1
 
-    conv1 = tf.layers.conv2d(inputs = input_layer,filters = 256, kernel_size=[166,5],padding="valid", activation=tf.nn.relu)
+    conv1 = tf.layers.conv2d(inputs = input_layer,filters = 256, kernel_size=[features["x"].shape[1],5],padding="valid", activation=tf.nn.relu)
 
     # Pooling layer 1
 

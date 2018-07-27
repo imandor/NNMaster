@@ -601,7 +601,7 @@ class Slice(Trial):
         if not isinstance(time_slice, slice):
             raise TypeError("Key must be a slice, got {}".format(type(time_slice)))
         return_array = []
-        current_time = 0
+        current_time = self.start_time
         last_time = self.trial_timestamp[0]["time"]
         for ind in range(0,
                          len(self.trial_timestamp) - 2):  # phases finishing (but not starting) in slice are also valid
