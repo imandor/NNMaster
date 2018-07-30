@@ -13,18 +13,26 @@ import os
 from math import isclose
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-tf.logging.set_verbosity(tf.logging.INFO)
+# tf.logging.set_verbosity(tf.logging.INFO)
 
+
+def find_first(vec,item,index=None):
+    if index is not None:
+        vec = vec[:,index]
+    for i in range(len(vec)):
+        if item == vec[i]:
+            return i
+    return None
 
 def get_data_slices(data_slice, time_range,  search_window_size, step_size,train_validation_ratio ,
-                             load_from=None, normalize_stations= True,save_as=None,eval_set_minimum_size=20):
+                             load_from=None, normalize_stations= True,save_as=None,eval_set_minimum_size=5):
     """
     Returns list of slices in the time_range around the licks
     """
     if load_from is not None:
         return load_pickle(load_from)
 
-    # Slice data_slice into even parts
+    # Slice d'ata_slice into even parts
 
     data_slice_list,time_slice_list, lickwell_list, position_list, speed_list, bin_list = [], [], [], [], [],[]
     data_slice_c = data_slice
@@ -51,9 +59,8 @@ def get_data_slices(data_slice, time_range,  search_window_size, step_size,train
             c = c + time_range
         else:
             c = c + 1
-
     # Get relevant data from slices for input/output
-
+    _,occurrence_counter = np.unique(lickwell_list, return_counts=True)
     for data_bit in data_slice_list:
         print("processing data_bit ",data_bit.start_time)
         time_of_lick = data_bit.start_time
@@ -73,39 +80,31 @@ def get_data_slices(data_slice, time_range,  search_window_size, step_size,train
 
         # Set up list
 
-        shuffle_list = [shuffle_list[i] for j in config["setup"]["lickwell_list"] for i, e in enumerate(shuffle_list) if
-                        shuffle_list[i][1] == j]
-        occurrence_counter = np.zeros(len(config["setup"]["lickwell_list"]))
-
-        # Determine minimum amount of occurrences
-
-        for le in (shuffle_list):
-            occurrence_counter[le[1] - 1] = occurrence_counter[le[1] - 1] + 1
-        minimum_occurrence = np.inf
-        for k in occurrence_counter:
-            if minimum_occurrence > k and k != 0:
-                minimum_occurrence = k
+        shuffle_list = np.asarray([shuffle_list[i] for j in config["setup"]["lickwell_list"] for i, e in enumerate(shuffle_list) if
+                        shuffle_list[i][1] == j])
 
         # Remove surplus entries from ordered list
-
+        minimum_occurence = np.min(occurrence_counter)
+        minimum_occurence= minimum_occurence - eval_set_minimum_size
         eval_list = []
+
+        # Remove surplus samples from training set and add them to testing set
+
         for lickwell in config["setup"]["lickwell_list"]:
-            # Remove surplus
-            max_val = max(int(occurrence_counter[lickwell - 1] - minimum_occurrence),eval_set_minimum_size)
-            for j in range(0, max_val):
+            max_val = int(occurrence_counter[lickwell - 1] - minimum_occurence)
+            for j in range(0,max_val):
+
                 # Find index
-                item_index = next((i for i, v in enumerate(shuffle_list) if lickwell == v[1]),
-                                  None)  # Amount of licks add up to short runtimes
+                item_index = find_first(shuffle_list,lickwell,1)
                 if item_index is not None:
                     eval_list.append(shuffle_list[item_index])
-                    del (shuffle_list[item_index])
-
-    # Assign list elements to training or validation
-
+                    shuffle_list = np.delete(shuffle_list,item_index,axis=0)
+                else:
+                    break
+    shuffle_list = np.ndarray.tolist(shuffle_list)
     random.shuffle(shuffle_list)
 
     bin_list, lickwell_list, position_list, speed_list = zip(*shuffle_list)
-
     if train_validation_ratio is not None: # random assignment
         train_validation_index = int(len(bin_list) * train_validation_ratio)
         return_dict = dict(
@@ -142,13 +141,13 @@ def get_data_slices(data_slice, time_range,  search_window_size, step_size,train
 
 data_slice = Slice.from_path(load_from="slice.pkl")
 # data_slice.neuron_filter(300)
-search_window_size = 25
-step_size = 50
-number_of_training_steps=16500
+search_window_size = 10
+step_size = 20
+number_of_training_steps=10000
 train_validation_ratio=None
-time_range = 2000
+time_range = 1000
 load = False
-train = True
+train = False
 if load is True:
     lick_slices = get_data_slices(data_slice=data_slice, time_range=time_range, train_validation_ratio=train_validation_ratio, search_window_size=search_window_size, step_size=step_size,
                             load_from="lick_slices_1.pkl")
@@ -162,8 +161,9 @@ y_train = lick_slices["y_licks_train"]
 y_valid = lick_slices["y_licks_valid"]
 
 #  Create Estimator
+print(np.unique(y_train, return_counts=True))
 
-network_classifier = tf.estimator.Estimator(model_fn=lickwell_position_model_fn,model_dir="lickwell_position_cnn_26-07-18_4")
+network_classifier = tf.estimator.Estimator(model_fn=lickwell_position_model_fn,model_dir="lickwell_position_cnn_30-07-18_8")
 
 # Create logging hook
 
