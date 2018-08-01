@@ -1,16 +1,10 @@
 import numpy as np
-from src.settings import load_pickle, save_as_pickle
-from src.filters import bin_filter
 from database_api_beta import Slice
 from networks.lickwell_position_cnn import lickwell_position_model_fn
 import tensorflow as tf
-import random
-import matplotlib.pyplot as plt
-from src.settings import config
 import os
-from math import isclose
-from test_lickwell_position_cnn import get_data_slices
-
+from test_lickwell_position_cnn_beta import get_data_slices
+from networks.lickwell_position_cnn_beta import cnn_model,hidden_layer_output
 
 # Setup network parameters
 
@@ -18,87 +12,51 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 tf.logging.set_verbosity(tf.logging.INFO)
 
 data_slice = Slice.from_path(load_from="slice.pkl")
-
+model_filename = "lickwell_position_cnn_beta_01-08-18_1.h5"
 model = lickwell_position_model_fn
 getter_function = get_data_slices
 
 # data_slice.neuron_filter(300)
-search_window_size = 50
-step_size = 100
-number_of_training_steps=20000
+search_window_size = 20
+step_size = 40
+epochs=100
 train_validation_ratio=None
-time_range = 1500
-load = False
-train = True
+time_range = 1000
+load = True
+train = False
 
 
 # Load input and labels
 
 if load is True:
     lick_slices = getter_function(data_slice=data_slice, time_range=time_range, train_validation_ratio=train_validation_ratio, search_window_size=search_window_size, step_size=step_size,
-                            load_from="lick_slices.pkl")
+                            load_from="lick_slices_1.pkl")
 else:
     lick_slices = getter_function(data_slice=data_slice, time_range=time_range, train_validation_ratio=train_validation_ratio, search_window_size=search_window_size, step_size=step_size,
-                                save_as="lick_slices.pkl")
+                            save_as="lick_slices_1.pkl")
 
 X_train = (lick_slices["X_train"])
 X_valid = lick_slices["X_valid"]
 y_train = lick_slices["y_licks_train"]
 y_valid = lick_slices["y_licks_valid"]
 
-#  Create Estimator
+#  Train model
 
-network_classifier = tf.estimator.Estimator(model_fn=model,model_dir="lickwell_position_cnn_24-07-18_10")
+model= cnn_model(shape=X_train.shape, model_filename=model_filename)
 
-# Create logging hook
-
-tensors_to_log = {"probabilities": "softmax_tensor"}
-logging_hook = tf.train.LoggingTensorHook(tensors=tensors_to_log,every_n_iter=50)
-
-
-# Train model
 
 if train is True:
-    train_input_fn = tf.estimator.inputs.numpy_input_fn(
-        x={"x": X_train},
-        y=y_train,
-        batch_size=1,
-        num_epochs=None,
-        shuffle=True)
+    print("Training model...")
+    model.fit(X_train, y_train, epochs=epochs)
+    print("Finished training")
+    model.save(model_filename)
 
-    network_classifier.train(
-        input_fn=train_input_fn,
-        steps=number_of_training_steps,
-        hooks=[logging_hook]
-    )
+# Evaluate validation set
+print("Validation set:")
+results = model.evaluate(X_valid, y_valid)
+print("loss: ", results[0], ", accuracy: ", results[1])
 
-eval_hook = tf.train.LoggingTensorHook(tensors=tensors_to_log,every_n_iter=1)
-
-# Evaluate training set
-
-eval_input_fn = tf.estimator.inputs.numpy_input_fn(
-    x={"x":X_train},
-    y=y_train,
-    num_epochs=1,
-    shuffle=False)
-
-
-eval_results = network_classifier.evaluate(input_fn=eval_input_fn,hooks=[eval_hook])
-print("Training set: ",eval_results)
-
-# Evaluate testing set
-
-eval_input_fn = tf.estimator.inputs.numpy_input_fn(
-    x={"x":X_valid},
-    y=y_valid,
-    num_epochs=1,
-    shuffle=False)
-
-eval_results = network_classifier.evaluate(input_fn=eval_input_fn,hooks=[eval_hook])
-print("Evaluation set: ",eval_results)
-
-# Evaluate testing set while filtering for each well
-
+# Evaluate validation set by well
 for i in range(0,6):
 
     X_single_lickwell = np.float32([e for j, e in enumerate(X_valid) if y_valid[j] == i])
@@ -110,13 +68,13 @@ for i in range(0,6):
             y=y_single_lickwell,
             num_epochs=1,
             shuffle=False)
-        eval_results = network_classifier.evaluate(input_fn=eval_input_fn,hooks=[eval_hook])
+        print("")
+        print("")
         print("lickwell", i, ": sample size: ", len(y_single_lickwell))
-        print("results: ", eval_results)
+        results = model.evaluate(X_single_lickwell, y_single_lickwell)
+        print("loss: ", results[0], ", accuracy: ", results[1])
+        print("hidden layer:")
+        print(hidden_layer_output(model, X_single_lickwell))
 
-    # sess = tf.InteractiveSession()
-    # with sess.as_default():
-    #     tf.initialize_all_variables().run()
-    #     print("logits:",logits.eval())
-    #     print("asd")
+
 print("fin")
