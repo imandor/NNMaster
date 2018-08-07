@@ -1,15 +1,8 @@
 import numpy as np
 from src.settings import load_pickle, save_as_pickle
 from src.filters import bin_filter
-from database_api_beta import Slice
-from networks.lickwell_position_cnn import lickwell_position_model_fn
-import tensorflow as tf
 import random
-import matplotlib.pyplot as plt
 from src.settings import config
-from networks.lick_cnn import lick_cnn_model
-from networks.lickwell_position_dense import lickwell_position_dense_model_fn
-from networks.lickwell_position_cnn_beta import cnn_model
 import os
 from math import isclose
 

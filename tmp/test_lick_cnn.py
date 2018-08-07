@@ -6,7 +6,6 @@ from tmp.estimators import cnn_model_fn
 import tensorflow as tf
 import random
 from src.settings import config
-from networks.lick_cnn import lick_cnn_model
 import os
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'

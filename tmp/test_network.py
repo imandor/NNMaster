@@ -1,10 +1,10 @@
 import numpy as np
 from database_api_beta import Slice
-from networks.lickwell_position_cnn import lickwell_position_model_fn
+from tmp.lickwell_position_cnn import lickwell_position_model_fn
 import tensorflow as tf
 import os
-from test_lickwell_position_cnn_beta import get_data_slices
-from networks.lickwell_position_cnn_beta import cnn_model,hidden_layer_output
+from tmp.test_lickwell_position_cnn_beta import get_data_slices
+from tmp.lickwell_position_cnn_beta import cnn_model,hidden_layer_output
 
 # Setup network parameters
 
@@ -12,7 +12,7 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 tf.logging.set_verbosity(tf.logging.INFO)
 
 data_slice = Slice.from_path(load_from="slice.pkl")
-model_filename = "lickwell_position_cnn_beta_01-08-18_1.h5"
+model_filename = "lickwell_position_cnn_beta_01-08-18_3.h5"
 model = lickwell_position_model_fn
 getter_function = get_data_slices
 
@@ -23,8 +23,8 @@ epochs=100
 train_validation_ratio=None
 time_range = 1000
 load = True
-train = False
-
+train = True
+load_model = False
 
 # Load input and labels
 
@@ -40,9 +40,13 @@ X_valid = lick_slices["X_valid"]
 y_train = lick_slices["y_licks_train"]
 y_valid = lick_slices["y_licks_valid"]
 
-#  Train model
+# Load model
 
-model= cnn_model(shape=X_train.shape, model_filename=model_filename)
+if load_model is True:
+    model= cnn_model(shape=X_train.shape, model_filename=model_filename,mode=tf.estimator.ModeKeys.TRAIN)
+else:
+    model= cnn_model(shape=X_train.shape, model_filename=None,mode=tf.estimator.ModeKeys.TRAIN)
+
 
 
 if train is True:
@@ -50,6 +54,13 @@ if train is True:
     model.fit(X_train, y_train, epochs=epochs)
     print("Finished training")
     model.save(model_filename)
+# Evaluate training set
+print("Training set:")
+results = model.evaluate(X_train, y_train)
+print("loss: ", results[0], ", accuracy: ", results[1])
+output = hidden_layer_output(model, X_train)
+print(output)
+
 
 # Evaluate validation set
 print("Validation set:")

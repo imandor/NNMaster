@@ -48,33 +48,34 @@ class Model:
 
 def hidden_layer_output(model,X_input):
     model2 = keras.Sequential()
-    model2.add(keras.layers.Convolution2D(256, kernel_size=(166, 5), activation='relu', padding='valid',
+    model2.add(keras.layers.Convolution2D(filters=256, kernel_size=(166, 5), activation='relu', padding='valid',
                                          input_shape=[X_input.shape[1], X_input.shape[2], X_input.shape[3]],weights=model.layers[0].get_weights()))
     model2.add(keras.layers.MaxPooling2D(pool_size=(1, 2), strides=2, padding='valid', data_format=None,weights=model.layers[1].get_weights()))
-    model2.add(keras.layers.Convolution2D(128, kernel_size=(1, 5), activation='relu', padding='valid',
+    model2.add(keras.layers.Convolution2D(filters=128, kernel_size=(1, 5), activation='relu', padding='valid',
                                          input_shape=[X_input.shape[1], X_input.shape[2], X_input.shape[3]],weights=model.layers[2].get_weights()))
     model2.add(keras.layers.MaxPooling2D(pool_size=(1, 2), strides=2, padding='valid', data_format=None,weights=model.layers[3].get_weights()))
-    model2.add(keras.layers.Flatten() )
-    model2.add(keras.layers.Dense(6))
+    model2.add(keras.layers.Flatten())
+    model2.add(keras.layers.Dense(1024, activation='relu',weights=model.layers[5].get_weights()))
+    model2.add(keras.layers.Dense(units=6))
     activations = model2.predict(X_input)
 
     return activations
 
-def cnn_model(shape, model_filename=None):
+def cnn_model(shape,mode, model_filename=None):
 
     if model_filename is None:
         print("Setting up model...")
         model = keras.Sequential()
-        model.add(keras.layers.Convolution2D(256, kernel_size=(166, 5), activation='relu', padding='valid', input_shape=[shape[1], shape[2],shape[3]]))
+        model.add(keras.layers.Convolution2D(filters=256, kernel_size=(166, 5), activation='relu', padding='valid', input_shape=[shape[1], shape[2],shape[3]]))
         model.add(keras.layers.MaxPooling2D(pool_size=(1, 2), strides=2, padding='valid', data_format=None))
-        model.add(keras.layers.Convolution2D(128, kernel_size=(1, 5), activation='relu', padding='valid', input_shape=[shape[1], shape[2], shape[3]]))
+        model.add(keras.layers.Convolution2D(filters=128, kernel_size=(1, 5), activation='relu', padding='valid', input_shape=[shape[1], shape[2], shape[3]]))
         model.add(keras.layers.MaxPooling2D(pool_size=(1, 2), strides=2, padding='valid', data_format=None))
         model.add(keras.layers.Flatten())
-        model.add(keras.layers.Dense(6))
-
-
+        model.add(keras.layers.Dense(1024,activation='relu'))
+        model.add(keras.layers.Dropout(rate=0.4))
+        model.add(keras.layers.Dense(units=6))
         model.add(keras.layers.Activation('softmax'))
-        model.compile(optimizer='SGD',
+        model.compile(optimizer=keras.optimizers.SGD(lr=0.001),
                       loss='sparse_categorical_crossentropy',
                       metrics=['accuracy'])
         print("Finished setting up model")

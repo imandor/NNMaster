@@ -2,12 +2,10 @@ import numpy as np
 from src.settings import load_pickle, save_as_pickle
 from src.filters import bin_filter
 from database_api_beta import Slice
-from networks.position_cnn import cnn_model_fn
+from tmp.position_cnn import cnn_model_fn
 import tensorflow as tf
 import random
 import matplotlib.pyplot as plt
-from src.settings import config
-from networks.lick_cnn import lick_cnn_model
 import os
 
 # Setup network parameters
@@ -143,7 +141,6 @@ plt.bar(x, predicted_classes, alpha=0.7)
 plt.bar(x, y_valid, alpha=0.7)
 plt.legend(['predicted position', 'actual position'], loc='upper left')
 plt.show()
-import matplotlib.pyplot as plt
 # print(
 #     "New Samples, Class Predictions:    {}\n"
 #     .format(predicted_classes))
