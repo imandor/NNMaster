@@ -35,7 +35,7 @@ class Filter:
         self._integral_on_search_window = sum([self._func(x) for x in X]) * (X[1] - X[0])
 
     def __call__(self, x):
-        return self._func(x / self.search_radius) / self._integral_on_search_window #TODO @Charles: why this function?
+        return self._func(x)#self._func(x / self.search_radius) / self._integral_on_search_window #TODO @Charles: why this function?
 
 
 hann_500_500 = Filter(hann, 500, 500)
@@ -74,14 +74,13 @@ def _convolve_thread_func(filter_func, n_bin_points, neuron_counter, n_neurons, 
     tic = time.process_time()
     tock = 0
     for index in range(n_bin_points):
-        tic = time.process_time()
 
         # if (printcounter == 100):
         #     toc = time.process_time()
         #     tock = toc + tock - tic
         #     print(toc - tic)
         #     print(tock)
-        #     print("next")
+        #     print("Spike:",neuron_spikes[index_first_spike_in_window])
         #     tic = time.process_time()
         #     printcounter = 0
         # printcounter += 1
@@ -90,23 +89,20 @@ def _convolve_thread_func(filter_func, n_bin_points, neuron_counter, n_neurons, 
                                                            neuron_spikes[index_first_spike_in_window:]))
 
         curr_spikes_in_search_window = list(curr_spikes_in_search_window)
-
+        curr_search_window_min_bound += filter_func.step_size
+        curr_search_window_max_bound += filter_func.step_size
+        if len(curr_spikes_in_search_window) == 0:
+            continue
         filtered_spikes[index] = sum(map(
         lambda x: filter_func(x - index * filter_func.step_size),
         curr_spikes_in_search_window))
 
 
-        curr_search_window_min_bound += filter_func.step_size
-        curr_search_window_max_bound += filter_func.step_size
-        index_first_spike_in_curr_window = 0
-
-
-
-        for spike_index, spike in enumerate(curr_spikes_in_search_window):
+        for spike_index, spike in enumerate(neuron_spikes[index_first_spike_in_window:index_first_spike_in_window+curr_search_window_max_bound]): # upper bound because a maximum of 1 spike per ms can occurr and runtime of slice operation is O(i2-i1)
             if spike >= curr_search_window_min_bound:
                 index_first_spike_in_window = index_first_spike_in_window + spike_index
                 break
-        index_first_spike_in_window += index_first_spike_in_curr_window
+        # index_first_spike_in_window += index_first_spike_in_curr_window
         # toc = time.process_time()
         # print(toc - tic)
 

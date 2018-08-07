@@ -34,7 +34,7 @@ def position_as_map(slice, xstep, ystep):
 
 
 if __name__ == '__main__':
-    WIN_SIZE = 57
+    WIN_SIZE = 1000
     X_MAX = 240
     Y_MAX = 180
     X_MIN = 0
@@ -43,15 +43,19 @@ if __name__ == '__main__':
     # session = Slice.from_raw_data("G:/raw data/2018-04-09_14-39-52/")
     # session.to_pickle("data/pickle/hippocampus.pkl")
     session = Slice.from_pickle("data/pickle/neofrontal_cortex.pkl") # load a data slice containing entire session
-    # S = SpecialNetwork1([None, 166, 18, 1], sp1)
-    S = MultiLayerPerceptron([None, 166, 18, 1], mlp)
-    # S = SpecialNetwork2([None, 166, 18, 1], sp2)
-    # hann = hann_generator(WIN_SIZE)
-    session_filter = Filter(func=hann, search_radius=2 * WIN_SIZE, step_size=WIN_SIZE)
+    # # S = SpecialNetwork1([None, 166, 18, 1], sp1)
+    # S = MultiLayerPerceptron([None, 166, 18, 1], mlp)
+    # # S = SpecialNetwork2([None, 166, 18, 1], sp2)
+    # # hann = hann_generator(WIN_SIZE)
+    session_filter = Filter(func=bin_filter, search_radius=2 * WIN_SIZE, step_size=WIN_SIZE)
     session.set_filter(session_filter)
-    session.to_pickle("data/pickle/neofrontal_cortex_hann_win_size_57.pkl")
+    session.to_pickle("data/pickle/neofrontal_cortex_deleteme.pkl")
+    session = Slice.from_pickle("data/pickle/neofrontal_cortex_deleteme.pkl")
+    spikes = np.divide(session.spikes[0],1000)
+    filtered_spikes = session.filtered_spikes[0]
     f, ax = plt.subplots()
     session[0:1000].plot_filtered_spikes(ax)
+
     f.show()
 
 
