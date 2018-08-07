@@ -53,7 +53,7 @@ if __name__ == '__main__':
     session = Slice.from_pickle("data/pickle/neofrontal_cortex_deleteme.pkl")
     spikes = np.divide(session.spikes[0],1000)
     filtered_spikes = session.filtered_spikes[0]
-    f, ax = plt.subplots()
+    f, ax = plt.subplots() # TODO: return _func zurückstellen
     session[0:1000].plot_filtered_spikes(ax)
 
     f.show()
