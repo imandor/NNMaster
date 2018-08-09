@@ -31,11 +31,17 @@ class Filter:
         self._func = func
         self.search_radius = search_radius
         self.step_size = step_size
-        X = np.linspace(-self.search_radius, self.search_radius, 1000)
+        X = np.linspace(-1, 1, self.search_radius)
+        # for x in X:
+        #     print(x,":",self._func(x),", ",)
+        # print("X - X:",X[1] - X[0])
         self._integral_on_search_window = sum([self._func(x) for x in X]) * (X[1] - X[0])
+        if self._integral_on_search_window is np.inf:
+            self._integral_on_search_window = 1
 
     def __call__(self, x):
-        return self._func(x)#self._func(x / self.search_radius) / self._integral_on_search_window #TODO @Charles: why this function?
+        # print("func:",self._func(x / self.search_radius), " value is:",x)
+        return self._func(x / self.search_radius) / self._integral_on_search_window #TODO @Charles: why this function?
 
 
 hann_500_500 = Filter(hann, 500, 500)
@@ -65,7 +71,7 @@ bin_50_25 = Filter(bin, 50, 25)
 
 
 def _convolve_thread_func(filter_func, n_bin_points, neuron_counter, n_neurons, neuron_spikes):
-    print("Convolving neuron ",neuron_counter, " of ", n_neurons,"...")
+    # print("Convolving neuron ",neuron_counter, " of ", n_neurons,"...")
     curr_search_window_min_bound = - filter_func.search_radius
     curr_search_window_max_bound = + filter_func.search_radius
     filtered_spikes = np.zeros(n_bin_points)
@@ -106,7 +112,7 @@ def _convolve_thread_func(filter_func, n_bin_points, neuron_counter, n_neurons, 
         # toc = time.process_time()
         # print(toc - tic)
 
-    print("Finished convolving neuron ",neuron_counter, " of ", n_neurons,"...")
+    # print("Finished convolving neuron ",neuron_counter, " of ", n_neurons,"...")
     return filtered_spikes
 
 class Slice:
@@ -142,7 +148,7 @@ class Slice:
             raise ValueError("step_size must be inferior to search_radius")
         n_bin_points = int(len(self.position_x) // step_size)
         self.filtered_spikes = np.zeros((len(self.spikes), n_bin_points))
-        with ThreadPool(processes=16) as p:
+        with ThreadPool(processes=1) as p:
             ret = p.starmap(_convolve_thread_func, zip(repeat(self._filter), repeat(n_bin_points),range(0,len(self.spikes)), repeat(len(self.spikes)),self.spikes))
             for i, r in enumerate(ret):
                 self.filtered_spikes[i] = r
