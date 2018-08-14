@@ -252,9 +252,13 @@ class Slice:
         if hasattr(self, "_filter"):
             new._filter = self._filter
             if hasattr(self, "filtered_spikes"):
-                fstart = start // self._filter.step_size
-                fstop = stop // self._filter.step_size
+                fstart = start / self._filter.step_size
+                fstop = (stop / self._filter.step_size)
+                frange = fstop - fstart
+                fstart = int(fstart)
+                fstop = int(fstart + frange)
                 new.filtered_spikes = self.filtered_spikes[:, fstart:fstop]
+
         new.absolute_time_offset = self.absolute_time_offset + start
         return new
 
