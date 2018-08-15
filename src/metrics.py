@@ -19,10 +19,18 @@ def get_avg_distance(y_valid,y_pred,step_size,margin=0):
 
 
 def get_accuracy(y_valid,y_pred,margin=0):
+    """ returns percentage of valid vs predicted with bin distance <= margin"""
     accuracy_list = []
     for i in range(y_valid.shape[1]):
         accuracy_list.append(np.abs(y_valid[:,i]-y_pred[:,i])<=margin)
     return np.average(accuracy_list,axis=1)
+
+def get_radius_accuracy(y_valid,y_pred,step_size,absolute_margin=0):
+    """ returns percentage of valid vs predicted with absolute distance <= margin in cm"""
+    distance_list = []
+    for i in range(y_valid.shape[1]):
+        distance_list.append(np.abs(step_size[i]*(y_valid[:,i]-y_pred[:,i]))<=absolute_margin)
+    return np.average(distance_list,axis=1)
 
 
 def bin_distance(bin_1,bin_2):

@@ -1,7 +1,7 @@
 import tensorflow as tf
 from database_api_beta import Slice,Filter,hann
 from src.nets import MultiLayerPerceptron
-from src.metrics import get_r2,get_avg_distance,bin_distance,get_accuracy
+from src.metrics import get_r2,get_avg_distance,bin_distance,get_accuracy,get_radius_accuracy
 import numpy as np
 from src.conf import mlp
 import matplotlib.pyplot as plt
@@ -57,9 +57,9 @@ def test_accuracy(X_eval,y_eval,show_plot=False,print_distance=False):
 
     r2 = get_r2(prediction_list, actual_list)
     distance = get_avg_distance(prediction_list, actual_list,[X_STEP,Y_STEP])
-    for i in range(0,20):
+    for i in range(0,11):
         print("accuracy",i,":",get_accuracy(prediction_list, actual_list,margin=i))
-
+        # print("accuracy",i,":",get_radius_accuracy(prediction_list, actual_list,[X_STEP,Y_STEP],5))
 
 
     return r2,distance
@@ -99,27 +99,27 @@ if __name__ == '__main__':
 
     # File settings settings
 
-    # MODEL_PATH = "data/models/model_neocortex.ckpt"
-    MODEL_PATH = "data/models/model_hippocampus.ckpt"
-    RAW_DATA_PATH = "G:/master_datafiles/raw_data/2018-05-16_17-13-37/" # hippocampus
-    # RAW_DATA_PATH = "G:/master_datafiles/raw_data/2018-04-09_14-39-52/" # neo cortex
-    # FILTERED_DATA_PATH = "G:/master_datafiles/filtered_data/neocortex_hann_win_size_100.pkl"
-    FILTERED_DATA_PATH = "G:/master_datafiles/filtered_data/hippocampus_hann_win_size_100.pkl"
+    MODEL_PATH = "data/models/model_neocortex.ckpt"
+    RAW_DATA_PATH = "G:/master_datafiles/raw_data/2018-04-09_14-39-52/" # neo cortex
+    FILTERED_DATA_PATH = "G:/master_datafiles/filtered_data/neocortex_hann_win_size_100.pkl"
+    # MODEL_PATH = "data/models/model_hippocampus.ckpt"
+    # RAW_DATA_PATH = "G:/master_datafiles/raw_data/2018-05-16_17-13-37/" # hippocampus
+    # FILTERED_DATA_PATH = "G:/master_datafiles/filtered_data/hippocampus_hann_win_size_50.pkl"
 
     # Program execution settings
 
     LOAD_RAW_DATA = False # load source data from raw data path or load default model
-    LOAD_MODEL = True # load model from model path
+    LOAD_MODEL = False # load model from model path
     TRAIN_MODEL = True # train model or just show results
     TRAINING_STEPS = 2001
     TIME_SHIFT = 500
-    TIME_SHIFT_STEPS = 10
+    TIME_SHIFT_STEPS = 1
 
     # Network parameters
 
     SLICE_SIZE = 1000
     BATCH_SIZE = 128
-    WIN_SIZE = 100
+    WIN_SIZE = 50
     SEARCH_RADIUS = WIN_SIZE*2
     X_MAX = 240
     Y_MAX = 190
@@ -128,7 +128,7 @@ if __name__ == '__main__':
     X_STEP = 5
     Y_STEP = 5
     session_filter = Filter(func=hann, search_radius=SEARCH_RADIUS, step_size=WIN_SIZE)
-    S = MultiLayerPerceptron([None, 68, 10, 1], mlp)
+    S = MultiLayerPerceptron([None, 166, 10, 1], mlp)
 
     # Preprocess data
 
@@ -176,12 +176,12 @@ if __name__ == '__main__':
 
     saver = tf.train.Saver()
     for z in range(0, TIME_SHIFT_STEPS):
-        print("__________________________________________")
-        print("Time shift is",z*TIME_SHIFT)
         sess = tf.Session()
         if LOAD_MODEL is True:
             saver.restore(sess, MODEL_PATH)
         if TRAIN_MODEL is True:
+            # print("__________________________________________")
+            # print("Time shift is", z * TIME_SHIFT)
             print("Training model...")
             S.initialize(sess)
             xshape = [BATCH_SIZE] + list(X_train[0].shape) + [1]
@@ -192,6 +192,8 @@ if __name__ == '__main__':
             avg_scores_train = []
             r2_scores_eval = []
             avg_scores_eval = []
+
+            initial_eval = True
             for i in range(TRAINING_STEPS):
                 # for j, (data_slice, position_map) in enumerate(zip(all_slices, all_position_maps)):
                 for j in range(0, len(X_train) - BATCH_SIZE, BATCH_SIZE):
@@ -200,8 +202,15 @@ if __name__ == '__main__':
                     y = np.array(y_train[j:j + BATCH_SIZE])
                     x = np.reshape(x, xshape)
                     y = np.reshape(y, yshape)
-                    t = (S.train(sess, x, y))
 
+                    # Print first model
+                    if initial_eval is True:
+                        print("Untrained model:")
+                        test_accuracy(X_train, y_train)
+                        initial_eval = False
+
+                    t = np.max(S.train(sess, x, y))
+                    print("loss:",t)
                     # Test accuracy
 
                     if metric_counter == 1000:
@@ -210,7 +219,7 @@ if __name__ == '__main__':
                         r2_scores_train.append(r2_train)
                         avg_scores_train.append(avg_train)
                         print("training data:",r2_train,avg_train)
-                        r2_eval, avg_eval = test_accuracy(X_eval,y_eval)
+                        r2_eval, avg_eval = test_accuracy(X_eval,y_eval,show_plot=True)
                         r2_scores_eval.append(r2_eval)
                         avg_scores_train.append(avg_eval)
                         print("evaluation data:",r2_eval,avg_eval)
@@ -246,7 +255,7 @@ if __name__ == '__main__':
 
         # Test model performance
 
-        print(test_accuracy(X_eval, y_eval, show_plot=False, print_distance=True))
+        print(test_accuracy(X_eval, y_eval, show_plot=False, print_distance=False))
 
         # Close session and add time shift to training data
 
