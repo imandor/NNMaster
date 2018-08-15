@@ -1,13 +1,12 @@
 import tensorflow as tf
 from database_api_beta import Slice,Filter,hann
-from src.nets import SpecialNetwork1, SpecialNetwork2, MultiLayerPerceptron
-from src.metrics import get_r2
+from src.nets import MultiLayerPerceptron
+from src.metrics import get_r2,get_avg_distance,bin_distance,get_accuracy
 import numpy as np
-from src.conf import sp1, sp2, mlp
+from src.conf import mlp
 import matplotlib.pyplot as plt
-from numpy.random import seed
-from multiprocessing import Pool
 from src.settings import save_as_pickle, load_pickle
+from sklearn.preprocessing import normalize
 
 def sigmoid(x):
     return 1 / (1 + np.exp(-x))
@@ -57,7 +56,13 @@ def test_accuracy(X_eval,y_eval,show_plot=False,print_distance=False):
             plt.show()
 
     r2 = get_r2(prediction_list, actual_list)
-    return r2
+    distance = get_avg_distance(prediction_list, actual_list,[X_STEP,Y_STEP])
+    for i in range(0,20):
+        print("accuracy",i,":",get_accuracy(prediction_list, actual_list,margin=i))
+
+
+
+    return r2,distance
 
 
 def hann_generator(width):
@@ -80,38 +85,50 @@ def position_as_map(slice, xstep, ystep):
         ret[X, Y] = 1
     return ret
 
-def bin_distance(bin_1,bin_2):
-    return [abs(bin_1[1]-bin_2[1]),abs(bin_1[2]-bin_2[2])]
 
 def shift(li,n):
     return li[n:] + li[:n]
+
+
+def time_shift_data(X,y,n):
+    y = shift(y,n)[n:]
+    X = X[:len(X)-n]
+    return X,y
 
 if __name__ == '__main__':
 
     # File settings settings
 
-    MODEL_PATH = "data/models/model_neocortex.ckpt"
-    # RAW_DATA_PATH = "G:/raw data/16-05-2018/2018-05-16_17-13-37/" # hippocampus
-    RAW_DATA_PATH = "G:/raw data/2018-04-09_14-39-52/" # neo cortex
-    FILTERED_DATA_PATH = "data/pickle/neocortex_hann_win_size_57.pkl"
+    # MODEL_PATH = "data/models/model_neocortex.ckpt"
+    MODEL_PATH = "data/models/model_hippocampus.ckpt"
+    RAW_DATA_PATH = "G:/master_datafiles/raw_data/2018-05-16_17-13-37/" # hippocampus
+    # RAW_DATA_PATH = "G:/master_datafiles/raw_data/2018-04-09_14-39-52/" # neo cortex
+    # FILTERED_DATA_PATH = "G:/master_datafiles/filtered_data/neocortex_hann_win_size_100.pkl"
+    FILTERED_DATA_PATH = "G:/master_datafiles/filtered_data/hippocampus_hann_win_size_100.pkl"
 
     # Program execution settings
 
-    LOAD_RAW_DATA = True # load source data from raw data path or load default model
-    LOAD_MODEL = False # load model from model path
+    LOAD_RAW_DATA = False # load source data from raw data path or load default model
+    LOAD_MODEL = True # load model from model path
     TRAIN_MODEL = True # train model or just show results
-    TRAINING_STEPS = 1
+    TRAINING_STEPS = 2001
+    TIME_SHIFT = 500
+    TIME_SHIFT_STEPS = 10
 
     # Network parameters
 
+    SLICE_SIZE = 1000
     BATCH_SIZE = 128
-    WIN_SIZE = 57
+    WIN_SIZE = 100
+    SEARCH_RADIUS = WIN_SIZE*2
     X_MAX = 240
-    Y_MAX = 180
+    Y_MAX = 190
     X_MIN = 0
     Y_MIN = 100
-    session_filter = Filter(func=hann, search_radius=2 * WIN_SIZE, step_size=WIN_SIZE)
-    S = MultiLayerPerceptron([None, 166, 17, 1], mlp)
+    X_STEP = 5
+    Y_STEP = 5
+    session_filter = Filter(func=hann, search_radius=SEARCH_RADIUS, step_size=WIN_SIZE)
+    S = MultiLayerPerceptron([None, 68, 10, 1], mlp)
 
     # Preprocess data
 
@@ -122,16 +139,27 @@ if __name__ == '__main__':
         print("Finished convolving data")
         X = []
         y = []
-        for frm, to in zip(range(0, len(session.position_x), 1000), range(1000, len(session.position_x), 1000)):
+        for frm, to in zip(range(0, len(session.position_x), SLICE_SIZE), range(SLICE_SIZE, len(session.position_x), SLICE_SIZE)):
             # print(" " * 50 + "{}/{}".format(frm, len(session.position_x)), end="\r")
             # print("Convolving",frm,"to",to,"...")
             print("Slicing data",frm,to)
             data_slice = session[frm:to]
             # data_slice.set_filter(session_filter)
-            X.append(data_slice.filtered_spikes)
-            y.append(position_as_map(data_slice, 3, 3))
+            X.append(normalize(data_slice.filtered_spikes,norm='l2',axis=0))
+            y.append(position_as_map(data_slice, X_STEP, Y_STEP))
         print("Finished slicing data")
-        pickled_dict = dict(X=X, y=y)
+        pickled_dict = dict(
+            X=X,
+            y=y,
+            win_size=WIN_SIZE,
+            search_radius=SEARCH_RADIUS,
+            x_max=X_MAX,
+            y_max=Y_MAX,
+            x_min=X_MIN,
+            y_min=Y_MIN,
+            x_step=X_STEP,
+            y_step=Y_STEP
+        )
         save_as_pickle(FILTERED_DATA_PATH, pickled_dict)
     else:
         pickled_dict = load_pickle(FILTERED_DATA_PATH)
@@ -147,14 +175,23 @@ if __name__ == '__main__':
     # Train model
 
     saver = tf.train.Saver()
-    with tf.Session() as sess:
+    for z in range(0, TIME_SHIFT_STEPS):
+        print("__________________________________________")
+        print("Time shift is",z*TIME_SHIFT)
+        sess = tf.Session()
         if LOAD_MODEL is True:
             saver.restore(sess, MODEL_PATH)
         if TRAIN_MODEL is True:
+            print("Training model...")
             S.initialize(sess)
             xshape = [BATCH_SIZE] + list(X_train[0].shape) + [1]
             yshape = [BATCH_SIZE] + list(y_train[0].shape) + [1]
+
             metric_counter = 0
+            r2_scores_train = []
+            avg_scores_train = []
+            r2_scores_eval = []
+            avg_scores_eval = []
             for i in range(TRAINING_STEPS):
                 # for j, (data_slice, position_map) in enumerate(zip(all_slices, all_position_maps)):
                 for j in range(0, len(X_train) - BATCH_SIZE, BATCH_SIZE):
@@ -167,44 +204,55 @@ if __name__ == '__main__':
 
                     # Test accuracy
 
-                    if metric_counter == 500:
+                    if metric_counter == 1000:
                         print("Step",i)
-                        print("training data:",test_accuracy(X_train,y_train),np.max(t))
-                        print("testing data:",test_accuracy(X_eval,y_eval))
+                        r2_train, avg_train = test_accuracy(X_train,y_train)
+                        r2_scores_train.append(r2_train)
+                        avg_scores_train.append(avg_train)
+                        print("training data:",r2_train,avg_train)
+                        r2_eval, avg_eval = test_accuracy(X_eval,y_eval)
+                        r2_scores_eval.append(r2_eval)
+                        avg_scores_train.append(avg_eval)
+                        print("evaluation data:",r2_eval,avg_eval)
+                        print("____________________")
                         save_path = saver.save(sess, MODEL_PATH)
                         metric_counter = 0
-                    metric_counter = metric_counter + 1
+                metric_counter = metric_counter + 1
+            save_path = saver.save(sess, MODEL_PATH)
 
-                    # Image output
+            # Save performance to file
 
-                    # if j // BATCH_SIZE in [0, 1, 2, 3, 4, 5, 10, 20] and i % 1000 == 999:
-                    #     print("plot")
-                    #     y_prime = S.eval(sess, x)
-                    #     fig = plt.figure()
-                    #     ax1 = fig.add_subplot(1, 2, 1)
-                    #     ax2 = fig.add_subplot(1, 2, 2)
-                    #     ax1.axis('off')
-                    #     ax2.axis('off')
-                    #     fig.subplots_adjust(left=0.01, right=0.99, bottom=0.01, top=0.99, hspace=0.01, wspace=0.01)
-                    #     Y = y[0, :, :, 0]
-                    #     Y -= np.min(Y)
-                    #     Y /= np.max(Y)
-                    #     Y *= 255
-                    #     Y_prime = sigmoid(y_prime[0, :, :, 0])
-                    #     Y_prime -= np.min(Y_prime)
-                    #     Y_prime /= np.max(Y_prime)
-                    #     Y_prime *= 255
-                    #     ax1.imshow(Y, cmap="gray")
-                    #     ax2.imshow(Y_prime, cmap="gray")
-                    #     plt.show()
-            # save_as_pickle("data/pickle/perceptron_08-08-18_1",S)
-            print("Training ",j)
-        save_path = saver.save(sess, MODEL_PATH)
-
+            file_dict = dict(
+                batch_size = BATCH_SIZE,
+                network_type = "Multi Layer Perceptron",
+                output_shape = y.shape,
+                training_steps = TRAINING_STEPS,
+                win_size = WIN_SIZE,
+                x_max = X_MAX,
+                y_max = Y_MAX,
+                x_min = X_MIN,
+                y_min = Y_MIN,
+                x_step = X_STEP,
+                y_step = Y_STEP,
+                model_path = MODEL_PATH,
+                raw_data_path = RAW_DATA_PATH,
+                learning_rate = "placeholder", # TODO
+                time_shift = TIME_SHIFT*z, # TODO
+                search_radius=SEARCH_RADIUS,
+                r2_scores_train = r2_scores_train,
+                r2_scores_eval=r2_scores_eval,
+                slice_size = SLICE_SIZE
+                )
 
         # Test model performance
 
         print(test_accuracy(X_eval, y_eval, show_plot=False, print_distance=True))
+
+        # Close session and add time shift to training data
+
+        sess.close()
+        X_train,y_train = time_shift_data(X_train,y_train,TIME_SHIFT)
+
     print("fin")
 
 

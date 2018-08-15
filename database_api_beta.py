@@ -41,7 +41,7 @@ class Filter:
 
     def __call__(self, x):
         # print("func:",self._func(x / self.search_radius), " value is:",x)
-        return self._func(x / self.search_radius) / self._integral_on_search_window #TODO @Charles: why this function?
+        return self._func(x / self.search_radius) / self._integral_on_search_window
 
 
 hann_500_500 = Filter(hann, 500, 500)
