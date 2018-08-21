@@ -168,6 +168,13 @@ class Slice:
                 ax.vlines(s, i, i + 0.8)
         print("")
 
+    def timeshift_position(self,timeshift):
+        if timeshift == 0: return self
+        other= self[:-timeshift]
+        other.position_x = self.position_x[timeshift:]
+        other.position_y = self.position_y[timeshift:]
+        return other
+
     def plot(self, ax_filtered_spikes=None, ax_raw_spikes=None, ax_licks=None, ax_trial_timestamps=None, filtered_spikes_kwargs={}):
         share_axis_set = set([ax_raw_spikes, ax_licks, ax_trial_timestamps])
         share_axis_set.discard(None)
@@ -226,7 +233,13 @@ class Slice:
         if ld == []:
             return []
         start = 0 if time_slice.start is None else time_slice.start
-        stop = self.end_time if time_slice.stop is None else time_slice.stop
+        if time_slice.stop is None:
+            stop = self.end_time
+        else:
+            if time_slice.stop<0:
+                stop = len(self.position_x)+time_slice.stop
+            else:
+                stop = time_slice.stop
         keys_containing_time = [k for k in ld[0] if "time" in k]
         ret = []
         for d in ld:
@@ -241,7 +254,14 @@ class Slice:
         if not isinstance(time_slice, slice):
             raise TypeError("Key must be a slice, got {}".format(type(time_slice)))
         start = 0 if time_slice.start is None else time_slice.start
-        stop = self.end_time if time_slice.stop is None else time_slice.stop
+
+        if time_slice.stop is None:
+            stop = self.end_time
+        else:
+            if time_slice.stop<0:
+                stop = len(self.position_x)+time_slice.stop
+            else:
+                stop = time_slice.stop
         spikes = self.slice_spikes(time_slice)
         licks = self.slice_list_of_dict(self.licks, time_slice)
         position_x = self.position_x[time_slice]
@@ -327,7 +347,7 @@ class Slice:
         licks = [{"time": initial_detection_timestamp[i],
                   "lickwell": lickwells[i],
                   "rewarded": rewarded[i]}
-                 for i in range(len(initial_detection_timestamp))]
+                 for i in range(1,len(initial_detection_timestamp))] # Please note that first lick is deleted by default TODO
         print("finished loading session")
         return cls(spikes, licks, position_x, position_y, speed, trial_timestamp)
 
