@@ -170,7 +170,7 @@ def run_network(network_dict):
                 y = np.array(y_train[j:j + network_dict["BATCH_SIZE"]])
                 x = np.reshape(x, xshape)
                 y = np.reshape(y, yshape)
-                t = np.max(S.train(sess, x, y, dropout=1)) # TODO add dropout parameter
+                t = np.max(S.train(sess, x, y, dropout=1))
                 # print(i, ", loss:", t)
 
                 # Test accuracy and add evaluation to output
@@ -247,7 +247,7 @@ if __name__ == '__main__':
     # Network parameters
 
     SLICE_SIZE = 500
-    BATCH_SIZE = 1
+    BATCH_SIZE = 128
     WIN_SIZE = 25
     SEARCH_RADIUS = WIN_SIZE * 2
     X_MAX = 240
@@ -356,17 +356,16 @@ if __name__ == '__main__':
         network_dict["LOAD_MODEL"] = LOAD_MODEL
         network_dict["TRAIN_MODEL"] = TRAIN_MODEL
         network_dict["METRIC_ITER"] = METRIC_ITER
-        y_list = network_dict["y_list"]
-
         save_as_pickle(FILTERED_DATA_PATH, network_dict)
+
+    X = network_dict["X"]
+    y_list = network_dict["y_list"]
+    metadata = network_dict["metadata"]
 
     if len(y_list) < TIME_SHIFT_STEPS:
         raise ValueError("Error: filtered data does not match amount of timeshift steps")
 
     # Shuffle data
-    X = network_dict["X"]
-    y_list = network_dict["y_list"]
-    metadata = network_dict["metadata"]
     if SHUFFLE_DATA is True:
         shuffle_list = np.asarray(list(zip(X, metadata, zip(*y_list))))
         shuffle_list = shuffle_list.reshape(-1,3,55)
@@ -392,8 +391,8 @@ if __name__ == '__main__':
     for z in range(INITIAL_TIMESHIFT // TIME_SHIFT_ITER, TIME_SHIFT_STEPS):
         print("Time shift is now",z*TIME_SHIFT_ITER)
         network_dict["TIME_SHIFT"] = TIME_SHIFT_ITER * z  # TODO
-        network_dict["y_eval"] = [a[z] for a in y_list[network_dict["eval_length"]:]]
-        network_dict["y_train"] = [a[z] for a in y_list[:network_dict["eval_length"]]]
+        network_dict["y_eval"] = [a for a in y_list[z][network_dict["eval_length"]:]]
+        network_dict["y_train"] = [a for a in y_list[z][:network_dict["eval_length"]]]
         if TIME_SHIFT_STEPS == 1:
             save_dict = run_network(network_dict)
         else:

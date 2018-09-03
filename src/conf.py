@@ -75,7 +75,7 @@ sp1.convT2.strides = [1, 2, 1, 1]
 sp1.convT2.padding = "VALID"
 sp1.convT2.activation = tf.identity
 sp1.loss_type = "rmse"
-sp1.optimizer = tf.train.GradientDescentOptimizer(0.01)
+sp1.optimizer = tf.train.GradientDescentOptimizer(0.1)
 
 
 sp2 = Map()
