@@ -12,10 +12,8 @@ def get_r2(y_valid,y_pred):
     return R2_array #Return an array of R2s
 
 def get_avg_distance(y_valid,y_pred,step_size,margin=0):
-    distance_list = []
-    for i in range(y_valid.shape[1]):
-        distance_list.append(np.abs(step_size[i]*(y_valid[:,i]-y_pred[:,i])))
-    return np.average(np.linalg.norm(distance_list,axis=0))
+    distance_list = np.sqrt(np.square(step_size[0]*(y_valid[:,0]-y_pred[:,0])) + np.square(step_size[1]*(y_valid[:,1]-y_pred[:,1])))
+    return np.average(distance_list,axis=0)
 
 
 def get_accuracy(y_valid,y_pred,margin=0):
@@ -27,10 +25,8 @@ def get_accuracy(y_valid,y_pred,margin=0):
 
 def get_radius_accuracy(y_valid,y_pred,step_size,absolute_margin=0):
     """ returns percentage of valid vs predicted with absolute distance <= margin in cm"""
-    distance_list = []
-    for i in range(y_valid.shape[1]):
-        distance_list.append(np.abs(step_size[i]*(y_valid[:,i]-y_pred[:,i]))<=absolute_margin)
-    return np.average(distance_list,axis=1)
+    distance_list = np.sqrt(np.square(step_size[0]*(y_valid[:,0]-y_pred[:,0])) + np.square(step_size[1]*(y_valid[:,1]-y_pred[:,1])))<=absolute_margin
+    return np.average(distance_list,axis=0)
 
 
 def bin_distance(bin_1,bin_2):

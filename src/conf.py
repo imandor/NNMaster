@@ -22,26 +22,26 @@ mlp.fc2 = Map()
 mlp.fc2.weights = tf.truncated_normal(shape=(128, 128), stddev=0.01)
 mlp.fc2.activation = tf.nn.relu
 mlp.fc3 = Map()
-mlp.fc3.weights = tf.truncated_normal(shape=(128, 48 * 18), stddev=0.01)
+mlp.fc3.weights = tf.truncated_normal(shape=(128, 80 * 30), stddev=0.01)
 mlp.fc3.activation = tf.identity
 mlp.reshape = Map()
-mlp.reshape.shape = [None, 48, 18, 1]
+mlp.reshape.shape = [None, 80, 30, 1]
 mlp.loss_type = "sigmoid_cross_entropy"
 mlp.optimizer = tf.train.AdamOptimizer(0.001)
 
 cnn1 = Map()
 cnn1.conv1 = Map()
-cnn1.conv1.weights = tf.truncated_normal(shape=(68, 1, 1, 100), stddev=0.01)
+cnn1.conv1.weights = tf.truncated_normal(shape=(166, 1, 1, 30), stddev=0.01)
 cnn1.conv1.strides = [1, 1, 1, 1]
 cnn1.conv1.padding = "VALID"
 cnn1.conv1.activation = tf.nn.relu
 cnn1.conv2 = Map()
-cnn1.conv2.weights = tf.truncated_normal(shape=(1, 5, 100, 150), stddev=0.01)
+cnn1.conv2.weights = tf.truncated_normal(shape=(1, 5, 30, 4), stddev=0.01)
 cnn1.conv2.strides = [1, 1, 1, 1]
 cnn1.conv2.padding = "VALID"
 cnn1.conv2.activation = tf.nn.relu
 cnn1.convT1 = Map()
-cnn1.fc1.weights = tf.truncated_normal(shape=(16 * 150, 128), stddev=0.01)
+cnn1.fc1.weights = tf.truncated_normal(shape=(16 * 4, 128), stddev=0.01)
 cnn1.fc1.activation = tf.nn.relu
 cnn1.fc2 = Map()
 cnn1.fc2.weights = tf.truncated_normal(shape=(128, 48 * 18), stddev=0.01)

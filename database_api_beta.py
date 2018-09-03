@@ -1,6 +1,5 @@
 from multiprocessing.pool import ThreadPool
 import numpy as np
-import matplotlib.pyplot as plt
 from itertools import takewhile, dropwhile, repeat
 from src import OpenEphys
 import scipy
