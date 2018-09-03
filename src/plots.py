@@ -20,8 +20,8 @@ for file_path in sorted(dict_files):
     net_dict = load_pickle(file_path)
     r2_scores_train_list.append(net_dict["r2_scores_train"])
     r2_scores_eval_list.append(net_dict["r2_scores_eval"])
-    acc_scores_train_list.append( net_dict["acc_scores_train"]) # TODO remove [0]
-    acc_scores_eval_list.append(net_dict["acc_scores_eval"])# TODO remove [0]
+    acc_scores_train_list.append( net_dict["acc_scores_train"])
+    acc_scores_eval_list.append(net_dict["acc_scores_eval"])
     avg_scores_train_list.append(net_dict["avg_scores_train"])
     avg_scores_eval_list.append(net_dict["avg_scores_eval"])
     time_shift_list.append(net_dict["TIME_SHIFT"])

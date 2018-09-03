@@ -350,6 +350,19 @@ class Slice:
         print("finished loading session")
         return cls(spikes, licks, position_x, position_y, speed, trial_timestamp)
 
+    def neuron_filter(self, minimum_spikes):
+        """
+        removes neurons from spikes that contain less than a given number of spikes
+        :param spikes: list of spikes from raw data
+        :param minimum_spikes: minimum spikes
+        :return: new spikes list
+        """
+        for i in range(len(self.spikes) - 1, -1, -1):
+            if len(self.spikes[i]) < minimum_spikes:
+                del self.spikes[i]
+        self.n_neurons = len(self.spikes)
+
+
     @classmethod
     def from_pickle(cls, path):
         with open(path, 'rb') as f:
