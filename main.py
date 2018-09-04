@@ -3,7 +3,7 @@ from database_api_beta import Slice, Filter, hann
 from src.nets import MultiLayerPerceptron, ConvolutionalNeuralNetwork1
 from src.metrics import get_r2, get_avg_distance, bin_distance, get_accuracy, get_radius_accuracy
 import numpy as np
-from src.conf import mlp, sp2, cnn1
+from src.conf import mlp,sp1,cnn1
 import matplotlib.pyplot as plt
 from src.settings import save_as_pickle, load_pickle
 from sklearn.preprocessing import normalize,scale
@@ -16,23 +16,20 @@ def sigmoid(x):
     return 1 / (1 + np.exp(-x))
 
 def average_position(mapping):
-    avg_pos_x = 0
-    avg_pos_y = 0
-    x_range = mapping.shape[0]
-    y_range = mapping.shape[1]
-    counter = 0
-    for x_pos in range(x_range):
-        for y_pos in range(y_range):
-            pos_value = mapping[x_pos][y_pos][0]
-            if pos_value >0:
-                avg_pos_x += x_pos*pos_value
-                avg_pos_y += y_pos*pos_value
-                counter += 1
-    if counter  == 0:
-        return [0,0]
-    avg_pos_x = avg_pos_x // counter
-    avg_pos_y = avg_pos_y // counter
-    return [avg_pos_x,avg_pos_y]
+    # mapping = np.reshape(mapping,[mapping.shape[0],mapping.shape[1]])
+    # sum_0 = np.dot(mapping,np.arange(mapping.shape[1]))
+    # sum_1 = np.dot(mapping.T,np.arange(mapping.shape[0]))
+
+    sum_0 = np.sum(mapping,axis=0)
+    sum_0 = np.sum(np.sum(sum_0*np.arange(mapping.shape[1])))/np.sum(np.sum(sum_0))
+    sum_1 = np.sum(mapping,axis=1)
+    sum_1  = np.sum(np.sum(sum_1*np.arange(mapping.shape[0])))/np.sum(np.sum(sum_1))
+    try:
+        return [int(sum_1),int(sum_0)]
+    except ValueError:
+        print("asd")
+        return False
+
 
 
 def test_accuracy(sess, S, network_dict, x, y, show_plot=False, plot_after_iter=1, print_distance=False):
@@ -48,10 +45,13 @@ def test_accuracy(sess, S, network_dict, x, y, show_plot=False, plot_after_iter=
         x = np.reshape(x, xshape)
         y = np.reshape(y, yshape)
         a = S.eval(sess, x)
-        exp_scores = np.exp(a)
-        a = exp_scores / np.sum(exp_scores, axis=1, keepdims=True)
-        bin_1 = average_position(a[0])
-        bin_2 = average_position(y[0])
+        # form softmax of output and remove nan values for columns with only zeros
+        # exp_scores = np.exp(a)
+        # a = np.nan_to_num(exp_scores / np.sum(exp_scores, axis=1, keepdims=True))
+        a = sigmoid(a[0, :, :, 0])
+        y = y[0,:,:,0]
+        bin_1 = average_position(a)
+        bin_2 = average_position(y)
         prediction_list[j][0] = bin_1[0]
         prediction_list[j][1] = bin_1[1]
         actual_list[j][0] = bin_2[0]
@@ -68,7 +68,7 @@ def test_accuracy(sess, S, network_dict, x, y, show_plot=False, plot_after_iter=
             title = "Next lickwell: " + str(well["lickwell"]) + " (" + str(
                 well["rewarded"]) + ") in " + time + "s" + " at " + str(network_dict["metadata"][j]["position"]) + "cm" + " and " + str(
                 network_dict["metadata"][j]["time"])
-            y_prime = S.eval(sess, x)
+            y_prime = a
             # fig = plt.figure()
             fig = plt.gcf()
             fig.canvas.set_window_title(title)
@@ -77,12 +77,12 @@ def test_accuracy(sess, S, network_dict, x, y, show_plot=False, plot_after_iter=
             ax1.axis('off')
             ax2.axis('off')
             fig.subplots_adjust(left=0.01, right=0.99, bottom=0.01, top=0.99, hspace=0.01, wspace=0.01)
-            Y = y[0, :, :, 0]
-            Y -= np.min(Y)
-            Y /= np.max(Y)
+            Y = y
+            # Y -= np.min(Y)
+            # Y /= np.max(Y)
             Y *= 255
 
-            Y_prime = sigmoid(y_prime[0, :, :, 0])
+            Y_prime = a
             Y_prime -= np.min(Y_prime)
             Y_prime /= np.max(Y_prime)
             Y_prime *= 255
@@ -102,12 +102,12 @@ def test_accuracy(sess, S, network_dict, x, y, show_plot=False, plot_after_iter=
             plt.show(block=True)
             plt.close()
 
-    r2 = get_r2(prediction_list, actual_list)
+    r2 = get_r2(actual_list,prediction_list)
     distance = get_avg_distance(prediction_list, actual_list, [network_dict["X_STEP"], network_dict["Y_STEP"]])
     accuracy = []
-    for i in range(0, 8):
+    for i in range(0, 20):
         # print("accuracy",i,":",get_accuracy(prediction_list, actual_list,margin=i))
-        acc = get_radius_accuracy(prediction_list, actual_list, [network_dict["X_STEP"], network_dict["Y_STEP"]], 5 * i)
+        acc = get_radius_accuracy(prediction_list, actual_list, [network_dict["X_STEP"], network_dict["Y_STEP"]],  i)
         accuracy.append(acc)
         print("accuracy", i, ":", acc)
 
@@ -154,7 +154,7 @@ def time_shift_data(X, y, n):
 
 def run_network(network_dict):
     # S = ConvolutionalNeuralNetwork1([None, 166, 20, 1], cnn1)
-    S = MultiLayerPerceptron([None, 68, 20, 1], mlp)
+    S = MultiLayerPerceptron([None, 68, 10, 1], mlp)
 
     saver = tf.train.Saver()
     sess = tf.Session()
@@ -189,22 +189,22 @@ def run_network(network_dict):
                 x = np.reshape(x, xshape)
                 y = np.reshape(y, yshape)
                 # asd = S.train(sess, x, y, dropout=1)
-                t = np.max(S.train(sess, x, y, dropout=1))
-                print(i, ", loss:", t)
+                t = np.max(S.train(sess, x, y, dropout=0.8))
+                # print(i, ", loss:", t)
                 # Test accuracy and add evaluation to output
 
                 if metric_counter == network_dict["METRIC_ITER"]:
                     print("Step", i)
                     print("training data:")
                     r2_train, avg_train, accuracy_train = test_accuracy(sess, S, network_dict, X_train, y_train,
-                                                                        show_plot=False, plot_after_iter=100)
+                                                                        show_plot=False, plot_after_iter=300,print_distance=False)
                     r2_scores_train.append(r2_train)
                     avg_scores_train.append(avg_train)
                     acc_scores_train.append(accuracy_train)
                     print(r2_train, avg_train)
                     print("evaluation data:")
                     r2_eval, avg_eval, accuracy_eval = test_accuracy(sess, S, network_dict, X_eval, y_eval,
-                                                                     show_plot=True, plot_after_iter=1000)
+                                                                     show_plot=False, plot_after_iter=300,print_distance=False)
                     r2_scores_eval.append(r2_eval)
                     avg_scores_eval.append(avg_eval)
                     acc_scores_eval.append(accuracy_eval)
@@ -248,24 +248,24 @@ if __name__ == '__main__':
 
     MODEL_PATH = "G:/master_datafiles/trained_networks/Special_CNN"
     RAW_DATA_PATH = "G:/master_datafiles/raw_data/2018-05-16_17-13-37/"
-    FILTERED_DATA_PATH = "G:/master_datafiles/filtered_data/hippocampus_hann_win_size_50_09-3.pkl"
+    FILTERED_DATA_PATH = "G:/master_datafiles/filtered_data/hippocampus_hann_win_size_200_09-4.pkl"
 
     # Program execution settings
 
     LOAD_RAW_DATA = False# load source data from raw data path or load default model
     LOAD_MODEL = False  # load model from model path
     TRAIN_MODEL = True  # train model or just show results
-    TRAINING_STEPS = 5000
+    TRAINING_STEPS = 50000
     INITIAL_TIMESHIFT = 0
     TIME_SHIFT_ITER = 200
     TIME_SHIFT_STEPS = 1
-    METRIC_ITER = 1000
+    METRIC_ITER = 100
 
     # Network parameters
 
-    SLICE_SIZE = 1000
+    SLICE_SIZE = 2000
     BATCH_SIZE = 128
-    WIN_SIZE = 50
+    WIN_SIZE = 200
     SEARCH_RADIUS = WIN_SIZE * 2
     X_MAX = 240
     Y_MAX = 190
@@ -278,11 +278,11 @@ if __name__ == '__main__':
     # Preprocess data
 
     if LOAD_RAW_DATA is True:
-        # session = Slice.from_raw_data(RAW_DATA_PATH)
-        # print("Convolving data...")
-        # session.set_filter(session_filter)
-        # print("Finished convolving data")
-        # session.to_pickle("slice.pkl")  # TODO delete again
+        session = Slice.from_raw_data(RAW_DATA_PATH)
+        print("Convolving data...")
+        session.set_filter(session_filter)
+        print("Finished convolving data")
+        session.to_pickle("slice.pkl")  # TODO delete again
         session = Slice.from_pickle("slice.pkl")  # TODO delete again
         shifted_positions_list = []
         copy_session = None
@@ -397,7 +397,6 @@ if __name__ == '__main__':
 
     if len(y_list) < TIME_SHIFT_STEPS:
         raise ValueError("Error: filtered data does not match amount of timeshift steps")
-
 
     # Start network with different time-shifts
 

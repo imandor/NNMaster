@@ -6,7 +6,7 @@ def get_r2(y_valid,y_pred):
     for i in range(y_valid.shape[1]): #Loop through outputs
         #Compute R2 for each output
         y_mean=np.mean(y_valid[:,i])
-        R2=1-np.sum((y_pred[:,i]-y_valid[:,i])**2)/np.sum((y_valid[:,i]-y_mean)**2)
+        R2=1-np.sum((y_pred[:,i]-y_valid[:,i])**2)/np.sum((y_pred[:,i]-y_mean)**2)
         R2_list.append(R2) #Append R2 of this output to the list
     R2_array=np.array(R2_list)
     return R2_array #Return an array of R2s
@@ -30,4 +30,4 @@ def get_radius_accuracy(y_valid,y_pred,step_size,absolute_margin=0):
 
 
 def bin_distance(bin_1,bin_2):
-    return [abs(bin_1[1]-bin_2[1]),abs(bin_1[2]-bin_2[2])]
+    return [abs(bin_1[0]-bin_2[0]),abs(bin_1[1]-bin_2[1])]
