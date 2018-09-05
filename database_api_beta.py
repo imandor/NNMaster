@@ -40,7 +40,7 @@ class Filter:
 
     def __call__(self, x):
         # print("func:",self._func(x / self.search_radius), " value is:",x)
-        return self._func(x / self.search_radius) / self._integral_on_search_window
+        return self._func(x)#self._func(x / self.search_radius) / self._integral_on_search_window
 
 
 hann_500_500 = Filter(hann, 500, 500)
@@ -99,7 +99,7 @@ def _convolve_thread_func(filter_func, n_bin_points, neuron_counter, n_neurons, 
         if len(curr_spikes_in_search_window) == 0:
             continue
         filtered_spikes[index] = sum(map(
-        lambda x: filter_func(x - index * filter_func.step_size),
+        lambda x: filter_func((x - index * filter_func.step_size)/filter_func.search_radius),
         curr_spikes_in_search_window))
 
 

@@ -1,5 +1,5 @@
 import tensorflow as tf
-from database_api_beta import Slice, Filter, hann
+from database_api_beta import Slice, Filter, hann,bin
 from src.nets import MultiLayerPerceptron, ConvolutionalNeuralNetwork1
 from src.metrics import get_r2, get_avg_distance, bin_distance, get_accuracy, get_radius_accuracy
 import numpy as np
@@ -7,10 +7,11 @@ from src.conf import mlp,sp1,cnn1
 import matplotlib.pyplot as plt
 from src.settings import save_as_pickle, load_pickle
 from sklearn.preprocessing import normalize,scale
-from random import shuffle
+from random import shuffle, seed
 import datetime
 import multiprocessing
-
+from scipy import stats
+from functools import reduce
 
 def sigmoid(x):
     return 1 / (1 + np.exp(-x))
@@ -32,9 +33,7 @@ def average_position(mapping):
 
 
 
-def test_accuracy(sess, S, network_dict, x, y, show_plot=False, plot_after_iter=1, print_distance=False):
-    X_eval = x
-    y_eval = y
+def test_accuracy(sess, S, network_dict, X_eval, y_eval, show_plot=False, plot_after_iter=1, print_distance=False):
     xshape = [1] + list(X_eval[0].shape) + [1]
     yshape = [1] + list(y_eval[0].shape) + [1]
     prediction_list = np.zeros([len(y_eval), 2])
@@ -99,7 +98,7 @@ def test_accuracy(sess, S, network_dict, x, y, show_plot=False, plot_after_iter=
             ax1.imshow(Y, cmap="gray")
             ax2.imshow(Y_prime, cmap="gray")
 
-            plt.show(block=True)
+            plt.show()
             plt.close()
 
     r2 = get_r2(actual_list,prediction_list)
@@ -154,7 +153,7 @@ def time_shift_data(X, y, n):
 
 def run_network(network_dict):
     # S = ConvolutionalNeuralNetwork1([None, 166, 20, 1], cnn1)
-    S = MultiLayerPerceptron([None, 68, 10, 1], mlp)
+    S = MultiLayerPerceptron([None, 56, 10, 1], mlp)
 
     saver = tf.train.Saver()
     sess = tf.Session()
@@ -188,23 +187,24 @@ def run_network(network_dict):
                 y = np.array(y_train[j:j + network_dict["BATCH_SIZE"]])
                 x = np.reshape(x, xshape)
                 y = np.reshape(y, yshape)
-                # asd = S.train(sess, x, y, dropout=1)
                 t = np.max(S.train(sess, x, y, dropout=0.8))
-                # print(i, ", loss:", t)
+                print(i, ", loss:", t)
+
                 # Test accuracy and add evaluation to output
 
                 if metric_counter == network_dict["METRIC_ITER"]:
+                    saver.save(sess, network_dict["MODEL_PATH"])
                     print("Step", i)
                     print("training data:")
                     r2_train, avg_train, accuracy_train = test_accuracy(sess, S, network_dict, X_train, y_train,
-                                                                        show_plot=False, plot_after_iter=300,print_distance=False)
+                                                                        show_plot=True, plot_after_iter=500,print_distance=False)
                     r2_scores_train.append(r2_train)
                     avg_scores_train.append(avg_train)
                     acc_scores_train.append(accuracy_train)
                     print(r2_train, avg_train)
                     print("evaluation data:")
                     r2_eval, avg_eval, accuracy_eval = test_accuracy(sess, S, network_dict, X_eval, y_eval,
-                                                                     show_plot=False, plot_after_iter=300,print_distance=False)
+                                                                     show_plot=True, plot_after_iter=500,print_distance=False)
                     r2_scores_eval.append(r2_eval)
                     avg_scores_eval.append(avg_eval)
                     acc_scores_eval.append(accuracy_eval)
@@ -246,13 +246,13 @@ if __name__ == '__main__':
 
     # hippocampus
 
-    MODEL_PATH = "G:/master_datafiles/trained_networks/Special_CNN"
+    MODEL_PATH = "G:/master_datafiles/trained_networks/MLP_hippocampus"
     RAW_DATA_PATH = "G:/master_datafiles/raw_data/2018-05-16_17-13-37/"
-    FILTERED_DATA_PATH = "G:/master_datafiles/filtered_data/hippocampus_hann_win_size_200_09-4.pkl"
+    FILTERED_DATA_PATH = "G:/master_datafiles/filtered_data/hippocampus_hann_win_size_25_09-5_6.pkl"
 
     # Program execution settings
-
-    LOAD_RAW_DATA = False# load source data from raw data path or load default model
+    LOAD_RAW_DATA = False # load source data from raw data path or load default model
+    # LOAD_RAW_DATA = True # load source data from raw data path or load default model
     LOAD_MODEL = False  # load model from model path
     TRAIN_MODEL = True  # train model or just show results
     TRAINING_STEPS = 50000
@@ -260,30 +260,71 @@ if __name__ == '__main__':
     TIME_SHIFT_ITER = 200
     TIME_SHIFT_STEPS = 1
     METRIC_ITER = 100
-
+    SHUFFLE_DATA = True
+    SHUFFLE_FACTOR = 5
     # Network parameters
 
     SLICE_SIZE = 2000
     BATCH_SIZE = 128
     WIN_SIZE = 200
     SEARCH_RADIUS = WIN_SIZE * 2
+    EVAL_RATIO = 0.1
+    BINS_BEFORE = 0
+    BINS_AFTER = 0
     X_MAX = 240
     Y_MAX = 190
     X_MIN = 0
     Y_MIN = 100
     X_STEP = 3
     Y_STEP = 3
-    session_filter = Filter(func=hann, search_radius=SEARCH_RADIUS, step_size=WIN_SIZE)
+
+    # Update network dict values
+
+    if LOAD_RAW_DATA is False:
+        network_dict = load_pickle(FILTERED_DATA_PATH)
+    else:
+        network_dict = dict()
+    network_dict["network_type"] = "Multi Layer Perceptron"
+    network_dict["TRAINING_STEPS"] = TRAINING_STEPS
+    network_dict["MODEL_PATH"] = MODEL_PATH
+    network_dict["learning_rate"] = "placeholder"  # TODO
+    network_dict["r2_scores_train"] = []
+    network_dict["r2_scores_eval"] = []
+    network_dict["acc_scores_train"] = []
+    network_dict["acc_scores_eval"] = []
+    network_dict["avg_scores_train"] = []
+    network_dict["avg_scores_eval"] = []
+    network_dict["LOAD_MODEL"] = LOAD_MODEL
+    network_dict["TRAIN_MODEL"] = TRAIN_MODEL
+    network_dict["METRIC_ITER"] = METRIC_ITER
+    network_dict["BATCH_SIZE"] = BATCH_SIZE
+    network_dict["BINS_BEFORE"] = BINS_BEFORE
+    network_dict["BINS_AFTER"] = BINS_AFTER
+    network_dict["SLICE_SIZE"] = SLICE_SIZE
+    network_dict["trained_steps"] = 0
+    network_dict["RAW_DATA_PATH"] = RAW_DATA_PATH
+    network_dict["X_MAX"] = X_MAX
+    network_dict["Y_MAX"] = Y_MAX
+    network_dict["X_MIN"] = X_MIN
+    network_dict["Y_MIN"] = Y_MIN
+    network_dict["X_STEP"] = X_STEP
+    network_dict["Y_STEP"] = Y_STEP
+    network_dict["WIN_SIZE"] = WIN_SIZE
+    network_dict["SEARCH_RADIUS"] = SEARCH_RADIUS
+
+    session_filter = Filter(func=bin, search_radius=SEARCH_RADIUS, step_size=WIN_SIZE)
 
     # Preprocess data
 
     if LOAD_RAW_DATA is True:
         session = Slice.from_raw_data(RAW_DATA_PATH)
+        session.neuron_filter(100)
         print("Convolving data...")
         session.set_filter(session_filter)
         print("Finished convolving data")
-        session.to_pickle("slice.pkl")  # TODO delete again
-        session = Slice.from_pickle("slice.pkl")  # TODO delete again
+        # session.filtered_spikes = stats.zscore(session.filtered_spikes,axis=1)
+        session.to_pickle("slice.pkl")
+        session = Slice.from_pickle("slice.pkl")
         shifted_positions_list = []
         copy_session = None
 
@@ -309,7 +350,7 @@ if __name__ == '__main__':
 
             data_slice = copy_session[0:SLICE_SIZE]
             copy_session = copy_session[SLICE_SIZE:]
-            X.append(normalize(scale(data_slice.filtered_spikes, axis=1), norm='l2', axis=1))
+            X.append(data_slice.filtered_spikes)
             # map of shifted positions_list
 
             for i in range(len(shifted_positions_list)):
@@ -320,80 +361,74 @@ if __name__ == '__main__':
             print("slicing", len(X), "of", len(session.position_x) // SLICE_SIZE)
         print("Finished slicing data")
 
-        # Shuffle and add to training or validation set
 
-        # shuffle_list = (list(zip(X, metadata, zip(*y_list))))
-        # shuffle(shuffle_list)
-        # X, metadata, y_list = (zip(*shuffle_list))
-        eval_length = int(len(X) / 2)
-        X_eval = X[:eval_length]
-        metadata_eval = metadata[:eval_length]
-        X_train = X[eval_length:]
-        metadata_train = metadata[eval_length:]
 
-        # Create dict for saving network data to file
+        # Increase range of X values
 
-        network_dict = dict(
-            X=X,
-            X_train=X_train,
-            X_eval=X_eval,
-            y_train=[],
-            y_eval=[],
-            eval_length=eval_length,
-            metadata_train=metadata_train,
-            metadata_eval=metadata_eval,
-            y_list=y_list,
-            WIN_SIZE=WIN_SIZE,
-            SEARCH_RADIUS=SEARCH_RADIUS,
-            X_MAX=X_MAX,
-            Y_MAX=Y_MAX,
-            X_MIN=X_MIN,
-            Y_MIN=Y_MIN,
-            X_STEP=X_STEP,
-            Y_STEP=Y_STEP,
-            metadata=metadata,
-            BATCH_SIZE=BATCH_SIZE,
-            network_type="Multi Layer Perceptron",
-            TRAINING_STEPS=TRAINING_STEPS,
-            trained_steps=0,
-            MODEL_PATH=MODEL_PATH,
-            RAW_DATA_PATH=RAW_DATA_PATH,
-            learning_rate="placeholder",  # TODO
-            TIME_SHIFT=TIME_SHIFT_ITER * z,  # TODO
-            r2_scores_train=[],
-            r2_scores_eval=[],
-            acc_scores_train=[],
-            acc_scores_eval=[],
-            avg_scores_train=[],
-            avg_scores_eval=[],
-            SLICE_SIZE=SLICE_SIZE,
-            LOAD_MODEL=LOAD_MODEL,
-            TRAIN_MODEL=TRAIN_MODEL,
-            METRIC_ITER=METRIC_ITER,
-        )
+        if BINS_AFTER != 0 or BINS_BEFORE != 0:
+
+            # crop unusable values
+            X_c = X[BINS_BEFORE:-BINS_AFTER]
+            y_list = [a for a in (np.array(y_list)[:,BINS_BEFORE:-BINS_AFTER])]
+            metadata = metadata[BINS_BEFORE:-BINS_AFTER]
+            # increase x-range
+
+            for i, x in enumerate(X_c):
+                X_c[i] = np.concatenate([a for a in X[i:i + BINS_BEFORE + BINS_AFTER + 1]], axis=1)
+            X = X_c
+
+        # Shuffle data
+        seed(2)
+        if SHUFFLE_DATA is True:
+
+            # crop length to fit shuffle factor
+
+            x_length = len(X) - (len(X) % SHUFFLE_FACTOR)
+            X = X[:x_length]
+            metadata = metadata[:x_length]
+            y_list = [y[:x_length] for y in y_list]
+
+            # Shuffle index of data
+
+            r = np.arange(len(X))
+            r = r.reshape(-1, SHUFFLE_FACTOR)
+            s = np.arange(len(r)) # shuffling r directly doesnt work
+            shuffle(s)
+            r = r[s]
+            r = r.reshape(-1)
+
+            # shuffle data
+
+            X = [X[j] for j in r]
+            metadata = [metadata[j] for j in r]
+            li = []
+            for y in y_list:
+                li.append([y[j] for j in r])
+            y_list = li
+
+
+        network_dict["X"]  = X
+        network_dict["y_list"] = y_list
+        network_dict["metadata"] = metadata
+        network_dict["trained_steps"] = 0
         save_as_pickle(FILTERED_DATA_PATH, network_dict)
-    else:
-        # Update network parameters dictionary
+    y_list = network_dict["y_list"]
 
-        network_dict = load_pickle(FILTERED_DATA_PATH)
-        network_dict["network_type"] = "Multi Layer Perceptron"
-        network_dict["TRAINING_STEPS"] = TRAINING_STEPS
-        network_dict["MODEL_PATH"] = MODEL_PATH
-        network_dict["learning_rate"] = "placeholder"  # TODO
-        network_dict["r2_scores_train"] = []
-        network_dict["r2_scores_eval"] = []
-        network_dict["acc_scores_train"] = []
-        network_dict["acc_scores_eval"] = []
-        network_dict["avg_scores_train"] = []
-        network_dict["avg_scores_eval"] = []
-        network_dict["LOAD_MODEL"] = LOAD_MODEL
-        network_dict["TRAIN_MODEL"] = TRAIN_MODEL
-        network_dict["METRIC_ITER"] = METRIC_ITER
-        network_dict["BATCH_SIZE"] = BATCH_SIZE
-        y_list = network_dict["y_list"]
+    eval_length = int(len(network_dict["X"])*EVAL_RATIO)
+    X_eval = network_dict["X"][:eval_length]
+    metadata_eval = network_dict["metadata"][:eval_length]
+    X_train = network_dict["X"][eval_length:]
+    metadata_train = network_dict["metadata"][eval_length:]
 
 
-        save_as_pickle(FILTERED_DATA_PATH, network_dict)
+
+    network_dict["X_train"] = X_train
+    network_dict["X_eval"] = X_eval
+    network_dict["y_train"] = []
+    network_dict["y_eval"] = []
+    network_dict["eval_length"] = eval_length
+    network_dict["metadata_train"] = metadata_train
+    network_dict["metadata_eval"] = metadata_eval
 
     if len(y_list) < TIME_SHIFT_STEPS:
         raise ValueError("Error: filtered data does not match amount of timeshift steps")
@@ -402,10 +437,10 @@ if __name__ == '__main__':
 
     for z in range(INITIAL_TIMESHIFT // TIME_SHIFT_ITER, TIME_SHIFT_STEPS):
         print("Time shift is now",z*TIME_SHIFT_ITER)
-        network_dict["TIME_SHIFT"] = TIME_SHIFT_ITER * z  # TODO
+        network_dict["TIME_SHIFT"] = TIME_SHIFT_ITER * z
         current_y = y_list[z]
-        network_dict["y_eval"] = current_y[network_dict["eval_length"]:]
-        network_dict["y_train"] = current_y[:network_dict["eval_length"]]
+        network_dict["y_eval"] = current_y[:network_dict["eval_length"]]
+        network_dict["y_train"] = current_y[network_dict["eval_length"]:]
         if TIME_SHIFT_STEPS == 1:
             save_dict = run_network(network_dict)
         else:
