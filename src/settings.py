@@ -2,6 +2,8 @@
 import pickle
 # import dill as pickle
 import json
+import os
+import errno
 """ paths and filenames"""
 # path_to_session = "C:/Users/NN/Desktop/Master/sample_data/2018-04-09_14-39-52/"
 # foster_path = path_to_session + "2018-04-09_14-39-53_fostertask.dat"
@@ -59,6 +61,12 @@ config = dict(
 
 def save_as_pickle(file_name, data):
     """ saves data in a pickle file"""
+    if not os.path.exists(os.path.dirname(file_name)):
+        try:
+            os.makedirs(os.path.dirname(file_name))
+        except OSError as exc:  # Guard against race condition
+            if exc.errno != errno.EEXIST:
+                raise
     with open(file_name, 'wb') as f:
         pickle.dump(data, f)
         return "saved!"

@@ -25,6 +25,7 @@ def bin(x):
         return 0
 
 
+
 class Filter:
     def __init__(self, func, search_radius, step_size):
         self._func = func
@@ -75,24 +76,10 @@ def _convolve_thread_func(filter_func, n_bin_points, neuron_counter, n_neurons, 
     curr_search_window_max_bound = + filter_func.search_radius
     filtered_spikes = np.zeros(n_bin_points)
     index_first_spike_in_window = 0
-    printcounter = 0
-    tic = time.process_time()
-    tock = 0
     for index in range(n_bin_points):
-
-        # if (printcounter == 100):
-        #     toc = time.process_time()
-        #     tock = toc + tock - tic
-        #     print(toc - tic)
-        #     print(tock)
-        #     print("Spike:",neuron_spikes[index_first_spike_in_window])
-        #     tic = time.process_time()
-        #     printcounter = 0
-        # printcounter += 1
         curr_spikes_in_search_window = dropwhile(lambda x: x < curr_search_window_min_bound,
                                                  takewhile(lambda x: x < curr_search_window_max_bound,
                                                            neuron_spikes[index_first_spike_in_window:]))
-
         curr_spikes_in_search_window = list(curr_spikes_in_search_window)
         curr_search_window_min_bound += filter_func.step_size
         curr_search_window_max_bound += filter_func.step_size
@@ -101,15 +88,10 @@ def _convolve_thread_func(filter_func, n_bin_points, neuron_counter, n_neurons, 
         filtered_spikes[index] = sum(map(
         lambda x: filter_func((x - index * filter_func.step_size)/filter_func.search_radius),
         curr_spikes_in_search_window))
-
-
         for spike_index, spike in enumerate(neuron_spikes[index_first_spike_in_window:index_first_spike_in_window+curr_search_window_max_bound]): # upper bound because a maximum of 1 spike per ms can occurr and runtime of slice operation is O(i2-i1)
             if spike >= curr_search_window_min_bound:
                 index_first_spike_in_window = index_first_spike_in_window + spike_index
                 break
-        # index_first_spike_in_window += index_first_spike_in_curr_window
-        # toc = time.process_time()
-        # print(toc - tic)
 
     # print("Finished convolving neuron ",neuron_counter, " of ", n_neurons,"...")
     return filtered_spikes
@@ -140,6 +122,11 @@ class Slice:
     def set_filter(self, filter):
         self._filter = filter
         self._convolve()
+
+
+
+
+
 
     def _convolve(self):
         search_radius, step_size = self._filter.search_radius, self._filter.step_size

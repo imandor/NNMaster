@@ -6,7 +6,7 @@ import glob
 import numpy as np
 
 
-PATH = "G:/master_datafiles/trained_networks/Special_CNN_hippocampus/"
+PATH = "G:/master_datafiles/trained_networks/MLP_OFC/"
 dict_files = glob.glob(PATH + "*.pkl")
 r2_scores_eval_list = []
 r2_scores_train_list = []
@@ -25,32 +25,23 @@ for file_path in sorted(dict_files):
     avg_scores_train_list.append(net_dict["avg_scores_train"])
     avg_scores_eval_list.append(net_dict["avg_scores_eval"])
     time_shift_list.append(net_dict["TIME_SHIFT"])
-plot_dict = dict(
-r2_scores_eval_list = r2_scores_eval_list,
-r2_scores_train_list = r2_scores_train_list,
-acc_scores_eval_list = acc_scores_eval_list,
-acc_scores_train_list = acc_scores_train_list,
-avg_scores_eval_list = avg_scores_eval_list,
-avg_scores_train_list = avg_scores_train_list,
-time_shift_list = time_shift_list,
-)
-save_as_pickle("deleteme.pkl",plot_dict)
-plot_dict = load_pickle("deleteme.pkl")
-for i in range(1,len(plot_dict["r2_scores_eval_list"][0]) + 1):
-    r2_scores_eval_list = [x[-i] for x in plot_dict["r2_scores_eval_list"]]
-    r2_scores_train_list = [x[-i] for x in plot_dict["r2_scores_train_list"]]
-    acc_scores_eval_list = plot_dict["acc_scores_eval_list"][-i]
-    acc_scores_train_list = plot_dict["acc_scores_train_list"][-i]
-    distance_scores_eval_list = [x[-1] for x in plot_dict["avg_scores_eval_list"]] # takes the latest trained value for each time shift
-    distance_scores_train_list = [x[-1] for x in plot_dict["avg_scores_train_list"]]
-    time_shift_list = [str(x) for x in plot_dict["time_shift_list"]]
+
+time_shift_list = [str(x) for x in time_shift_list]   
+for i in range(1,len(r2_scores_eval_list[0]) + 1):
+    r2_scores_eval_list = [x[-i] for x in r2_scores_eval_list]
+    r2_scores_train_list = [x[-i] for x in r2_scores_train_list]
+    acc_scores_eval_list = list(map(list, zip(*[e[-i] for e in acc_scores_eval_list])))
+    acc_scores_train_list = list(map(list, zip(*[e[-i] for e in acc_scores_train_list])))
+    distance_scores_eval_list = [x[-1] for x in avg_scores_eval_list] # takes the latest trained value for each time shift
+    distance_scores_train_list = [x[-1] for x in avg_scores_train_list]
 
 
 
-    acc_scores_eval_list =np.array(acc_scores_eval_list).T.tolist()
-    acc_scores_train_list = np.array(acc_scores_train_list).T.tolist()
-    distance_scores_eval_list = np.array(distance_scores_eval_list).T.tolist()
-    distance_scores_eval_list = np.array(distance_scores_eval_list).T.tolist()
+
+    # acc_scores_eval_list =np.array(acc_scores_eval_list).T.tolist()
+    # acc_scores_train_list = np.array(acc_scores_train_list).T.tolist()
+    # distance_scores_eval_list = np.array(distance_scores_eval_list).T.tolist()
+    # distance_scores_eval_list = np.array(distance_scores_eval_list).T.tolist()
 
     levels = MaxNLocator(nbins=15).tick_values(np.min(acc_scores_train_list), np.max(acc_scores_train_list))
     cmap = plt.get_cmap('PiYG')
