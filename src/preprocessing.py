@@ -35,12 +35,12 @@ def preprocess_raw_data(network_dict):
 
     # Load and filter session
 
-    session = Slice.from_raw_data(RAW_DATA_PATH)[0:50000]
+    session = Slice.from_raw_data(RAW_DATA_PATH)
     session.neuron_filter(100)
     print("Convolving data...")
     session.set_filter(network_dict["session_filter"])
     print("Finished convolving data")
-    session.filtered_spikes = stats.zscore(session.filtered_spikes,axis=1)
+    session.filtered_spikes = stats.zscore(session.filtered_spikes,axis=1) # Z Score neural activity
     session.to_pickle("slice.pkl")
     session = Slice.from_pickle("slice.pkl")
     shifted_positions_list = []
@@ -82,16 +82,17 @@ def preprocess_raw_data(network_dict):
     # Increase range of X values
 
     if BINS_AFTER != 0 or BINS_BEFORE != 0:
-
+        print("Adding surrounding neural activity to spike bins...")
         # crop unusable values
         X_c = X[BINS_BEFORE:-BINS_AFTER]
-        y_list = [a for a in (np.array(y_list)[:,BINS_BEFORE:-BINS_AFTER])]
+        y_list = [a[BINS_BEFORE:-BINS_AFTER] for a in y_list]
         metadata = metadata[BINS_BEFORE:-BINS_AFTER]
         # increase x-range
 
         for i, x in enumerate(X_c):
             X_c[i] = np.concatenate([a for a in X[i:i + BINS_BEFORE + BINS_AFTER + 1]], axis=1)
         X = X_c
+        print("Finished adding surrounding neural activity to spike bins")
 
     # Shuffle data
 
@@ -99,7 +100,7 @@ def preprocess_raw_data(network_dict):
     if SHUFFLE_DATA is True:
 
         # crop length to fit shuffle factor
-
+        print("Shuffling data...")
         x_length = len(X) - (len(X) % SHUFFLE_FACTOR)
         X = X[:x_length]
         metadata = metadata[:x_length]
@@ -122,5 +123,5 @@ def preprocess_raw_data(network_dict):
         for y in y_list:
             li.append([y[j] for j in r])
         y_list = li
-
+        print("Finished shuffling data")
     return X, y_list,metadata
