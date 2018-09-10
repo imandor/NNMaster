@@ -1,6 +1,7 @@
 from database_api_beta import Slice
 from random import seed,shuffle
 import numpy as np
+from scipy import stats, spatial
 
 def position_as_map(pos_list, xstep, ystep, X_MAX, X_MIN, Y_MAX, Y_MIN):
     pos_list = np.asarray(pos_list)
@@ -33,18 +34,19 @@ def preprocess_raw_data(network_dict):
 
 
     # Load and filter session
-    session = Slice.from_raw_data(RAW_DATA_PATH)
+
+    session = Slice.from_raw_data(RAW_DATA_PATH)[0:50000]
     session.neuron_filter(100)
     print("Convolving data...")
     session.set_filter(network_dict["session_filter"])
     print("Finished convolving data")
-    # session.filtered_spikes = stats.zscore(session.filtered_spikes,axis=1)
+    session.filtered_spikes = stats.zscore(session.filtered_spikes,axis=1)
     session.to_pickle("slice.pkl")
     session = Slice.from_pickle("slice.pkl")
     shifted_positions_list = []
     copy_session = None
 
-    # list of outputs for all time shifts
+    # Make list of outputs for all time shifts
 
     for z in range(0, TIME_SHIFT_STEPS):
         copy_session = session.timeshift_position(z * TIME_SHIFT_ITER)
@@ -77,8 +79,6 @@ def preprocess_raw_data(network_dict):
         print("slicing", len(X), "of", len(session.position_x) // SLICE_SIZE)
     print("Finished slicing data")
 
-
-
     # Increase range of X values
 
     if BINS_AFTER != 0 or BINS_BEFORE != 0:
@@ -94,6 +94,7 @@ def preprocess_raw_data(network_dict):
         X = X_c
 
     # Shuffle data
+
     seed(2)
     if SHUFFLE_DATA is True:
 
@@ -121,4 +122,5 @@ def preprocess_raw_data(network_dict):
         for y in y_list:
             li.append([y[j] for j in r])
         y_list = li
-        return X, y_list,metadata
+
+    return X, y_list,metadata
