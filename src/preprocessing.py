@@ -18,6 +18,7 @@ def position_as_map(pos_list, xstep, ystep, X_MAX, X_MIN, Y_MAX, Y_MIN):
 
 def preprocess_raw_data(network_dict):
     RAW_DATA_PATH = network_dict["RAW_DATA_PATH"]
+    INITIAL_TIMESHIFT = network_dict["INITIAL_TIMESHIFT"]
     TIME_SHIFT_STEPS = network_dict["TIME_SHIFT_STEPS"]
     TIME_SHIFT_ITER = network_dict["TIME_SHIFT_ITER"]
     SLICE_SIZE = network_dict["SLICE_SIZE"]
@@ -49,7 +50,7 @@ def preprocess_raw_data(network_dict):
     # Make list of outputs for all time shifts
 
     for z in range(0, TIME_SHIFT_STEPS):
-        copy_session = session.timeshift_position(z * TIME_SHIFT_ITER)
+        copy_session = session.timeshift_position(INITIAL_TIMESHIFT + z * TIME_SHIFT_ITER)
         shifted_positions_list.append(
             [copy_session.position_x, copy_session.position_y])
 

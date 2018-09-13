@@ -53,14 +53,22 @@ def average_position(mapping):
         return False
 
 
-def test_accuracy(sess, S, network_dict, X_eval, y_eval, show_plot=False, plot_after_iter=1, print_distance=False):
-    xshape = [1] + list(X_eval[0].shape) + [1]
-    yshape = [1] + list(y_eval[0].shape) + [1]
-    prediction_list = np.zeros([len(y_eval), 2])
-    actual_list = np.zeros([len(y_eval), 2])
-    for j in range(0, len(X_eval) - 1, 1):
-        x = np.array([data_slice for data_slice in X_eval[j:j + 1]])
-        y = np.array(y_eval[j:j + 1])
+def test_accuracy(sess, S, network_dict, training_step, is_training_data=False, show_plot=False, plot_after_iter=1, print_distance=False):
+    if is_training_data:
+        X_test = network_dict["X_train"]
+        y_test = network_dict["y_train"]
+        plot_savefile = "plot_train_prediction_"
+    else:
+        X_test = network_dict["X_eval"]
+        y_test = network_dict["y_eval"]
+        plot_savefile = "plot_eval_prediction_"
+    xshape = [1] + list(X_test[0].shape) + [1]
+    yshape = [1] + list(y_test[0].shape) + [1]
+    prediction_list = np.zeros([len(y_test), 2])
+    actual_list = np.zeros([len(y_test), 2])
+    for j in range(0, len(X_test) - 1, 1):
+        x = np.array([data_slice for data_slice in X_test[j:j + 1]])
+        y = np.array(y_test[j:j + 1])
         x = np.reshape(x, xshape)
         y = np.reshape(y, yshape)
         a = S.eval(sess, x)
@@ -119,8 +127,7 @@ def test_accuracy(sess, S, network_dict, X_eval, y_eval, show_plot=False, plot_a
             # Y[41, 9] = 30
             ax1.imshow(Y, cmap="gray")
             ax2.imshow(Y_prime, cmap="gray")
-
-            plt.show(block=True)
+            plt.savefig(network_dict["MODEL_PATH"]+"images/"+ plot_savefile + "_shift=" + str(network_dict["TIME_SHIFT"])+ "_epoch=" + str(training_step) + "_img"+ str(j) + ".pdf")
             plt.close()
 
     r2 = get_r2(actual_list, prediction_list)

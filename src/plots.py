@@ -6,7 +6,7 @@ import glob
 import numpy as np
 
 
-PATH = "G:/master_datafiles/trained_networks/MLP_hippocampus/"
+PATH = "G:/master_datafiles/trained_networks/MLP_OFC/"
 dict_files = glob.glob(PATH + "*.pkl")
 r2_scores_eval_list = []
 r2_scores_train_list = []
@@ -26,9 +26,9 @@ for file_path in sorted(dict_files):
     avg_scores_eval_list.append(net_dict["avg_scores_eval"])
     time_shift_list.append(net_dict["TIME_SHIFT"])
 
-training_step_list = [net_dict["METRIC_ITER"]]
-for i in range(1,len(r2_scores_eval_list[0])):
-    training_step_list.append(str(training_step_list + net_dict["trained_steps"]))
+training_step_list = [str(net_dict["METRIC_ITER"])]
+for i in range(0,len(r2_scores_eval_list[0])-1):
+    training_step_list.append(str(int(training_step_list[-1]) + net_dict["METRIC_ITER"]))
 
 time_shift_list = [str(x) for x in time_shift_list]
 
@@ -43,6 +43,7 @@ for i in range(0,len(r2_scores_train_list)): # for each time_shift
     avg_scores_eval = avg_scores_eval_list[i]
     avg_scores_train = avg_scores_train_list[i]
 
+
     #     # Get data for current amount of training steps
     #
     levels = MaxNLocator(nbins=15).tick_values(np.min(acc_scores_train), np.max(acc_scores_train))
@@ -52,44 +53,44 @@ for i in range(0,len(r2_scores_train_list)): # for each time_shift
     cf = ax0.contourf(acc_scores_train, levels=levels, cmap=cmap)
     fig.colorbar(cf, ax=ax0)
     ax0.set_title('Portion of training predictions in radius wrt training_step')
-    ax0.set_xlabel("Time shift (s)")
+    ax0.set_xlabel("Training step")
     ax0.set_ylabel("distance to actual position(cm)")
-    # ax0.set_xticks(time_shift_list)
+    ax0.set_xticks(training_step_list)
     levels = MaxNLocator(nbins=15).tick_values(np.min(acc_scores_eval), np.max(acc_scores_eval))
 
     cf = ax1.contourf(acc_scores_eval, levels=levels, cmap=cmap)
     fig.colorbar(cf, ax=ax1)
     ax1.set_title('Portion of eval predictions in radius wrt training_step')
-    ax1.set_xlabel("Time shift (s)")
+    ax1.set_xlabel("Training step")
     ax1.set_ylabel("distance to actual position(cm)")
-    # ax1.set_xticks(time_shift_list)
+    ax1.set_xticks(training_step_list)
     fig.tight_layout()
     plt.ion()
     plt.show()
     # plt.savefig(PATH +"images/acc_score" + "_shift=" + time_shift_list[-i] + "_epoch=" + training_step_list[i]  + ".pdf")
 
     fig, (ax0, ax1) = plt.subplots(nrows=2,sharey=True)
-    ax0.plot(time_shift_list,avg_scores_train)
+    ax0.plot(training_step_list,avg_scores_train)
     ax0.set_title('Average distance of training wrt time-shift')
-    ax0.set_xlabel("Time shift (s)")
+    ax0.set_xlabel("Training step")
     ax0.set_ylabel("Average distance to actual position(cm)")
-    ax1.plot(time_shift_list,avg_scores_eval)
+    ax1.plot(training_step_list,avg_scores_eval)
     ax1.set_title('Average distance of evaluation wrt time-shift')
-    ax1.set_xlabel("Time shift (s)")
+    ax1.set_xlabel("Training step")
     ax1.set_ylabel("Average distance to actual position(cm)")
     fig.tight_layout()
     plt.show()
     # plt.savefig(PATH  +"images/avg_dist" + "_shift=" + time_shift_list[-i] + "_epoch=" + str(trained_steps) + ".pdf")
 
 
-fig, (ax0, ax1) = plt.subplots(nrows=2,sharey=True)
-    ax0.plot(time_shift_list,r2_scores_train)
+    fig, (ax0, ax1) = plt.subplots(nrows=2,sharey=True)
+    ax0.plot(training_step_list,r2_scores_train)
     ax0.set_title('r2 of training wrt training_steps')
-    ax0.set_xlabel("Time shift")
+    ax0.set_xlabel("Training step")
     ax0.set_ylabel("r2 score")
-    ax1.plot(time_shift_list,r2_scores_eval)
+    ax1.plot(training_step_list,r2_scores_eval)
     ax1.set_title('r2 of evaluation wrt time-shift')
-    ax1.set_xlabel("Time shift")
+    ax1.set_xlabel("Training step")
     ax1.set_ylabel("r2 score")
     fig.tight_layout()
     plt.show()

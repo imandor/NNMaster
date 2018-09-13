@@ -68,7 +68,7 @@ def save_as_pickle(file_name, data):
             if exc.errno != errno.EEXIST:
                 raise
     with open(file_name, 'wb') as f:
-        pickle.dump(data, f)
+        pickle.dump(data, f,protocol=pickle.HIGHEST_PROTOCOL)
         return "saved!"
 
 
@@ -77,10 +77,6 @@ def load_pickle(file_name):
     with open(file_name,'rb') as f:
         data = pickle.load(f)
         return data
-def save_as_json(file_name,data):
-
-    with open('data.txt', 'w') as outfile:
-        json.dump(data, outfile)
 
 # save_as_pickle('config.pkl', config)
 # config = load_pickle('config.pkl')
