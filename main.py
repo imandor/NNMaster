@@ -9,6 +9,7 @@ import errno
 from src.settings import save_as_pickle, load_pickle
 from src.preprocessing import preprocess_raw_data
 import datetime
+import random
 import multiprocessing
 from functools import reduce
 
@@ -39,7 +40,7 @@ def time_shift_data(X, y, n):
 
 def run_network(network_dict):
     # S = ConvolutionalNeuralNetwork1([None, 166, 20, 1], cnn1)
-    S = MultiLayerPerceptron([None, 56, 100, 1], mlp)
+    S = MultiLayerPerceptron([None, 56, 100, 1], mlp) # 56 147
 
     saver = tf.train.Saver()
     sess = tf.Session()
@@ -68,7 +69,7 @@ def run_network(network_dict):
         yshape = [network_dict["BATCH_SIZE"]] + list(y_train[0].shape) + [1]
         metric_counter = 0
         metric_step_counter = []
-        for i in range(0, network_dict["EPOCHS"]):
+        for i in range(0, network_dict["EPOCHS"]+1):
             # Train model
             for j in range(0, len(X_train) - network_dict["BATCH_SIZE"], network_dict["BATCH_SIZE"]):
                 x = np.array([data_slice for data_slice in X_train[j:j + network_dict["BATCH_SIZE"]]])
@@ -127,13 +128,13 @@ if __name__ == '__main__':
 
     # neo cortex
 
-    # MODEL_PATH = "G:/master_datafiles/trained_networks/MLP_OFC_2"
+    # MODEL_PATH = "G:/master_datafiles/trained_networks/MLP_OFC_2018-09-13/"
     # RAW_DATA_PATH = "G:/master_datafiles/raw_data/2018-04-09_14-39-52/"
     # FILTERED_DATA_PATH = "G:/master_datafiles/filtered_data/neocortex_hann_win_size_100.pkl"
 
     # hippocampus
 
-    MODEL_PATH = "G:/master_datafiles/trained_networks/MLP_hippocampus_2018-10-12/"
+    MODEL_PATH = "G:/master_datafiles/trained_networks/MLP_hippocampus_2018-09-12/"
     RAW_DATA_PATH = "G:/master_datafiles/raw_data/2018-05-16_17-13-37/"
     FILTERED_DATA_PATH = "G:/master_datafiles/filtered_data/hippocampus_hann_win_size_25_09-5_7.pkl"
 
@@ -144,10 +145,10 @@ if __name__ == '__main__':
     SAVE_MODEL = False
     LOAD_MODEL = False  # load model from model path
     TRAIN_MODEL = True  # train model or just show results
-    EPOCHS = 1000
-    INITIAL_TIMESHIFT = 0
-    TIME_SHIFT_ITER = 400
-    TIME_SHIFT_STEPS = 6
+    EPOCHS = 500
+    INITIAL_TIMESHIFT = 1000
+    TIME_SHIFT_ITER = 200
+    TIME_SHIFT_STEPS = 5
     METRIC_ITER = 100 # after how many epochs network is evaluated
     SHUFFLE_DATA = True # wether to randomly shuffle the data in big slices
     SHUFFLE_FACTOR = 20
@@ -225,6 +226,9 @@ if __name__ == '__main__':
 
     if LOAD_RAW_DATA is True:
         X, y_list, metadata = preprocess_raw_data(network_dict)
+        # for i,x in enumerate(X): # random test for baseline
+        #     for j,y in enumerate(x):
+        #         X[i][j] = np.random.rand(100)
         network_dict["X"] = X
         network_dict["y_list"] = y_list
         network_dict["metadata"] = metadata
@@ -256,8 +260,8 @@ if __name__ == '__main__':
     # Start network with different time-shifts
 
     print_network_dict(network_dict) # show network parameters in console
-    asd = range(INITIAL_TIMESHIFT, INITIAL_TIMESHIFT+ TIME_SHIFT_STEPS*TIME_SHIFT_ITER,TIME_SHIFT_ITER)
-    for z in asd:
+
+    for z in range(INITIAL_TIMESHIFT, INITIAL_TIMESHIFT+ TIME_SHIFT_STEPS*TIME_SHIFT_ITER,TIME_SHIFT_ITER):
         iter = int(z-INITIAL_TIMESHIFT)//TIME_SHIFT_ITER
         print("Time shift is now", z)
         network_dict["TIME_SHIFT"] = z
