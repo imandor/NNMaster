@@ -34,7 +34,7 @@ class Network:
     def train(self, sess, x, y,dropout=1):
         return sess.run(self.train_op, feed_dict={self.input: x, self.output_target: y, self.dropout:dropout})
 
-    def eval(self, sess, x,dropout=1.0):
+    def valid(self, sess, x,dropout=1.0):
         return sess.run(self.output, feed_dict={self.input: x,self.dropout:dropout})
 
     def get_weights(self, sess):
@@ -84,7 +84,8 @@ class MultiLayerPerceptron(Network):
             layer = conf["fc{}".format(layer_number)]
             self.weights.append(tf.Variable(layer.weights, dtype=DTYPE))
             self.layers.append(layer.activation(tf.matmul(self.layers[-1], self.weights[-1])))
-            self.layers.append(tf.nn.dropout(x=self.layers[-1], keep_prob=self.dropout))  # TODO
+        self.layers.append(tf.nn.dropout(x=self.layers[-1], keep_prob=self.dropout))  # TODO
+
         shape = conf.reshape.shape
         shape[0] = batch_size
         self.layers.append(tf.reshape(self.layers[-1], shape))

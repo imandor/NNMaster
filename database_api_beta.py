@@ -157,11 +157,24 @@ class Slice:
                 ax.vlines(s, i, i + 0.8)
         print("")
 
+    def print_details(self):
+        average_spikes_per_second = np.mean([len(x) for x in self.spikes])*1000/len(self.position_x)
+        session_length_in_minutes = len(self.position_x)/(1000*60)
+        print("Average spikes per second:",average_spikes_per_second)
+        print("Session length in minutes:",session_length_in_minutes)
+
+
     def timeshift_position(self,timeshift):
         if timeshift == 0: return self
-        other= self[:-timeshift]
-        other.position_x = self.position_x[timeshift:]
-        other.position_y = self.position_y[timeshift:]
+        if timeshift > 0:
+            other= self[:-timeshift]
+            other.position_x = self.position_x[timeshift:]
+            other.position_y = self.position_y[timeshift:]
+        else:
+            other= self[-timeshift:]
+            other.position_x = self.position_x[:timeshift]
+            other.position_y = self.position_y[:timeshift]
+
         return other
 
     def plot(self, ax_filtered_spikes=None, ax_raw_spikes=None, ax_licks=None, ax_trial_timestamps=None, filtered_spikes_kwargs={}):

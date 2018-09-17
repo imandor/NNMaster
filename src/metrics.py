@@ -59,9 +59,9 @@ def test_accuracy(sess, S, network_dict, training_step, is_training_data=False, 
         y_test = network_dict["y_train"]
         plot_savefile = "plot_train_prediction_"
     else:
-        X_test = network_dict["X_eval"]
-        y_test = network_dict["y_eval"]
-        plot_savefile = "plot_eval_prediction_"
+        X_test = network_dict["X_valid"]
+        y_test = network_dict["y_valid"]
+        plot_savefile = "plot_valid_prediction_"
     xshape = [1] + list(X_test[0].shape) + [1]
     yshape = [1] + list(y_test[0].shape) + [1]
     prediction_list = np.zeros([len(y_test), 2])
@@ -71,7 +71,7 @@ def test_accuracy(sess, S, network_dict, training_step, is_training_data=False, 
         y = np.array(y_test[j:j + 1])
         x = np.reshape(x, xshape)
         y = np.reshape(y, yshape)
-        a = S.eval(sess, x)
+        a = S.valid(sess, x)
         # form softmax of output and remove nan values for columns with only zeros
         # exp_scores = np.exp(a)
         # a = np.nan_to_num(exp_scores / np.sum(exp_scores, axis=1, keepdims=True))
@@ -91,16 +91,9 @@ def test_accuracy(sess, S, network_dict, training_step, is_training_data=False, 
             print("_____________")
         if j % plot_after_iter == plot_after_iter - 1 and show_plot is True:
             print("plot")
-            time = "{:.1f}".format(network_dict["metadata"][j]["lickwells"]["time"] / 1000)
-            well = network_dict["metadata"][j]["lickwells"]
-            title = "Next lickwell: " + str(well["lickwell"]) + " (" + str(
-                well["rewarded"]) + ") in " + time + "s" + " at " + str(
-                network_dict["metadata"][j]["position"]) + "cm" + " and " + str(
-                network_dict["metadata"][j]["time"])
             y_prime = a
             # fig = plt.figure()
             fig = plt.gcf()
-            fig.canvas.set_window_title(title)
             ax1 = fig.add_subplot(1, 2, 1)
             ax2 = fig.add_subplot(1, 2, 2)
             ax1.axis('off')
@@ -137,12 +130,12 @@ def test_accuracy(sess, S, network_dict, training_step, is_training_data=False, 
         # print("accuracy",i,":",get_accuracy(prediction_list, actual_list,margin=i))
         acc = get_radius_accuracy(prediction_list, actual_list, [network_dict["X_STEP"], network_dict["Y_STEP"]], i)
         accuracy.append(acc)
-        print("accuracy", i, ":", acc)
+        if i == 19: print("accuracy", i, ":", acc)
 
     return r2, distance, accuracy
 
 
-def print_network_dict(network_dict):
+def print_net_dict(network_dict):
     print("session_filter",network_dict["session_filter"])
     print("EPOCHS",network_dict["EPOCHS"])
     print("TIME_SHIFT_STEPS",network_dict["TIME_SHIFT_STEPS"])

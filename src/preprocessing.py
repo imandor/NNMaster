@@ -2,6 +2,7 @@ from database_api_beta import Slice
 from random import seed,shuffle
 import numpy as np
 from scipy import stats, spatial
+from itertools import takewhile, dropwhile, repeat
 
 def position_as_map(pos_list, xstep, ystep, X_MAX, X_MIN, Y_MAX, Y_MIN):
     pos_list = np.asarray(pos_list)
@@ -16,113 +17,123 @@ def position_as_map(pos_list, xstep, ystep, X_MAX, X_MIN, Y_MAX, Y_MIN):
         ret[pos[0], pos[1]] = 1
     return ret
 
-def preprocess_raw_data(network_dict):
-    RAW_DATA_PATH = network_dict["RAW_DATA_PATH"]
-    INITIAL_TIMESHIFT = network_dict["INITIAL_TIMESHIFT"]
-    TIME_SHIFT_STEPS = network_dict["TIME_SHIFT_STEPS"]
-    TIME_SHIFT_ITER = network_dict["TIME_SHIFT_ITER"]
-    SLICE_SIZE = network_dict["SLICE_SIZE"]
-    X_STEP = network_dict["X_STEP"]
-    Y_STEP = network_dict["Y_STEP"]
-    X_MAX = network_dict["X_MAX"]
-    Y_MAX = network_dict["Y_MAX"]
-    X_MIN = network_dict["X_MIN"]
-    Y_MIN = network_dict["Y_MIN"]
-    BINS_AFTER = network_dict["BINS_AFTER"]
-    BINS_BEFORE = network_dict["BINS_BEFORE"]
-    SHUFFLE_DATA = network_dict["SHUFFLE_DATA"]
-    SHUFFLE_FACTOR = network_dict["SHUFFLE_FACTOR"]
+
+def shuffle_io(X,y,net_dict):
+
+    # Shuffle data
+
+    SHUFFLE_FACTOR = net_dict["SHUFFLE_FACTOR"]
+    seed(2)
+
+    # crop length to fit shuffle factor
+
+    print("Shuffling data...")
+    x_length = len(X) - (len(X) % SHUFFLE_FACTOR)
+    X = X[:x_length]
+    y = y[:x_length]
+
+    # Shuffle index of data
+
+    r = np.arange(len(X))
+    r = r.reshape(-1, SHUFFLE_FACTOR)
+    s = np.arange(len(r)) # shuffling r directly doesnt work
+    shuffle(s)
+    r = r[s]
+    r = r.reshape(-1)
+
+    # shuffle data
+
+    X = [X[j] for j in r]
+    y = [y[j] for j in r]
+    print("Finished shuffling data")
+    return X,y
 
 
-    # Load and filter session
+def time_shift_io(session,X,shift,net_dict):
+    SLICE_SIZE = net_dict["SLICE_SIZE"]
+    X_STEP = net_dict["X_STEP"]
+    Y_STEP = net_dict["Y_STEP"]
+    X_MAX = net_dict["X_MAX"]
+    X_MIN = net_dict["X_MIN"]
+    Y_MAX = net_dict["Y_MAX"]
+    Y_MIN = net_dict["Y_MIN"]
+    BINS_BEFORE = net_dict["BINS_BEFORE"]
+    BINS_AFTER = net_dict["BINS_AFTER"]
 
-    session = Slice.from_raw_data(RAW_DATA_PATH)
-    session.neuron_filter(100)
-    print("Convolving data...")
-    session.set_filter(network_dict["session_filter"])
-    print("Finished convolving data")
-    session.filtered_spikes = stats.zscore(session.filtered_spikes,axis=1) # Z Score neural activity
-    session.to_pickle("slice.pkl")
-    session = Slice.from_pickle("slice.pkl")
-    shifted_positions_list = []
-    copy_session = None
+    # Shift positions
 
-    # Make list of outputs for all time shifts
+    if shift > 0:
+        session.position_x = session.position_x[shift:]
+        session.position_y = session.position_y[shift:]
+        X = X[:-shift//SLICE_SIZE]
 
-    for z in range(0, TIME_SHIFT_STEPS):
-        copy_session = session.timeshift_position(INITIAL_TIMESHIFT + z * TIME_SHIFT_ITER)
-        shifted_positions_list.append(
-            [copy_session.position_x, copy_session.position_y])
+    if shift < 0:
+        session.position_x = session.position_x[:shift]
+        session.position_y = session.position_y[:shift]
+        X = X[-shift//SLICE_SIZE:]
+    y = []
+    pos_x = session.position_x
+    pos_y = session.position_y
+    while len(pos_x)>=SLICE_SIZE:
+        posxy_list = []
+        posxy_list.append(pos_x[:SLICE_SIZE])
+        posxy_list.append(pos_y[:SLICE_SIZE])
+        y.append(position_as_map(posxy_list, X_STEP, Y_STEP, X_MAX, X_MIN, Y_MAX, Y_MIN))
+        pos_x = pos_x[SLICE_SIZE:]
+        pos_y = pos_y[SLICE_SIZE:]
+        # print(len(pos_x))
 
-    X = []
-    y_list = [[] for i in range(len(shifted_positions_list))]
-    metadata = []
+    if BINS_AFTER != 0 or BINS_BEFORE != 0:
+        print("Adding surrounding neural activity to spike bins...")
+        # crop unusable values
+        y = y[BINS_BEFORE:-BINS_AFTER]
+
+    return X, y
+
+
+
+
+def preprocess_raw_data(session,net_dict):
+    SLICE_SIZE = net_dict["SLICE_SIZE"]
+    WIN_SIZE = net_dict["WIN_SIZE"]
+    BINS_BEFORE = net_dict["BINS_BEFORE"]
+    BINS_AFTER = net_dict["BINS_AFTER"]
 
     # bin and normalize input and create metadata
 
-    while len(copy_session.position_x) >= SLICE_SIZE:
-        try:
-            metadata.append(dict(lickwells=copy_session.licks[0], time=copy_session.absolute_time_offset,
-                                 position=copy_session.position_x[0]))
-        except:
-            metadata.append(dict(rewarded=0, time=0, lickwell=0))  # no corresponding y-value
 
-        data_slice = copy_session[0:SLICE_SIZE]
-        copy_session = copy_session[SLICE_SIZE:]
-        X.append(data_slice.filtered_spikes)
-        # map of shifted positions_list
+    filtered_spikes = session.filtered_spikes
+    total = len(session.position_x) // SLICE_SIZE
+    BINS_IN_SAMPLE = SLICE_SIZE // WIN_SIZE
+    X = []
+    counter = 0
+    while len(filtered_spikes[0]) >= BINS_IN_SAMPLE:
+        first_half = []
+        second_half = []
+        for spike in filtered_spikes:
+            first_half.append(spike[:BINS_IN_SAMPLE])
+            second_half.append(spike[BINS_IN_SAMPLE:])
+        first_half = np.reshape(first_half,[len(first_half),len(first_half[0])])
+        X.append(first_half)
+        filtered_spikes = second_half
+        counter = counter + 1
+        print("slicing", counter, "of", total)
 
-        for i in range(len(shifted_positions_list)):
-            posxy_list = [shifted_positions_list[i][0][:SLICE_SIZE], shifted_positions_list[i][1][:SLICE_SIZE]]
-            y_list[i].append(position_as_map(posxy_list, X_STEP, Y_STEP, X_MAX, X_MIN, Y_MAX, Y_MIN))
-            shifted_positions_list[i] = [shifted_positions_list[i][0][SLICE_SIZE:],
-                                         shifted_positions_list[i][1][SLICE_SIZE:]]
-        print("slicing", len(X), "of", len(session.position_x) // SLICE_SIZE)
-    print("Finished slicing data")
-
-    # Increase range of X values
+    #Increase range of X values
 
     if BINS_AFTER != 0 or BINS_BEFORE != 0:
         print("Adding surrounding neural activity to spike bins...")
         # crop unusable values
         X_c = X[BINS_BEFORE:-BINS_AFTER]
-        y_list = [a[BINS_BEFORE:-BINS_AFTER] for a in y_list]
-        metadata = metadata[BINS_BEFORE:-BINS_AFTER]
         # increase x-range
 
         for i, x in enumerate(X_c):
             X_c[i] = np.concatenate([a for a in X[i:i + BINS_BEFORE + BINS_AFTER + 1]], axis=1)
         X = X_c
-        print("Finished adding surrounding neural activity to spike bins")
 
-    # Shuffle data
 
-    seed(2)
-    if SHUFFLE_DATA is True:
+    print("Finished adding surrounding neural activity to spike bins")
 
-        # crop length to fit shuffle factor
-        print("Shuffling data...")
-        x_length = len(X) - (len(X) % SHUFFLE_FACTOR)
-        X = X[:x_length]
-        metadata = metadata[:x_length]
-        y_list = [y[:x_length] for y in y_list]
+    print("Finished slicing data")
+    return X
 
-        # Shuffle index of data
-
-        r = np.arange(len(X))
-        r = r.reshape(-1, SHUFFLE_FACTOR)
-        s = np.arange(len(r)) # shuffling r directly doesnt work
-        shuffle(s)
-        r = r[s]
-        r = r.reshape(-1)
-
-        # shuffle data
-
-        X = [X[j] for j in r]
-        metadata = [metadata[j] for j in r]
-        li = []
-        for y in y_list:
-            li.append([y[j] for j in r])
-        y_list = li
-        print("Finished shuffling data")
-    return X, y_list,metadata
