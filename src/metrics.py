@@ -84,11 +84,6 @@ def test_accuracy(sess, S, network_dict, training_step, is_training_data=False, 
         actual_list[j][0] = bin_2[0]
         actual_list[j][1] = bin_2[1]
 
-        if print_distance is True:
-            print("prediction:", bin_1)
-            print("actual:    ", bin_2)
-            print("distance:", bin_distance(bin_1, bin_2))
-            print("_____________")
         if j % plot_after_iter == plot_after_iter - 1 and show_plot is True:
             print("plot")
             y_prime = a
@@ -130,7 +125,7 @@ def test_accuracy(sess, S, network_dict, training_step, is_training_data=False, 
         # print("accuracy",i,":",get_accuracy(prediction_list, actual_list,margin=i))
         acc = get_radius_accuracy(prediction_list, actual_list, [network_dict["X_STEP"], network_dict["Y_STEP"]], i)
         accuracy.append(acc)
-        if i == 19: print("accuracy", i, ":", acc)
+        if i == 19 and print_distance is True: print("accuracy", i, ":", acc)
 
     return r2, distance, accuracy
 

@@ -1,7 +1,7 @@
 import tensorflow as tf
 from database_api_beta import Slice, Filter, hann, bin
 from src.nets import MultiLayerPerceptron, ConvolutionalNeuralNetwork1
-from src.metrics import test_accuracy, print_net_dict
+from src.metrics import test_accuracy, print_net_dict,get_radius_accuracy
 import numpy as np
 from src.conf import mlp, sp1, cnn1
 import os
@@ -51,6 +51,7 @@ def run_network(net_dict):
     avg_scores_valid = []
     acc_scores_train = []
     acc_scores_valid = []
+    early_stop_valid = []
     X_train = net_dict["X_train"]
     y_train = net_dict["y_train"]
     if net_dict["LOAD_MODEL"] is True:
@@ -61,61 +62,75 @@ def run_network(net_dict):
 
     # Train model
 
-    if net_dict["TRAIN_MODEL"] is True:
-        sess.run(tf.local_variables_initializer())
-        print("Training model...")
-        xshape = [net_dict["BATCH_SIZE"]] + list(X_train[0].shape) + [1]
-        yshape = [net_dict["BATCH_SIZE"]] + list(y_train[0].shape) + [1]
-        metric_counter = 0
-        metric_step_counter = []
-        EARLY_STOP = False
-        for i in range(0, net_dict["EPOCHS"]+1):
-            # Train model
-            for j in range(0, len(X_train) - net_dict["BATCH_SIZE"], net_dict["BATCH_SIZE"]):
-                x = np.array([data_slice for data_slice in X_train[j:j + net_dict["BATCH_SIZE"]]])
-                y = np.array(y_train[j:j + net_dict["BATCH_SIZE"]])
-                x = np.reshape(x, xshape)
-                y = np.reshape(y, yshape)
-                t = np.max(S.train(sess, x, y, dropout=0.6))
-                # print(i, ", loss:", t)
+    sess.run(tf.local_variables_initializer())
+    print("Training model...")
+    xshape = [net_dict["BATCH_SIZE"]] + list(X_train[0].shape) + [1]
+    yshape = [net_dict["BATCH_SIZE"]] + list(y_train[0].shape) + [1]
+    metric_counter = 0
+    metric_step_counter = []
+    stop_early = False
+    for i in range(0, net_dict["EPOCHS"]+1):
+        # Train model
+        X_train, y_train = shuffle_io(X_train, y_train, net_dict,i)
+        t = None
+        for j in range(0, len(X_train) - net_dict["BATCH_SIZE"], net_dict["BATCH_SIZE"]):
+            x = np.array([data_slice for data_slice in X_train[j:j + net_dict["BATCH_SIZE"]]])
+            y = np.array(y_train[j:j + net_dict["BATCH_SIZE"]])
+            x = np.reshape(x, xshape)
+            y = np.reshape(y, yshape)
+            t = np.max(S.train(sess, x, y, dropout=0.6))
 
-                # Test accuracy and add validation to output. Check if early stopping is necessary
-
-                if metric_counter == net_dict["METRIC_ITER"]:
-                    metric_step_counter.append(j)
-                    saver.save(sess, net_dict["MODEL_PATH"])
-                    print("Step", i)
-                    print("training data:")
-                    r2_train, avg_train, accuracy_train = test_accuracy(sess, S, net_dict, i, is_training_data=True,
-                                                                        show_plot=False, plot_after_iter=5000,
-                                                                        print_distance=False)
-                    r2_scores_train.append(r2_train)
-                    avg_scores_train.append(avg_train)
-                    acc_scores_train.append(accuracy_train)
-                    print(r2_train, avg_train)
-                    print("validation data:")
-                    r2_valid, avg_valid, accuracy_valid = test_accuracy(sess, S, net_dict, i,is_training_data=False,
-                                                                     show_plot=False, plot_after_iter=500,
-                                                                     print_distance=False)
-                    r2_scores_valid.append(r2_valid)
-                    avg_scores_valid.append(avg_valid)
-                    acc_scores_valid.append(accuracy_valid)
-
-                    # Check if early stopping applies
-                    print(r2_valid, avg_valid)
-                    if net_dict["EARLY_STOPPING"] is True and len(avg_scores_valid) > 1 and i > 200:
-                        if avg_valid < avg_scores_valid[-2]:
-                            EARLY_STOP = True
-                            break
+        # Test accuracy and add validation to output. Check if early stopping is necessary
 
 
-                    # saver.save(sess, net_dict["MODEL_PATH"], global_step=i, write_meta_graph=False)
-                    print("____________________")
-                    metric_counter = 0
-            if EARLY_STOP is True:
-                break
-            metric_counter = metric_counter + 1
-        saver.save(sess, net_dict["MODEL_PATH"])
+
+            # Check if early stopping applies
+
+        if net_dict["EARLY_STOPPING"] is True and i >= 200:
+            if i % 5 == 0:
+                r2_valid, avg_valid, acc_valid = test_accuracy(sess, S, net_dict, i, is_training_data=False,
+                                                           show_plot=False, plot_after_iter=500,
+                                                           print_distance=False)
+                early_stop_valid.append(acc_valid)
+                if len(early_stop_valid)>2:
+                    if early_stop_valid[-1][19] < early_stop_valid[-2][19] and early_stop_valid[-2][19] < early_stop_valid[-3][19]:
+                        stop_early = True
+                        metric_counter = net_dict["METRIC_ITER"] # one last calculation with local maximum return
+
+
+        if metric_counter == net_dict["METRIC_ITER"]:
+            print(i, ", loss:", t)
+            metric_step_counter.append(i)
+            saver.save(sess, net_dict["MODEL_PATH"])
+            print("Epoch", i)
+            print("training data:")
+            r2_train, avg_train, accuracy_train = test_accuracy(sess, S, net_dict, i, is_training_data=True,
+                                                                show_plot=False, plot_after_iter=5000,
+                                                                print_distance=True)
+            r2_scores_train.append(r2_train)
+            avg_scores_train.append(avg_train)
+            acc_scores_train.append(accuracy_train)
+            print(r2_train, avg_train)
+            print("validation data:")
+            r2_valid, avg_valid, acc_valid = test_accuracy(sess, S, net_dict, i,is_training_data=False,
+                                                             show_plot=False, plot_after_iter=500,
+                                                             print_distance=True)
+            print(r2_valid, avg_valid)
+            r2_scores_valid.append(r2_valid)
+            avg_scores_valid.append(avg_valid)
+            acc_scores_valid.append(acc_valid)
+
+
+
+            # saver.save(sess, net_dict["MODEL_PATH"], global_step=i, write_meta_graph=False)
+            print("____________________")
+            metric_counter = 0
+            # a = get_radius_accuracy(prediction_list, actual_list, [network_dict["X_STEP"], network_dict["Y_STEP"]], 19)
+
+        metric_counter = metric_counter + 1
+        if stop_early is True:
+            break
+    saver.save(sess, net_dict["MODEL_PATH"])
 
     # Add performance to return dict
 
@@ -144,7 +159,7 @@ if __name__ == '__main__':
 
     # hippocampus
 
-    MODEL_PATH = "G:/master_datafiles/trained_networks/MLP_hippocampus_2018-09-14/"
+    MODEL_PATH = "G:/master_datafiles/trained_networks/MLP_hippocampus_2018-09-15/"
     RAW_DATA_PATH = "G:/master_datafiles/raw_data/2018-05-16_17-13-37/"
     FILTERED_DATA_PATH = "G:/master_datafiles/filtered_data/hippocampus_hann_win_size_25_09-5_7.pkl"
 
@@ -155,14 +170,14 @@ if __name__ == '__main__':
     SAVE_FILTERED_DATA = True
     LOAD_MODEL = False  # load model from model path
     TRAIN_MODEL = True  # train model or just show results
-    EPOCHS = 1000
+    EPOCHS = 10000
     INITIAL_TIMESHIFT = 0
-    TIME_SHIFT_ITER = 500
-    TIME_SHIFT_STEPS = 1
+    TIME_SHIFT_ITER = 200
+    TIME_SHIFT_STEPS = 50
     METRIC_ITER = 50 # after how many epochs network is validated
     SHUFFLE_DATA = True # wether to randomly shuffle the data in big slices
     SHUFFLE_FACTOR = 20
-    EARLY_STOPPING = False
+    EARLY_STOPPING = True
 
     # Input data parameters
 
@@ -244,7 +259,6 @@ if __name__ == '__main__':
         # session.to_pickle("slice_2.pkl")
         session = Slice.from_pickle("slice_2.pkl")
         session.print_details()
-        net_dict["X"] = preprocess_raw_data(session, net_dict)
         if SAVE_FILTERED_DATA is True:
             save_as_pickle(FILTERED_DATA_PATH, net_dict)
 
@@ -258,8 +272,12 @@ if __name__ == '__main__':
 
         # Time-Shift input and output
 
-        X, y = time_shift_io(session,net_dict["X"],z,net_dict)
-        X, y = shuffle_io(X,y,net_dict)
+        X, y = time_shift_io(session,z,net_dict)
+        X, y = shuffle_io(X,y,net_dict,2)
+        if len(X)!= len(y):
+            raise ValueError("Error: Length of x and y are not identical")
+
+
 
         # Assign training and testing set
 

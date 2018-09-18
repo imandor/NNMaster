@@ -18,16 +18,17 @@ def position_as_map(pos_list, xstep, ystep, X_MAX, X_MIN, Y_MAX, Y_MIN):
     return ret
 
 
-def shuffle_io(X,y,net_dict):
+def shuffle_io(X,y,net_dict,seed_no):
 
     # Shuffle data
-
+    if net_dict["SHUFFLE_DATA"] is False:
+        return X,y
     SHUFFLE_FACTOR = net_dict["SHUFFLE_FACTOR"]
-    seed(2)
+    seed(seed_no)
 
     # crop length to fit shuffle factor
 
-    print("Shuffling data...")
+    # print("Shuffling data...")
     x_length = len(X) - (len(X) % SHUFFLE_FACTOR)
     X = X[:x_length]
     y = y[:x_length]
@@ -45,12 +46,13 @@ def shuffle_io(X,y,net_dict):
 
     X = [X[j] for j in r]
     y = [y[j] for j in r]
-    print("Finished shuffling data")
+    # print("Finished shuffling data")
     return X,y
 
 
-def time_shift_io(session,X,shift,net_dict):
+def time_shift_io(session,shift,net_dict):
     SLICE_SIZE = net_dict["SLICE_SIZE"]
+    WIN_SIZE = net_dict["WIN_SIZE"]
     X_STEP = net_dict["X_STEP"]
     Y_STEP = net_dict["Y_STEP"]
     X_MAX = net_dict["X_MAX"]
@@ -62,18 +64,22 @@ def time_shift_io(session,X,shift,net_dict):
 
     # Shift positions
 
+    shift_in_filtered_spikes = int(shift/WIN_SIZE)
+    position_x = session.position_x
+    position_y = session.position_y
+    filtered_spikes = session.filtered_spikes
     if shift > 0:
-        session.position_x = session.position_x[shift:]
-        session.position_y = session.position_y[shift:]
-        X = X[:-shift//SLICE_SIZE]
+        position_x = position_x[shift:]
+        position_y = position_y[shift:]
+        filtered_spikes = [x[:-shift_in_filtered_spikes] for x in filtered_spikes]
 
     if shift < 0:
-        session.position_x = session.position_x[:shift]
-        session.position_y = session.position_y[:shift]
-        X = X[-shift//SLICE_SIZE:]
+        position_x = position_x[:shift]
+        position_y = position_y[:shift]
+        filtered_spikes = [x[-shift_in_filtered_spikes:] for x in filtered_spikes]
     y = []
-    pos_x = session.position_x
-    pos_y = session.position_y
+    pos_x = position_x
+    pos_y = position_y
     while len(pos_x)>=SLICE_SIZE:
         posxy_list = []
         posxy_list.append(pos_x[:SLICE_SIZE])
@@ -87,13 +93,13 @@ def time_shift_io(session,X,shift,net_dict):
         print("Adding surrounding neural activity to spike bins...")
         # crop unusable values
         y = y[BINS_BEFORE:-BINS_AFTER]
-
+    X = preprocess_raw_data(filtered_spikes, net_dict)
     return X, y
 
 
 
 
-def preprocess_raw_data(session,net_dict):
+def preprocess_raw_data(filtered_spikes,net_dict):
     SLICE_SIZE = net_dict["SLICE_SIZE"]
     WIN_SIZE = net_dict["WIN_SIZE"]
     BINS_BEFORE = net_dict["BINS_BEFORE"]
@@ -102,8 +108,7 @@ def preprocess_raw_data(session,net_dict):
     # bin and normalize input and create metadata
 
 
-    filtered_spikes = session.filtered_spikes
-    total = len(session.position_x) // SLICE_SIZE
+    # total = len(position_x) // SLICE_SIZE
     BINS_IN_SAMPLE = SLICE_SIZE // WIN_SIZE
     X = []
     counter = 0
@@ -117,7 +122,7 @@ def preprocess_raw_data(session,net_dict):
         X.append(first_half)
         filtered_spikes = second_half
         counter = counter + 1
-        print("slicing", counter, "of", total)
+        # print("slicing", counter, "of", total)
 
     #Increase range of X values
 
@@ -130,9 +135,6 @@ def preprocess_raw_data(session,net_dict):
         for i, x in enumerate(X_c):
             X_c[i] = np.concatenate([a for a in X[i:i + BINS_BEFORE + BINS_AFTER + 1]], axis=1)
         X = X_c
-
-
-    print("Finished adding surrounding neural activity to spike bins")
 
     print("Finished slicing data")
     return X
