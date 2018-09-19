@@ -84,10 +84,10 @@ def run_network(net_dict):
 
 
 
-            # Check if early stopping applies
+        # Check if early stopping applies
 
-        if net_dict["EARLY_STOPPING"] is True and i >= 200:
-            if i % 5 == 0:
+        if net_dict["EARLY_STOPPING"] is True and i>200: # most likely overfitting
+            if i % 20 == 0 and r2_scores_train[-1][0]>0.99:
                 r2_valid, avg_valid, acc_valid = test_accuracy(sess, S, net_dict, i, is_training_data=False,
                                                            show_plot=False, plot_after_iter=500,
                                                            print_distance=False)
@@ -153,13 +153,13 @@ if __name__ == '__main__':
 
     # neo cortex
 
-    # MODEL_PATH = "G:/master_datafiles/trained_networks/MLP_OFC_2018-09-13/"
+    # MODEL_PATH = "G:/master_datafiles/trained_networks/MLP_OFC_2018-09-19/"
     # RAW_DATA_PATH = "G:/master_datafiles/raw_data/2018-04-09_14-39-52/"
     # FILTERED_DATA_PATH = "G:/master_datafiles/filtered_data/neocortex_hann_win_size_100.pkl"
 
     # hippocampus
 
-    MODEL_PATH = "G:/master_datafiles/trained_networks/MLP_hippocampus_2018-09-15/"
+    MODEL_PATH = "G:/master_datafiles/trained_networks/MLP_hippocampus_ff/"
     RAW_DATA_PATH = "G:/master_datafiles/raw_data/2018-05-16_17-13-37/"
     FILTERED_DATA_PATH = "G:/master_datafiles/filtered_data/hippocampus_hann_win_size_25_09-5_7.pkl"
 
@@ -170,14 +170,14 @@ if __name__ == '__main__':
     SAVE_FILTERED_DATA = True
     LOAD_MODEL = False  # load model from model path
     TRAIN_MODEL = True  # train model or just show results
-    EPOCHS = 10000
+    EPOCHS = 1000
     INITIAL_TIMESHIFT = 0
     TIME_SHIFT_ITER = 200
-    TIME_SHIFT_STEPS = 50
+    TIME_SHIFT_STEPS = 13
     METRIC_ITER = 50 # after how many epochs network is validated
     SHUFFLE_DATA = True # wether to randomly shuffle the data in big slices
     SHUFFLE_FACTOR = 20
-    EARLY_STOPPING = True
+    EARLY_STOPPING = False
 
     # Input data parameters
 
@@ -252,12 +252,13 @@ if __name__ == '__main__':
     if LOAD_RAW_DATA is True:
         # session = Slice.from_raw_data(RAW_DATA_PATH)
         # session.neuron_filter(100)
+        # session.print_details()
         # print("Convolving data...")
         # session.set_filter(net_dict["session_filter"])
         # print("Finished convolving data")
         # session.filtered_spikes = stats.zscore(session.filtered_spikes, axis=1)  # Z Score neural activity
-        # session.to_pickle("slice_2.pkl")
-        session = Slice.from_pickle("slice_2.pkl")
+        # session.to_pickle("slice_OFC.pkl")
+        session = Slice.from_pickle("slice_OFC.pkl")
         session.print_details()
         if SAVE_FILTERED_DATA is True:
             save_as_pickle(FILTERED_DATA_PATH, net_dict)
