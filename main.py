@@ -9,10 +9,12 @@ import errno
 from src.settings import save_as_pickle, load_pickle
 from src.preprocessing import preprocess_raw_data,time_shift_io,shuffle_io
 import datetime
+import pickle
 import random
 import multiprocessing
 from functools import reduce
 from scipy import stats, spatial
+from external.preprocessing_funcs import  get_spikes_with_history
 
 
 def hann_generator(width):
@@ -41,7 +43,7 @@ def time_shift_data(X, y, n):
 
 def run_network(net_dict):
     # S = ConvolutionalNeuralNetwork1([None, 56, 40, 1], cnn1)
-    S = MultiLayerPerceptron([None, 56, 40, 1], mlp) # 56 147
+    S = MultiLayerPerceptron([None, 147, 40, 1], mlp) # 56 147
 
     saver = tf.train.Saver()
     sess = tf.Session()
@@ -51,7 +53,7 @@ def run_network(net_dict):
     avg_scores_valid = []
     acc_scores_train = []
     acc_scores_valid = []
-    early_stop_valid = []
+    early_stop_min = np.inf
     X_train = net_dict["X_train"]
     y_train = net_dict["y_train"]
     if net_dict["LOAD_MODEL"] is True:
@@ -71,7 +73,7 @@ def run_network(net_dict):
     stop_early = False
     for i in range(0, net_dict["EPOCHS"]+1):
         # Train model
-        X_train, y_train = shuffle_io(X_train, y_train, net_dict,i)
+        X_train, y_train = shuffle_io(X_train, y_train, net_dict,i+1)
         t = None
         for j in range(0, len(X_train) - net_dict["BATCH_SIZE"], net_dict["BATCH_SIZE"]):
             x = np.array([data_slice for data_slice in X_train[j:j + net_dict["BATCH_SIZE"]]])
@@ -91,12 +93,12 @@ def run_network(net_dict):
                 r2_valid, avg_valid, acc_valid = test_accuracy(sess, S, net_dict, i, is_training_data=False,
                                                            show_plot=False, plot_after_iter=500,
                                                            print_distance=False)
-                early_stop_valid.append(acc_valid)
-                if len(early_stop_valid)>2:
-                    if early_stop_valid[-1][19] < early_stop_valid[-2][19] and early_stop_valid[-2][19] < early_stop_valid[-3][19]:
-                        stop_early = True
-                        metric_counter = net_dict["METRIC_ITER"] # one last calculation with local maximum return
-
+                if early_stop_min > acc_valid[19]:
+                    early_stop_min = acc_valid[19]
+                else:
+                    if early_stop_min > acc_valid[19]  + 2:
+                            stop_early = True
+                            metric_counter = net_dict["METRIC_ITER"] # one last calculation with local maximum return
 
         if metric_counter == net_dict["METRIC_ITER"]:
             print(i, ", loss:", t)
@@ -151,33 +153,42 @@ def run_network(net_dict):
 if __name__ == '__main__':
     now = datetime.datetime.now().isoformat()
 
+
+    # Glaser data set
+    MODEL_PATH = "G:/master_datafiles/trained_networks/MLP_Custom_2018-20-09/"
+    RAW_DATA_PATH = "C:/Users/NN\Desktop/Neural_Decoding-master/example_data_hc.pickle"
+    FILTERED_DATA_PATH = "G:/master_datafiles/filtered_data/neocortex_hann_win_size_100.pkl"
+
+
+
     # neo cortex
 
-    # MODEL_PATH = "G:/master_datafiles/trained_networks/MLP_OFC_2018-09-19/"
+    # MODEL_PATH = "G:/master_datafiles/trained_networks/MLP_OFC_2018-09-20_verification_set/"
     # RAW_DATA_PATH = "G:/master_datafiles/raw_data/2018-04-09_14-39-52/"
     # FILTERED_DATA_PATH = "G:/master_datafiles/filtered_data/neocortex_hann_win_size_100.pkl"
 
     # hippocampus
 
-    MODEL_PATH = "G:/master_datafiles/trained_networks/MLP_hippocampus_ff/"
-    RAW_DATA_PATH = "G:/master_datafiles/raw_data/2018-05-16_17-13-37/"
-    FILTERED_DATA_PATH = "G:/master_datafiles/filtered_data/hippocampus_hann_win_size_25_09-5_7.pkl"
+    # MODEL_PATH = "G:/master_datafiles/trained_networks/MLP_hippocampus_2018-09-20/"
+    # RAW_DATA_PATH = "G:/master_datafiles/raw_data/2018-05-16_17-13-37/"
+    # FILTERED_DATA_PATH = "G:/master_datafiles/filtered_data/hippocampus_hann_win_size_25_09-5_7.pkl"
 
     # Program execution settings
 
     LOAD_RAW_DATA = True  # load source data from raw data path or load default model
     # LOAD_RAW_DATA = True # load source data from raw data path or load default model
+    LOAD_GLASER_DATA = True
     SAVE_FILTERED_DATA = True
     LOAD_MODEL = False  # load model from model path
     TRAIN_MODEL = True  # train model or just show results
     EPOCHS = 1000
     INITIAL_TIMESHIFT = 0
     TIME_SHIFT_ITER = 200
-    TIME_SHIFT_STEPS = 13
+    TIME_SHIFT_STEPS = 10
     METRIC_ITER = 50 # after how many epochs network is validated
     SHUFFLE_DATA = True # wether to randomly shuffle the data in big slices
     SHUFFLE_FACTOR = 20
-    EARLY_STOPPING = False
+    EARLY_STOPPING = True
 
     # Input data parameters
 
@@ -249,15 +260,16 @@ if __name__ == '__main__':
     
     # Preprocess data
 
-    if LOAD_RAW_DATA is True:
+    if LOAD_RAW_DATA is True and LOAD_GLASER_DATA is False:
         # session = Slice.from_raw_data(RAW_DATA_PATH)
-        # session.neuron_filter(100)
-        # session.print_details()
-        # print("Convolving data...")
-        # session.set_filter(net_dict["session_filter"])
-        # print("Finished convolving data")
-        # session.filtered_spikes = stats.zscore(session.filtered_spikes, axis=1)  # Z Score neural activity
-        # session.to_pickle("slice_OFC.pkl")
+        session = Slice.from_custom_data(RAW_DATA_PATH)
+        session.neuron_filter(100)
+        session.print_details()
+        print("Convolving data...")
+        session.set_filter(net_dict["session_filter"])
+        print("Finished convolving data")
+        session.filtered_spikes = stats.zscore(session.filtered_spikes, axis=1)  # Z Score neural activity
+        session.to_pickle("slice_OFC.pkl")
         session = Slice.from_pickle("slice_OFC.pkl")
         session.print_details()
         if SAVE_FILTERED_DATA is True:
@@ -268,16 +280,25 @@ if __name__ == '__main__':
     print_net_dict(net_dict) # show network parameters in console
 
     for z in range(INITIAL_TIMESHIFT, INITIAL_TIMESHIFT+ TIME_SHIFT_STEPS*TIME_SHIFT_ITER,TIME_SHIFT_ITER):
-        iter = int(z-INITIAL_TIMESHIFT)//TIME_SHIFT_ITER
-        print("Time shift is now", z)
+        if LOAD_GLASER_DATA is False:
+            iter = int(z-INITIAL_TIMESHIFT)//TIME_SHIFT_ITER
+            print("Time shift is now", z)
 
-        # Time-Shift input and output
+            # Time-Shift input and output
 
-        X, y = time_shift_io(session,z,net_dict)
-        X, y = shuffle_io(X,y,net_dict,2)
-        if len(X)!= len(y):
-            raise ValueError("Error: Length of x and y are not identical")
+            X, y = time_shift_io(session,z,net_dict)
+            X, y = shuffle_io(X,y,net_dict,3)
+            if len(X)!= len(y):
+                raise ValueError("Error: Length of x and y are not identical")
 
+
+        if LOAD_GLASER_DATA is True:
+            with open(RAW_DATA_PATH, 'rb') as f:
+                neural_data, y = pickle.load(f, encoding='latin1')  # If using python 3
+            bins_before = 0  # How many bins of neural data prior to the output are used for decoding
+            bins_current = 1  # Whether to use concurrent time bin of neural data
+            bins_after = 0  # How many bins of neural data after the output are used for decoding
+            X = get_spikes_with_history(neural_data, bins_before, bins_after, bins_current)
 
 
         # Assign training and testing set
@@ -307,7 +328,7 @@ if __name__ == '__main__':
         save_dict.pop('y_train', None)
         save_dict.pop('y_list', None)
 
-        path = MODEL_PATH  + "output/" + chr(97 + iter+INITIAL_TIMESHIFT//TIME_SHIFT_ITER) + "_" + now[0:10] + "_network_output_timeshift=" + str(
+        path = MODEL_PATH  + "output/" + chr(65 + iter) + "_" + now[0:10] + "_network_output_timeshift=" + str(
             z) + ".pkl"
         save_as_pickle(path, save_dict)
     print("fin")

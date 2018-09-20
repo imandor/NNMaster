@@ -86,11 +86,11 @@ def _convolve_thread_func(filter_func, n_bin_points, neuron_counter, n_neurons, 
         curr_search_window_max_bound += filter_func.step_size
         if len(curr_spikes_in_search_window) == 0:
             continue
-        filtered_spikes[index] = (np.average(curr_spikes_in_search_window) - np.average(
-            [curr_search_window_min_bound, curr_search_window_max_bound])) / len(curr_spikes_in_search_window)
-        # filtered_spikes[index] = sum(map(
-        # lambda x: filter_func((x - index * filter_func.step_size)/filter_func.search_radius),
-        # curr_spikes_in_search_window))
+        # filtered_spikes[index] = (np.average(curr_spikes_in_search_window) - np.average(
+        #     [curr_search_window_min_bound, curr_search_window_max_bound])) / len(curr_spikes_in_search_window)
+        filtered_spikes[index] = sum(map(
+        lambda x: filter_func((x - index * filter_func.step_size)/filter_func.search_radius),
+        curr_spikes_in_search_window))
         for spike_index, spike in enumerate(neuron_spikes[index_first_spike_in_window:index_first_spike_in_window+curr_search_window_max_bound]): # upper bound because a maximum of 1 spike per ms can occurr and runtime of slice operation is O(i2-i1)
             if spike >= curr_search_window_min_bound:
                 index_first_spike_in_window = index_first_spike_in_window + spike_index
@@ -352,6 +352,8 @@ class Slice:
                  for i in range(1,len(initial_detection_timestamp))] # Please note that first lick is deleted by default TODO
         print("finished loading session")
         return cls(spikes, licks, position_x, position_y, speed, trial_timestamp)
+
+
 
     def neuron_filter(self, minimum_spikes):
         """
