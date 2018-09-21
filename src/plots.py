@@ -15,7 +15,13 @@ def load_imagefile(path):
     avg_scores_valid_list = []
     avg_scores_train_list = []
     time_shift_list = []
-    for file_path in sorted(dict_files):
+    sorted_list = []
+    for i,file_path in enumerate(dict_files):
+        net_dict = load_pickle(file_path)
+        sorted_list.append([file_path,net_dict["TIME_SHIFT"]])
+    sorted_list = sorted(sorted_list, key=lambda x: x[1])
+    dict_files = [i[0] for i in sorted_list]
+    for file_path in dict_files:
         print("processing", file_path)
         net_dict = load_pickle(file_path)
         r2_scores_train_list.append(net_dict["r2_scores_train"])
@@ -28,8 +34,10 @@ def load_imagefile(path):
     return r2_scores_valid_list,r2_scores_train_list,acc_scores_valid_list,acc_scores_train_list,avg_scores_valid_list,avg_scores_train_list,net_dict,time_shift_list
 
 # PATH = "G:/master_datafiles/trained_networks/MLP_hippocampus/"
-PATH = "G:/master_datafiles/trained_networks/MLP_hippocampus_2018-09-20_ff/"
-PATH_2 = "G:/master_datafiles/trained_networks/MLP_hippocampus_2018-09-18/"
+PATH = "G:/master_datafiles/trained_networks/MLP_hippocampus_2018-09-19_verification_set/"
+
+# PATH = "G:/master_datafiles/trained_networks/MLP_OFC_2018-09-20_verification_set/"
+PATH_2 = "G:/master_datafiles/trained_networks/MLP_hippocampus_2018-09-19_verification_set/"
 # PATH = "G:/master_datafiles/trained_networks/MLP_hippocampus_2018-09-12/"
 
 
@@ -223,9 +231,9 @@ r2_scores_valid_2 = [x[-1][0] for x in r2_scores_valid_list_2]
 distance_scores_valid = [x[-1] for x in avg_scores_valid_list] # takes the latest trained value for each time shift
 distance_scores_valid_2 = [x[-1] for x in avg_scores_valid_list_2] # takes the latest trained value for each time shift
 
-acc_scores_valid_2 = [x[15:38] for i,x in enumerate(acc_scores_valid_2)]
-r2_scores_valid_2 = r2_scores_valid_2[15:38]
-distance_scores_valid_2 = distance_scores_valid_2[15:38]
+# acc_scores_valid_2 = [x[15:38] for i,x in enumerate(acc_scores_valid_2)]
+# r2_scores_valid_2 = r2_scores_valid_2[15:38]
+# distance_scores_valid_2 = distance_scores_valid_2[15:38]
 acc_scores_middle = np.ndarray.tolist(np.array(acc_scores_valid) - np.array(acc_scores_valid_2))
 r2_scores_middle = np.ndarray.tolist(np.array(r2_scores_valid) - np.array(r2_scores_valid_2))
 distance_scores_middle = np.ndarray.tolist(np.array(distance_scores_valid) - np.array(distance_scores_valid_2))
@@ -244,7 +252,7 @@ custom_lines = [Patch(facecolor='mediumvioletred', edgecolor='b',
                 Patch(facecolor='green', edgecolor='b',
                             label='acc_2')
                 ]
-ax1.legend(custom_lines, ['integral filter underperforms', 'integral filter overperforms'],bbox_to_anchor=(1, 1),
+ax1.legend(custom_lines, ['prefrontal cortex underperforms', 'prefrontal cortex overperforms'],bbox_to_anchor=(1, 1),
            bbox_transform=plt.gcf().transFigure)
 # ax1.set_title('Portion of predictions inside given radius wrt time-shift')
 ax1.set_xlabel("Time shift in ms")
@@ -269,7 +277,7 @@ custom_lines = [Patch(facecolor='green', edgecolor='b',
                 Patch(facecolor='red', edgecolor='b',
                             label='d_2')
                 ]
-ax.legend(custom_lines, [r'$\varnothing$ distance integral filter', r'$\varnothing$distance hann filter'])
+ax.legend(custom_lines, [r'$\varnothing$ distance prefrontal cortex', r'$\varnothing$distance hippocampus'])
 ax.grid(c='k', ls='-', alpha=0.3)
 # ax.set_title(r'$\varnothing$distance of validation wrt time-shift')
 ax.set_xlabel("Time shift in ms")
@@ -296,7 +304,7 @@ custom_lines = [Patch(facecolor='green', edgecolor='b',
                 Patch(facecolor='red', edgecolor='b',
                             label='R2_2')
                 ]
-ax1.legend(custom_lines, ['R2 integral filter', 'R2 hann filter'])
+ax1.legend(custom_lines, ['R2 prefrontal cortex', 'R2 hippocampus'])
 f = interp1d(time_shift_list, r2_scores_middle)
 x = np.linspace(time_shift_list[0],time_shift_list[-1],1000)
 ax1.fill_between(x, 0, f(x), where=(np.array(f(x))) < 0 , color='maroon')
