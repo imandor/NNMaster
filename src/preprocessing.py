@@ -6,20 +6,15 @@ from itertools import takewhile, dropwhile, repeat
 
 def position_as_map(pos_list, xstep, ystep, X_MAX, X_MIN, Y_MAX, Y_MIN):
     pos_list = np.asarray(pos_list)
-    if  np.isscalar(pos_list[0]):
-        x_list = np.array(pos_list[0])
-        y_list = np.array(pos_list[1])
-
-    else: # if more than one entry in pos_list (standard)
-        x_list = pos_list[0, :]
-        y_list = pos_list[1, :]
+    x_list = pos_list[0, :]
+    y_list = pos_list[1, :]
     x_list = ((x_list - X_MIN) // xstep).astype(int)
     y_list = ((y_list - Y_MIN) // ystep).astype(int)
     pos_list = np.dstack((x_list, y_list))[0]
     pos_list = np.unique(pos_list, axis=0)
     ret = np.zeros(((X_MAX - X_MIN) // xstep, (Y_MAX - Y_MIN) // ystep))
     for pos in pos_list:
-        ret[int(pos[0]), int(pos[1])] = 1
+        ret[pos[0], pos[1]] = 1
     return ret
 
 
@@ -144,11 +139,3 @@ def preprocess_raw_data(filtered_spikes,net_dict):
     print("Finished slicing data")
     return X
 
-def filter_movement(X, y, max_movement):
-    for i, posxy in reversed(list(enumerate(y))):
-        counts = np.sum(posxy)
-        if counts > max_movement:
-            X = np.delete(X, i, axis=0)
-            y = np.delete(y,i,axis=0)
-
-    return X,y

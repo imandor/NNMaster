@@ -112,6 +112,12 @@ class ConvolutionalNeuralNetwork1(Network):
             self.weights["conv1"],
             conf.conv1.strides,
             conf.conv1.padding, name="conv1"))
+
+        # Dropout
+
+
+        # Conv2
+
         self.weights["conv2"] = tf.Variable(conf.conv2.weights)
         self.layers["conv2"] = conf.conv2.activation(tf.nn.conv2d(
             self.layers["conv1"],
