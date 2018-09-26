@@ -7,7 +7,7 @@ from src.conf import mlp, sp1, cnn1
 import os
 import errno
 from src.settings import save_as_pickle, load_pickle
-from src.preprocessing import preprocess_raw_data,time_shift_io,shuffle_io
+from src.preprocessing import time_shift_io,shuffle_io
 import datetime
 import pickle
 import random
@@ -67,7 +67,7 @@ def run_network(net_dict):
     sess.run(tf.local_variables_initializer())
     print("Training model...")
     xshape = [net_dict["BATCH_SIZE"]] + list(X_train[0].shape) + [1]
-    yshape = [net_dict["BATCH_SIZE"]] + list(y_train[0].shape) + [1]
+    yshape = [net_dict["BATCH_SIZE"]]  + [2]
     metric_counter = 0
     metric_step_counter = []
     stop_early = False
@@ -80,7 +80,7 @@ def run_network(net_dict):
             y = np.array(y_train[j:j + net_dict["BATCH_SIZE"]])
             x = np.reshape(x, xshape)
             y = np.reshape(y, yshape)
-            t = np.max(S.train(sess, x, y, dropout=0.3))
+            t = np.max(S.train(sess, x, y, dropout=0.8))
 
         # Test accuracy and add validation to output. Check if early stopping is necessary
 
@@ -177,24 +177,25 @@ if __name__ == '__main__':
 
     LOAD_RAW_DATA = True  # load source data from raw data path or load default model
     # LOAD_RAW_DATA = True # load source data from raw data path or load default model
-    LOAD_GLASER_DATA = False
     SAVE_FILTERED_DATA = True
     LOAD_MODEL = False  # load model from model path
     TRAIN_MODEL = True  # train model or just show results
-    EPOCHS = 1000
+    EPOCHS = 100000
     INITIAL_TIMESHIFT = 0
     TIME_SHIFT_ITER = 200
-    TIME_SHIFT_STEPS = 10
+    TIME_SHIFT_STEPS = 1
     METRIC_ITER = 50 # after how many epochs network is validated
-    SHUFFLE_DATA = True # wether to randomly shuffle the data in big slices
+    SHUFFLE_DATA = False # wether to randomly shuffle the data in big slices
     SHUFFLE_FACTOR = 20
     EARLY_STOPPING = True
 
     # Input data parameters
 
-    SLICE_SIZE = 200
-    BATCH_SIZE = 10
-    WIN_SIZE = 5
+    SLICE_SIZE = 800
+    Y_SLICE_SIZE = 200
+    STRIDE = int(SLICE_SIZE*0.1)
+    BATCH_SIZE = 50
+    WIN_SIZE = 20
     SEARCH_RADIUS = WIN_SIZE * 2
     VALID_RATIO = 0.1
     BINS_BEFORE = 0
@@ -257,10 +258,12 @@ if __name__ == '__main__':
     net_dict["WIN_SIZE"] = WIN_SIZE
     net_dict["SEARCH_RADIUS"] = SEARCH_RADIUS
     net_dict["EARLY_STOPPING"] = EARLY_STOPPING
-    
+    net_dict["Y_SLICE_SIZE"] = Y_SLICE_SIZE
+    net_dict["STRIDE"] = STRIDE
+
     # Preprocess data
 
-    if LOAD_RAW_DATA is True and LOAD_GLASER_DATA is False:
+    if LOAD_RAW_DATA is True :
         # session = Slice.from_raw_data(RAW_DATA_PATH)
         # session.neuron_filter(100)
         # session.print_details()
@@ -279,25 +282,17 @@ if __name__ == '__main__':
     print_net_dict(net_dict) # show network parameters in console
 
     for z in range(INITIAL_TIMESHIFT, INITIAL_TIMESHIFT+ TIME_SHIFT_STEPS*TIME_SHIFT_ITER,TIME_SHIFT_ITER):
-        if LOAD_GLASER_DATA is False:
-            iter = int(z-INITIAL_TIMESHIFT)//TIME_SHIFT_ITER
-            print("Time shift is now", z)
+        iter = int(z-INITIAL_TIMESHIFT)//TIME_SHIFT_ITER
+        print("Time shift is now", z)
 
-            # Time-Shift input and output
+        # Time-Shift input and output
 
-            X, y = time_shift_io(session,z,net_dict)
-            X, y = shuffle_io(X,y,net_dict,3)
-            if len(X)!= len(y):
-                raise ValueError("Error: Length of x and y are not identical")
+        X, y = time_shift_io(session,z,net_dict)
+        if len(X)!= len(y):
+            raise ValueError("Error: Length of x and y are not identical")
+        X, y = shuffle_io(X,y,net_dict,3)
 
 
-        # if LOAD_GLASER_DATA is True:
-        #     with open(RAW_DATA_PATH, 'rb') as f:
-        #         neural_data, y = pickle.load(f, encoding='latin1')  # If using python 3
-        #     bins_before = 0  # How many bins of neural data prior to the output are used for decoding
-        #     bins_current = 1  # Whether to use concurrent time bin of neural data
-        #     bins_after = 0  # How many bins of neural data after the output are used for decoding
-        #     X = get_spikes_with_history(neural_data, bins_before, bins_after, bins_current)
 
 
         # Assign training and testing set

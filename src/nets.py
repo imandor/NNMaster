@@ -12,8 +12,7 @@ def conf_to_loss(loss_type, logits, labels):
     elif loss_type == "sigmoid_cross_entropy":
         return tf.nn.sigmoid_cross_entropy_with_logits(logits=logits, labels=labels)
     elif loss_type == "mse":
-        axis = list(range(1, len(logits.shape.as_list())))
-        return tf.reduce_mean((logits - labels) ** 2, axis=axis)
+        return tf.losses.mean_squared_error(labels=logits,predictions=labels)
     elif loss_type == "rmse":
         axis = list(range(1, len(logits.shape.as_list())))
         return tf.reduce_mean(tf.abs(logits - labels), axis=axis)

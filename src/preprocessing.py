@@ -59,9 +59,8 @@ def time_shift_io(session,shift,net_dict):
     X_MIN = net_dict["X_MIN"]
     Y_MAX = net_dict["Y_MAX"]
     Y_MIN = net_dict["Y_MIN"]
-    BINS_BEFORE = net_dict["BINS_BEFORE"]
-    BINS_AFTER = net_dict["BINS_AFTER"]
-
+    STRIDE = net_dict["STRIDE"]
+    Y_SLICE_SIZE = net_dict["Y_SLICE_SIZE"]
     # Shift positions
 
     shift_in_filtered_spikes = int(shift/WIN_SIZE)
@@ -80,62 +79,40 @@ def time_shift_io(session,shift,net_dict):
     y = []
     pos_x = position_x
     pos_y = position_y
-    while len(pos_x)>=SLICE_SIZE:
-        posxy_list = []
-        posxy_list.append(pos_x[:SLICE_SIZE])
-        posxy_list.append(pos_y[:SLICE_SIZE])
-        y.append(position_as_map(posxy_list, X_STEP, Y_STEP, X_MAX, X_MIN, Y_MAX, Y_MIN))
-        pos_x = pos_x[SLICE_SIZE:]
-        pos_y = pos_y[SLICE_SIZE:]
+    BINS_IN_SAMPLE = SLICE_SIZE // WIN_SIZE
+    BINS_IN_STRIDE = STRIDE // WIN_SIZE
+    SURROUNDING_INDEX = int(0.5 * (SLICE_SIZE - Y_SLICE_SIZE))
+    X = []
+    while len(filtered_spikes[0]) >= STRIDE:
+
+        # Input
+        bins_to_X = []
+        remaining_bins = []
+        for spike in filtered_spikes:
+            bins_to_X.append(spike[:BINS_IN_SAMPLE])
+            remaining_bins.append(spike[BINS_IN_STRIDE:])
+        bins_to_X = np.reshape(bins_to_X, [len(bins_to_X), len(bins_to_X[0])])
+        X.append(bins_to_X)
+        filtered_spikes = remaining_bins
+
+        # output
+
+        # norm_x = (pos_x[:SLICE_SIZE] - X_MIN)/X_MAX
+        # norm_y = (pos_y[:SLICE_SIZE] - X_MIN)/X_MAX
+        norm_x = pos_x[:SLICE_SIZE]
+        norm_y = pos_y[:SLICE_SIZE]
+
+        posxy_list =  [np.average(norm_x[SURROUNDING_INDEX:-SURROUNDING_INDEX]),np.average(norm_y[SURROUNDING_INDEX:-SURROUNDING_INDEX]) ] # remove surrounding positional data and form average
+        y.append(posxy_list)
+        pos_x = pos_x[BINS_IN_STRIDE*WIN_SIZE:]
+        pos_y = pos_y[BINS_IN_STRIDE*WIN_SIZE:]
         # print(len(pos_x))
 
-    if BINS_AFTER != 0 or BINS_BEFORE != 0:
-        print("Adding surrounding neural activity to spike bins...")
-        # crop unusable values
-        y = y[BINS_BEFORE:-BINS_AFTER]
-    X = preprocess_raw_data(filtered_spikes, net_dict)
+
     return X, y
 
 
 
 
-def preprocess_raw_data(filtered_spikes,net_dict):
-    SLICE_SIZE = net_dict["SLICE_SIZE"]
-    WIN_SIZE = net_dict["WIN_SIZE"]
-    BINS_BEFORE = net_dict["BINS_BEFORE"]
-    BINS_AFTER = net_dict["BINS_AFTER"]
 
-    # bin and normalize input and create metadata
-
-
-    # total = len(position_x) // SLICE_SIZE
-    BINS_IN_SAMPLE = SLICE_SIZE // WIN_SIZE
-    X = []
-    counter = 0
-    while len(filtered_spikes[0]) >= BINS_IN_SAMPLE:
-        first_half = []
-        second_half = []
-        for spike in filtered_spikes:
-            first_half.append(spike[:BINS_IN_SAMPLE])
-            second_half.append(spike[BINS_IN_SAMPLE:])
-        first_half = np.reshape(first_half,[len(first_half),len(first_half[0])])
-        X.append(first_half)
-        filtered_spikes = second_half
-        counter = counter + 1
-        # print("slicing", counter, "of", total)
-
-    #Increase range of X values
-
-    if BINS_AFTER != 0 or BINS_BEFORE != 0:
-        print("Adding surrounding neural activity to spike bins...")
-        # crop unusable values
-        X_c = X[BINS_BEFORE:-BINS_AFTER]
-        # increase x-range
-
-        for i, x in enumerate(X_c):
-            X_c[i] = np.concatenate([a for a in X[i:i + BINS_BEFORE + BINS_AFTER + 1]], axis=1)
-        X = X_c
-
-    print("Finished slicing data")
-    return X
 

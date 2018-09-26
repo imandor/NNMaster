@@ -22,12 +22,12 @@ mlp.fc2 = Map()
 mlp.fc2.weights = tf.truncated_normal(shape=(100, 100), stddev=0.01)
 mlp.fc2.activation = tf.nn.relu
 mlp.fc3 = Map()
-mlp.fc3.weights = tf.truncated_normal(shape=(100, 80 * 30), stddev=0.01)
+mlp.fc3.weights = tf.truncated_normal(shape=(100, 2), stddev=0.01)
 mlp.fc3.activation = tf.identity
 mlp.reshape = Map()
-mlp.reshape.shape = [None, 80, 30, 1]
-mlp.loss_type = "sigmoid_cross_entropy"
-mlp.optimizer = tf.train.AdamOptimizer(0.005, epsilon=1e-14)
+mlp.reshape.shape = [None, 2]
+mlp.loss_type = "mse"
+mlp.optimizer = tf.train.AdamOptimizer(0.005)
 
 cnn1 = Map()
 cnn1.conv1 = Map()
