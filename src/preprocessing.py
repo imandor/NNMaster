@@ -101,17 +101,14 @@ def time_shift_io(session,shift,net_dict):
         # norm_y = (pos_y[:SLICE_SIZE] - X_MIN)/X_MAX
         norm_x = pos_x[:SLICE_SIZE]
         norm_y = pos_y[:SLICE_SIZE]
-
-        posxy_list =  [np.average(norm_x[SURROUNDING_INDEX:-SURROUNDING_INDEX]),np.average(norm_y[SURROUNDING_INDEX:-SURROUNDING_INDEX]) ] # remove surrounding positional data and form average
-        y.append(posxy_list)
+        right_index_border = len(norm_x) - SURROUNDING_INDEX
+        posxy_list =  [(norm_x[SURROUNDING_INDEX:right_index_border]),(norm_y[SURROUNDING_INDEX:right_index_border]) ] # remove surrounding positional data and form average
+        y.append(position_as_map(posxy_list, X_STEP, Y_STEP, X_MAX, X_MIN, Y_MAX, Y_MIN))
         pos_x = pos_x[BINS_IN_STRIDE*WIN_SIZE:]
         pos_y = pos_y[BINS_IN_STRIDE*WIN_SIZE:]
         # print(len(pos_x))
 
-
     return X, y
-
-
 
 
 

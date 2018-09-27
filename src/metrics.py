@@ -11,8 +11,8 @@ def get_r2(y_actual, y_pred):
     R2_array=np.array(R2_list)
     return R2_array #Return an array of R2s
 
-def get_avg_distance(y_actual, y_pred, margin=0):
-    distance_list = np.sqrt(np.square(y_actual[:, 0] - y_pred[:, 0]) + np.square(y_actual[:, 1] - y_pred[:, 1]))
+def get_avg_distance(y_actual, y_pred, step_size, margin=0):
+    distance_list = np.sqrt(np.square(step_size[0] * (y_actual[:, 0] - y_pred[:, 0])) + np.square(step_size[1] * (y_actual[:, 1] - y_pred[:, 1])))
     return np.average(distance_list,axis=0)
 
 
@@ -23,10 +23,9 @@ def get_accuracy(y_actual, y_pred, margin=0):
         accuracy_list.append(np.abs(y_actual[:, i] - y_pred[:, i]) <= margin)
     return np.average(accuracy_list,axis=1)
 
-def get_radius_accuracy(y_actual, y_pred,  absolute_margin=0):
+def get_radius_accuracy(y_actual, y_pred, step_size, absolute_margin=0):
     """ returns percentage of valid vs predicted with absolute distance <= margin in cm"""
-    asd = np.sqrt(np.square( (y_actual[:, 0] - y_pred[:, 0])) + np.square((y_actual[:, 1] - y_pred[:, 1])))
-    distance_list = np.sqrt(np.square( (y_actual[:, 0] - y_pred[:, 0])) + np.square((y_actual[:, 1] - y_pred[:, 1]))) <= absolute_margin
+    distance_list = np.sqrt(np.square(step_size[0] * (y_actual[:, 0] - y_pred[:, 0])) + np.square(step_size[1] * (y_actual[:, 1] - y_pred[:, 1]))) <= absolute_margin
     return np.average(distance_list,axis=0)
 
 
@@ -50,8 +49,8 @@ def average_position(mapping):
     try:
         return [int(sum_1), int(sum_0)]
     except ValueError:
-        print("asd")
-        return False
+        print("Value error, check validation output")
+        return "Value error, check validation output"
 
 
 def test_accuracy(sess, S, network_dict, training_step, is_training_data=False, show_plot=False, plot_after_iter=1, print_distance=False):
@@ -64,7 +63,7 @@ def test_accuracy(sess, S, network_dict, training_step, is_training_data=False, 
         y_test = network_dict["y_valid"]
         plot_savefile = "plot_valid_prediction_"
     xshape = [1] + list(X_test[0].shape) + [1]
-    yshape = [1]  + [2]
+    yshape = [1] + list(y_test[0].shape) + [1]
     prediction_list = np.zeros([len(y_test), 2])
     actual_list = np.zeros([len(y_test), 2])
     for j in range(0, len(X_test) - 1, 1):
@@ -72,22 +71,60 @@ def test_accuracy(sess, S, network_dict, training_step, is_training_data=False, 
         y = np.array(y_test[j:j + 1])
         x = np.reshape(x, xshape)
         y = np.reshape(y, yshape)
-        a = S.valid(sess, x)
+        prediction = S.valid(sess,x)
         # form softmax of output and remove nan values for columns with only zeros
         # exp_scores = np.exp(a)
         # a = np.nan_to_num(exp_scores / np.sum(exp_scores, axis=1, keepdims=True))
-        prediction_list[j][0] = a[0][0]
-        prediction_list[j][1] = a[0][1]
-        actual_list[j][0] = y[0][0]
-        actual_list[j][1] = y[0][1]
+        # a = np.interp(prediction, (prediction.min(), prediction.max()), (0, +1))
+        a = sigmoid(prediction[0, :, :, 0])
+        y = y[0, :, :, 0]
+        bin_1 = average_position(a)
+        bin_2 = average_position(y)
+        prediction_list[j][0] = bin_1[0]
+        prediction_list[j][1] = bin_1[1]
+        actual_list[j][0] = bin_2[0]
+        actual_list[j][1] = bin_2[1]
 
+        if j % plot_after_iter == plot_after_iter - 1 and show_plot is True:
+            print("plot")
+            y_prime = a
+            # fig = plt.figure()
+            fig = plt.gcf()
+            ax1 = fig.add_subplot(1, 2, 1)
+            ax2 = fig.add_subplot(1, 2, 2)
+            ax1.axis('off')
+            ax2.axis('off')
+            fig.subplots_adjust(left=0.01, right=0.99, bottom=0.01, top=0.99, hspace=0.01, wspace=0.01)
+            Y = y
+            # Y -= np.min(Y)
+            # Y /= np.max(Y)
+            Y *= 255
+
+            Y_prime = a
+            Y_prime -= np.min(Y_prime)
+            Y_prime /= np.max(Y_prime)
+            Y_prime *= 255
+            # Y_prime[6, 9] = 30
+            # Y_prime[14, 9] = 30
+            # Y_prime[23, 9] = 30
+            # Y_prime[32, 9] = 30
+            # Y_prime[41, 9] = 30
+            # Y[6, 9] = 30
+            # Y[14, 9] = 30
+            # Y[23, 9] = 30
+            # Y[32, 9] = 30
+            # Y[41, 9] = 30
+            ax1.imshow(Y, cmap="gray")
+            ax2.imshow(Y_prime, cmap="gray")
+            plt.savefig(network_dict["MODEL_PATH"]+"images/"+ plot_savefile + "_shift=" + str(network_dict["TIME_SHIFT"])+ "_epoch=" + str(training_step) + "_img"+ str(j) + ".pdf")
+            plt.close()
 
     r2 = get_r2(actual_list, prediction_list)
     distance = get_avg_distance(prediction_list, actual_list, [network_dict["X_STEP"], network_dict["Y_STEP"]])
     accuracy = []
     for i in range(0, 20):
         # print("accuracy",i,":",get_accuracy(prediction_list, actual_list,margin=i))
-        acc = get_radius_accuracy(prediction_list, actual_list, i)
+        acc = get_radius_accuracy(prediction_list, actual_list, [network_dict["X_STEP"], network_dict["Y_STEP"]], i)
         accuracy.append(acc)
         if i == 19 and print_distance is True: print("accuracy", i, ":", acc)
 

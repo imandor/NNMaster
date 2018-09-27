@@ -160,8 +160,12 @@ class Slice:
     def print_details(self):
         average_spikes_per_second = np.mean([len(x) for x in self.spikes])*1000/len(self.position_x)
         session_length_in_minutes = len(self.position_x)/(1000*60)
+        average_speed = np.average(self.speed)
+        maximum_speed = np.max(self.speed)
         print("Average spikes per second:",average_spikes_per_second)
         print("Session length in minutes:",session_length_in_minutes)
+        print("Average speed in m/s:",average_speed)
+        print("Maximum speed in m/s:",maximum_speed)
 
 
     def timeshift_position(self,timeshift):
