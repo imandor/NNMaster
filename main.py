@@ -1,13 +1,13 @@
 import tensorflow as tf
 from database_api_beta import Slice, Filter, hann, bin
 from src.nets import MultiLayerPerceptron, ConvolutionalNeuralNetwork1
-from src.metrics import test_accuracy, print_net_dict,get_radius_accuracy
+from src.metrics import test_accuracy, print_net_dict, plot_histogram
 import numpy as np
 from src.conf import mlp, sp1, cnn1
 import os
 import errno
 from src.settings import save_as_pickle, load_pickle
-from src.preprocessing import time_shift_io,shuffle_io
+from src.preprocessing import time_shift_io,shuffle_io,position_as_map
 import datetime
 import pickle
 import random
@@ -42,8 +42,8 @@ def time_shift_data(X, y, n):
 
 
 def run_network(net_dict):
-    # S = ConvolutionalNeuralNetwork1([None, 56, 40, 1], cnn1)
-    S = MultiLayerPerceptron([None, 56, 100, 1], mlp) # 56 147
+    # S = ConvolutionalNeuralNetwork1([None, 147, 40, 1], cnn1)
+    S = MultiLayerPerceptron([None, 147, 100, 1], mlp) # 56 147
 
     saver = tf.train.Saver()
     sess = tf.Session()
@@ -90,8 +90,7 @@ def run_network(net_dict):
 
         if net_dict["EARLY_STOPPING"] is True and i>200: # most likely overfitting
             if i % 20 == 0 and r2_scores_train[-1][0]>0.97:
-                r2_valid, avg_valid, acc_valid = test_accuracy(sess, S, net_dict, i, is_training_data=False,
-                                                           show_plot=False, plot_after_iter=500,
+                r2_valid, avg_valid, acc_valid = test_accuracy(sess, S, net_dict, is_training_data=False,
                                                            print_distance=False)
                 if early_stop_min > acc_valid[19]:
                     early_stop_min = acc_valid[19]
@@ -106,16 +105,14 @@ def run_network(net_dict):
             saver.save(sess, net_dict["MODEL_PATH"])
             print("Epoch", i)
             print("training data:")
-            r2_train, avg_train, accuracy_train = test_accuracy(sess, S, net_dict, i, is_training_data=True,
-                                                                show_plot=False, plot_after_iter=5000,
+            r2_train, avg_train, accuracy_train = test_accuracy(sess, S, net_dict, is_training_data=True,
                                                                 print_distance=True)
             r2_scores_train.append(r2_train)
             avg_scores_train.append(avg_train)
             acc_scores_train.append(accuracy_train)
             print(r2_train, avg_train)
             print("validation data:")
-            r2_valid, avg_valid, acc_valid = test_accuracy(sess, S, net_dict, i,is_training_data=False,
-                                                             show_plot=False, plot_after_iter=500,
+            r2_valid, avg_valid, acc_valid = test_accuracy(sess, S, net_dict, is_training_data=False,
                                                              print_distance=True)
             print(r2_valid, avg_valid)
             r2_scores_valid.append(r2_valid)
@@ -145,7 +142,9 @@ def run_network(net_dict):
     net_dict["trained_steps"] = net_dict["trained_steps"] + net_dict["METRIC_ITER"]
     net_dict["metric_step_counter"] = metric_step_counter
     # Close session and add current time shift to network save file
-
+    if net_dict["MAKE_HISTOGRAM"] is True:
+        plot_histogram(sess,S,net_dict,net_dict["X_valid"],net_dict["y_valid"])
+        plot_histogram(sess,S,net_dict,net_dict["X_train"],net_dict["y_train"])
     sess.close()
     return dict(net_dict)
 
@@ -155,36 +154,37 @@ if __name__ == '__main__':
 
 
     # Glaser data set
-    # MODEL_PATH = "G:/master_datafiles/trained_networks/MLP_Custom_2018-20-09/"
-    # RAW_DATA_PATH = "C:/Users/NN\Desktop/Neural_Decoding-master/example_data_hc.pickle"
-    # FILTERED_DATA_PATH = "G:/master_datafiles/filtered_data/neocortex_hann_win_size_100.pkl"
+    MODEL_PATH = "G:/master_datafiles/trained_networks/MLP_Custom_2018-20-09/"
+    RAW_DATA_PATH = "C:/Users/NN\Desktop/Neural_Decoding-master/example_data_hc.pickle"
+    FILTERED_DATA_PATH = "G:/master_datafiles/filtered_data/neocortex_hann_win_size_100.pkl"
 
 
 
     # neo cortex
 
-    # MODEL_PATH = "G:/master_datafiles/trained_networks/MLP_OFC_2018-09-20_verification_set/"
+    # MODEL_PATH = "G:/master_datafiles/trained_networks/MLP_OFC_2018-10-01_delete/"
     # RAW_DATA_PATH = "G:/master_datafiles/raw_data/2018-04-09_14-39-52/"
     # FILTERED_DATA_PATH = "G:/master_datafiles/filtered_data/neocortex_hann_win_size_100.pkl"
 
     # hippocampus
 
-    MODEL_PATH = "G:/master_datafiles/trained_networks/MLP_hippocampus_2018-09-26_stride/"
-    RAW_DATA_PATH = "G:/master_datafiles/raw_data/2018-05-16_17-13-37/"
-    FILTERED_DATA_PATH = "G:/master_datafiles/filtered_data/hippocampus_hann_win_size_25_09-5_7.pkl"
+    # MODEL_PATH = "G:/master_datafiles/trained_networks/MLP_hippocampus_2018-09-30_small_stride/"
+    # RAW_DATA_PATH = "G:/master_datafiles/raw_data/2018-05-16_17-13-37/"
+    # FILTERED_DATA_PATH = "G:/master_datafiles/filtered_data/hippocampus_hann_win_size_25_09-5_7.pkl"
 
     # Program execution settings
 
     LOAD_RAW_DATA = True  # load source data from raw data path or load default model
     # LOAD_RAW_DATA = True # load source data from raw data path or load default model
-    LOAD_GLASER_DATA = False
+    LOAD_GLASER_DATA = True
     SAVE_FILTERED_DATA = True
+    MAKE_HISTOGRAM = True
     LOAD_MODEL = False  # load model from model path
     TRAIN_MODEL = True  # train model or just show results
     EPOCHS = 200
-    INITIAL_TIMESHIFT = -5000
+    INITIAL_TIMESHIFT = 0
     TIME_SHIFT_ITER = 200
-    TIME_SHIFT_STEPS = 50
+    TIME_SHIFT_STEPS = 1
     METRIC_ITER = 50 # after how many epochs network is validated
     SHUFFLE_DATA = True # wether to randomly shuffle the data in big slices
     SHUFFLE_FACTOR = 200
@@ -225,6 +225,7 @@ if __name__ == '__main__':
         net_dict = load_pickle(FILTERED_DATA_PATH)
     else:
         net_dict = dict()
+    net_dict["MAKE_HISTOGRAM"] = MAKE_HISTOGRAM
     net_dict["STRIDE"] = STRIDE
     net_dict["Y_SLICE_SIZE"] = Y_SLICE_SIZE
     net_dict["network_type"] = "Multi Layer Perceptron"
@@ -296,14 +297,26 @@ if __name__ == '__main__':
             X, y = shuffle_io(X,y,net_dict,3)
 
 
-        # if LOAD_GLASER_DATA is True:
-        #     with open(RAW_DATA_PATH, 'rb') as f:
-        #         neural_data, y = pickle.load(f, encoding='latin1')  # If using python 3
-        #     bins_before = 0  # How many bins of neural data prior to the output are used for decoding
-        #     bins_current = 1  # Whether to use concurrent time bin of neural data
-        #     bins_after = 0  # How many bins of neural data after the output are used for decoding
-        #     X = get_spikes_with_history(neural_data, bins_before, bins_after, bins_current)
-
+        if LOAD_GLASER_DATA is True:
+            with open(RAW_DATA_PATH, 'rb') as f:
+                neural_data, y = pickle.load(f, encoding='latin1')  # If using python 3
+            bins_before = 0  # How many bins of neural data prior to the output are used for decoding
+                neural_data, y_raw = pickle.load(f, encoding='latin1')  # If using python 3
+            bins_before = 0  # How many bins of neural data prior to the output are used for decoding
+            bins_current = 1  # Whether to use concurrent time bin of neural data
+            bins_after = 0  # How many bins of neural data after the output are used for decoding
+            bins_after = 0  # How many bins of neural data after the output are used for decoding
+            X = get_spikes_with_history(neural_data, bins_before, bins_after, bins_current)
+            # X_mean = np.nanmean(X, axis=0)
+            # X_std = np.nanstd(X, axis=0)
+            # X = (X - X_mean) / X_std
+            for i,posxy_list in reversed(list(enumerate(y_raw))):
+                if np.isnan(posxy_list).any() or np.isnan(X[i].any()):
+                    X = np.delete(X,i,axis=0)
+                else:
+                    posxy_list = [np.array(posxy_list[0]),np.array(posxy_list[1])]
+                    y.append(position_as_map(posxy_list, X_STEP, Y_STEP,X_MAX, X_MIN, Y_MAX, Y_MIN))
+            X = X.transpose([0,2,1])
 
         # Assign training and testing set
 

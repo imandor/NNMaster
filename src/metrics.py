@@ -11,8 +11,11 @@ def get_r2(y_actual, y_pred):
     R2_array=np.array(R2_list)
     return R2_array #Return an array of R2s
 
+def get_distances(y_actual,y_pred,step_size):
+    return np.sqrt(np.square(step_size[0] * (y_actual[:, 0] - y_pred[:, 0])) + np.square(step_size[1] * (y_actual[:, 1] - y_pred[:, 1])))
+
 def get_avg_distance(y_actual, y_pred, step_size, margin=0):
-    distance_list = np.sqrt(np.square(step_size[0] * (y_actual[:, 0] - y_pred[:, 0])) + np.square(step_size[1] * (y_actual[:, 1] - y_pred[:, 1])))
+    distance_list = get_distances(y_actual,y_pred,step_size)
     return np.average(distance_list,axis=0)
 
 
@@ -53,29 +56,51 @@ def average_position(mapping):
         return "Value error, check validation output"
 
 
-def test_accuracy(sess, S, network_dict, training_step, is_training_data=False, show_plot=False, plot_after_iter=1, print_distance=False):
-    if is_training_data:
-        X_test = network_dict["X_train"]
-        y_test = network_dict["y_train"]
-        plot_savefile = "plot_train_prediction_"
-    else:
-        X_test = network_dict["X_valid"]
-        y_test = network_dict["y_valid"]
-        plot_savefile = "plot_valid_prediction_"
-    xshape = [1] + list(X_test[0].shape) + [1]
-    yshape = [1] + list(y_test[0].shape) + [1]
-    prediction_list = np.zeros([len(y_test), 2])
-    actual_list = np.zeros([len(y_test), 2])
-    for j in range(0, len(X_test) - 1, 1):
-        x = np.array([data_slice for data_slice in X_test[j:j + 1]])
-        y = np.array(y_test[j:j + 1])
+def plot_histogram(sess,S,net_dict,X,y):
+
+    prediction_list,actual_list = predict(S,sess,X,y)
+    distances = get_distances(prediction_list,actual_list,[net_dict["X_STEP"], net_dict["Y_STEP"]])
+    x_axis_labels = np.linspace(0,150,150)
+    fig, ax = plt.subplots()
+    # ax.plot(time_shift_list,distance_scores_train,label='Training set',color='r')
+    ax.hist(distances,x_axis_labels,density=True, cumulative= True,rwidth=0.9,color='r')
+    ax.legend('total samples ='+ str(len(y)))
+    ax.grid(c='k', ls='-', alpha=0.3)
+    # ax.set_title(r'$\varnothing$distance of validation wrt time-shift')
+    ax.set_xlabel("Percentage of samples")
+    ax.set_ylabel('Prediction error [cm]')
+    fig.tight_layout()
+
+    fig2, ax2 = plt.subplots()
+    # ax.plot(time_shift_list,distance_scores_train,label='Training set',color='r')
+    ax2.hist(distances, x_axis_labels, density=False, rwidth=0.9, color='r')
+    ax2.legend('total samples ='+ str(len(y)))
+    ax2.grid(c='k', ls='-', alpha=0.3)
+    # ax.set_title(r'$\varnothing$distance of validation wrt time-shift')
+    ax2.set_xlabel("Sample count")
+    ax2.set_ylabel('Prediction error [cm]')
+    fig.tight_layout()
+    plt.show()
+
+
+    plt.show()
+
+
+    # plt.savefig(PATH + "images/avg_dist" + "_epoch=" + str(training_step_list[-i]) + ".pdf")
+
+
+def predict(S,sess,X,Y):
+    """ returns list of x/y tuples for predicted and actual positions"""
+    xshape = [1] + list(X[0].shape) + [1]
+    yshape = [1] + list(Y[0].shape) + [1]
+    prediction_list = np.zeros([len(Y), 2])
+    actual_list = np.zeros([len(Y), 2])
+    for j in range(0, len(X) - 1, 1):
+        x = np.array([data_slice for data_slice in X[j:j + 1]])
+        y = np.array(Y[j:j + 1])
         x = np.reshape(x, xshape)
         y = np.reshape(y, yshape)
-        prediction = S.valid(sess,x)
-        # form softmax of output and remove nan values for columns with only zeros
-        # exp_scores = np.exp(a)
-        # a = np.nan_to_num(exp_scores / np.sum(exp_scores, axis=1, keepdims=True))
-        # a = np.interp(prediction, (prediction.min(), prediction.max()), (0, +1))
+        prediction = S.valid(sess, x)
         a = sigmoid(prediction[0, :, :, 0])
         y = y[0, :, :, 0]
         bin_1 = average_position(a)
@@ -84,64 +109,40 @@ def test_accuracy(sess, S, network_dict, training_step, is_training_data=False, 
         prediction_list[j][1] = bin_1[1]
         actual_list[j][0] = bin_2[0]
         actual_list[j][1] = bin_2[1]
+    return prediction_list,actual_list
 
-        if j % plot_after_iter == plot_after_iter - 1 and show_plot is True:
-            print("plot")
-            y_prime = a
-            # fig = plt.figure()
-            fig = plt.gcf()
-            ax1 = fig.add_subplot(1, 2, 1)
-            ax2 = fig.add_subplot(1, 2, 2)
-            ax1.axis('off')
-            ax2.axis('off')
-            fig.subplots_adjust(left=0.01, right=0.99, bottom=0.01, top=0.99, hspace=0.01, wspace=0.01)
-            Y = y
-            # Y -= np.min(Y)
-            # Y /= np.max(Y)
-            Y *= 255
 
-            Y_prime = a
-            Y_prime -= np.min(Y_prime)
-            Y_prime /= np.max(Y_prime)
-            Y_prime *= 255
-            # Y_prime[6, 9] = 30
-            # Y_prime[14, 9] = 30
-            # Y_prime[23, 9] = 30
-            # Y_prime[32, 9] = 30
-            # Y_prime[41, 9] = 30
-            # Y[6, 9] = 30
-            # Y[14, 9] = 30
-            # Y[23, 9] = 30
-            # Y[32, 9] = 30
-            # Y[41, 9] = 30
-            ax1.imshow(Y, cmap="gray")
-            ax2.imshow(Y_prime, cmap="gray")
-            plt.savefig(network_dict["MODEL_PATH"]+"images/"+ plot_savefile + "_shift=" + str(network_dict["TIME_SHIFT"])+ "_epoch=" + str(training_step) + "_img"+ str(j) + ".pdf")
-            plt.close()
+def test_accuracy(sess, S, net_dict, is_training_data=False,  print_distance=False):
+    if is_training_data:
+        X = net_dict["X_train"]
+        y = net_dict["y_train"]
+    else:
+        X = net_dict["X_valid"]
+        y = net_dict["y_valid"]
 
+    prediction_list,actual_list = predict(S,sess,X,y)
     r2 = get_r2(actual_list, prediction_list)
-    distance = get_avg_distance(prediction_list, actual_list, [network_dict["X_STEP"], network_dict["Y_STEP"]])
+    distance = get_avg_distance(prediction_list, actual_list, [net_dict["X_STEP"], net_dict["Y_STEP"]])
     accuracy = []
     for i in range(0, 20):
         # print("accuracy",i,":",get_accuracy(prediction_list, actual_list,margin=i))
-        acc = get_radius_accuracy(prediction_list, actual_list, [network_dict["X_STEP"], network_dict["Y_STEP"]], i)
+        acc = get_radius_accuracy(prediction_list, actual_list, [net_dict["X_STEP"], net_dict["Y_STEP"]], i)
         accuracy.append(acc)
         if i == 19 and print_distance is True: print("accuracy", i, ":", acc)
-
     return r2, distance, accuracy
 
 
-def print_net_dict(network_dict):
-    print("session_filter",network_dict["session_filter"])
-    print("EPOCHS",network_dict["EPOCHS"])
-    print("TIME_SHIFT_STEPS",network_dict["TIME_SHIFT_STEPS"])
-    print("SHUFFLE_DATA",network_dict["SHUFFLE_DATA"])
-    print("SHUFFLE_FACTOR",network_dict["SHUFFLE_FACTOR"])
-    print("TIME_SHIFT_ITER",network_dict["TIME_SHIFT_ITER"])
-    print("METRIC_ITER",network_dict["METRIC_ITER"])
-    print("BATCH_SIZE",network_dict["BATCH_SIZE"])
-    print("BINS_BEFORE",network_dict["BINS_BEFORE"])
-    print("BINS_AFTER",network_dict["BINS_AFTER"])
-    print("SLICE_SIZE",network_dict["SLICE_SIZE"])
-    print("= WIN_SIZE",network_dict["WIN_SIZE"])
-    print("= SEARCH_RADIUS",network_dict["SEARCH_RADIUS"])
+def print_net_dict(net_dict):
+    print("session_filter",net_dict["session_filter"])
+    print("EPOCHS",net_dict["EPOCHS"])
+    print("TIME_SHIFT_STEPS",net_dict["TIME_SHIFT_STEPS"])
+    print("SHUFFLE_DATA",net_dict["SHUFFLE_DATA"])
+    print("SHUFFLE_FACTOR",net_dict["SHUFFLE_FACTOR"])
+    print("TIME_SHIFT_ITER",net_dict["TIME_SHIFT_ITER"])
+    print("METRIC_ITER",net_dict["METRIC_ITER"])
+    print("BATCH_SIZE",net_dict["BATCH_SIZE"])
+    print("BINS_BEFORE",net_dict["BINS_BEFORE"])
+    print("BINS_AFTER",net_dict["BINS_AFTER"])
+    print("SLICE_SIZE",net_dict["SLICE_SIZE"])
+    print("= WIN_SIZE",net_dict["WIN_SIZE"])
+    print("= SEARCH_RADIUS",net_dict["SEARCH_RADIUS"])

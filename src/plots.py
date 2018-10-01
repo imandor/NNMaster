@@ -6,6 +6,9 @@ import glob
 import numpy as np
 from scipy.interpolate import interp1d
 from matplotlib.patches import Patch
+
+
+
 def load_imagefile(path):
     dict_files = glob.glob(path + "output/" + "*.pkl")
     r2_scores_valid_list = []
@@ -15,8 +18,14 @@ def load_imagefile(path):
     avg_scores_valid_list = []
     avg_scores_train_list = []
     time_shift_list = []
-    for file_path in sorted(dict_files):
-        # print("processing", file_path)
+    sorted_list = []
+    for i,file_path in enumerate(dict_files):
+        net_dict = load_pickle(file_path)
+        sorted_list.append([file_path,net_dict["TIME_SHIFT"]])
+    sorted_list = sorted(sorted_list, key=lambda x: x[1])
+    dict_files = [i[0] for i in sorted_list]
+    for file_path in dict_files:
+        print("processing", file_path)
         net_dict = load_pickle(file_path)
         r2_scores_train_list.append(net_dict["r2_scores_train"])
         r2_scores_valid_list.append(net_dict["r2_scores_valid"])
@@ -28,94 +37,18 @@ def load_imagefile(path):
     return r2_scores_valid_list,r2_scores_train_list,acc_scores_valid_list,acc_scores_train_list,avg_scores_valid_list,avg_scores_train_list,net_dict,time_shift_list
 
 # PATH = "G:/master_datafiles/trained_networks/MLP_hippocampus/"
-PATH = "G:/master_datafiles/trained_networks/MLP_hippocampus_2018-09-20_ff/"
-PATH_2 = "G:/master_datafiles/trained_networks/MLP_hippocampus_2018-09-18/"
+# PATH = "G:/master_datafiles/trained_networks/MLP_hippocampus_2018-09-20_ff/"
+# PATH_2 = "G:/master_datafiles/trained_networks/MLP_hippocampus_2018-09-18/"
 # PATH = "G:/master_datafiles/trained_networks/MLP_hippocampus_2018-09-12/"
+PATH_2 = "G:/master_datafiles/trained_networks/MLP_OFC_2018-09-28_stride/"
+PATH = "G:/master_datafiles/trained_networks/MLP_hippocampus_2018-09-26_stride/"
 
-
-
-# for file_path in sorted(dict_files):
-#     net_dict = load_pickle(file_path)
-#     time_shift_list.append(net_dict["TIME_SHIFT"])
-#
-# sorted_files = list(zip(dict_files,time_shift_list))
-# sorted_files = (sorted(sorted_files, key=lambda x: x[1]))
-# sorted_files_a,time_shift_list = zip(*sorted_files)
 
 r2_scores_valid_list,r2_scores_train_list,acc_scores_valid_list,acc_scores_train_list,avg_scores_valid_list,avg_scores_train_list,net_dict,time_shift_list = load_imagefile(PATH)
 
 training_step_list = [net_dict["METRIC_ITER"]]
 for i in range(0,len(r2_scores_valid_list[0])-1):
     training_step_list.append(training_step_list[-1] + net_dict["METRIC_ITER"])
-
-# time_shift_list = [str(x) for x in time_shift_list]
-
-# Plot for all metric epochs
-
-
-# for i in range(0,len(r2_scores_train_list)): # for each time_shift
-#     r2_scores_valid = r2_scores_valid_list[i]
-#     r2_scores_train = r2_scores_train_list[i]
-#     acc_scores_valid = acc_scores_valid_list[i]
-#     acc_scores_train = acc_scores_train_list[i]
-#     avg_scores_valid = avg_scores_valid_list[i]
-#     avg_scores_train = avg_scores_train_list[i]
-#
-#     acc_scores_valid = [[a[i] for a in acc_scores_valid] for i in range(len(acc_scores_valid[0]))]
-#     acc_scores_train = [[a[i] for a in acc_scores_train] for i in range(len(acc_scores_train[0]))]
-#
-#     #     # Get data for current amount of training steps
-#     #
-#     levels = MaxNLocator(nbins=20).tick_values(np.min(acc_scores_train), np.max(acc_scores_train))
-#     cmap = plt.get_cmap('gist_heat')
-#     norm = BoundaryNorm(levels, ncolors=cmap.N, clip=True)
-#     fig, (ax0, ax1) = plt.subplots(nrows=2)
-#     cf = ax0.contourf(acc_scores_train, levels=levels, cmap=cmap)
-#     fig.colorbar(cf, ax=ax0)
-#     ax0.set_title('Portion of training predictions in radius wrt training_step')
-#     ax0.set_xlabel("Training step")
-#     ax0.set_ylabel("distance to actual position(cm)")
-#     ax0.set_xticklabels(training_step_list)
-#     # ax0.set_xticks(range(len(training_step_list)),training_step_list)
-#     # levels = MaxNLocator(nbins=20).tick_values(np.min(acc_scores_valid), np.max(acc_scores_valid))
-#
-#     cf = ax1.contourf(acc_scores_valid, levels=levels, cmap=cmap)
-#     fig.colorbar(cf, ax=ax1)
-#     ax1.set_title('Portion of valid predictions in radius wrt training_step')
-#     ax1.set_xlabel("Training step")
-#     ax1.set_ylabel("distance to actual position(cm)")
-#     # ax1.set_xticks(range(len(training_step_list)),training_step_list)
-#     fig.tight_layout()
-#     plt.ion()
-#     # plt.show()
-#     plt.savefig(PATH +"images/epoch_acc_score" + "_shift=" + time_shift_list[i] + ".pdf")
-#
-#     fig, (ax0, ax1) = plt.subplots(nrows=2,sharey=True)
-#     ax0.plot(training_step_list,avg_scores_train)
-#     ax0.set_title(r'$\varnothing$ distance of training wrt time-shift')
-#     ax0.set_xlabel("Training step")
-#     ax0.set_ylabel(r'$\varnothing$ distance to actual position(cm)')
-#     ax1.plot(training_step_list,avg_scores_valid)
-#     ax1.set_title(r'$\varnothing$ distance of validation wrt time-shift')
-#     ax1.set_xlabel("Training step")
-#     ax1.set_ylabel(r'$\varnothing$ distance to actual position(cm)')
-#     fig.tight_layout()
-#     # plt.show()
-#     plt.savefig(PATH  +"images/epoch_avg_dist" + "_shift=" + time_shift_list[i] + ".pdf")
-#
-#
-#     fig, (ax0, ax1) = plt.subplots(nrows=2,sharey=True)
-#     ax0.plot(training_step_list,r2_scores_train)
-#     ax0.set_title('r2 of training wrt training_steps')
-#     ax0.set_xlabel("Training step")
-#     ax0.set_ylabel("r2 score")
-#     ax1.plot(training_step_list,r2_scores_valid)
-#     ax1.set_title('r2 of validation wrt time-shift')
-#     ax1.set_xlabel("Training step")
-#     ax1.set_ylabel("r2 score")
-#     fig.tight_layout()
-#     # plt.show()
-#     plt.savefig(PATH + "images/epoch_r2_score" + "_shift=" + time_shift_list[i] +  ".pdf")
 
 
 
@@ -223,9 +156,7 @@ r2_scores_valid_2 = [x[-1][0] for x in r2_scores_valid_list_2]
 distance_scores_valid = [x[-1] for x in avg_scores_valid_list] # takes the latest trained value for each time shift
 distance_scores_valid_2 = [x[-1] for x in avg_scores_valid_list_2] # takes the latest trained value for each time shift
 
-acc_scores_valid_2 = [x[15:38] for i,x in enumerate(acc_scores_valid_2)]
-r2_scores_valid_2 = r2_scores_valid_2[15:38]
-distance_scores_valid_2 = distance_scores_valid_2[15:38]
+
 acc_scores_middle = np.ndarray.tolist(np.array(acc_scores_valid) - np.array(acc_scores_valid_2))
 r2_scores_middle = np.ndarray.tolist(np.array(r2_scores_valid) - np.array(r2_scores_valid_2))
 distance_scores_middle = np.ndarray.tolist(np.array(distance_scores_valid) - np.array(distance_scores_valid_2))

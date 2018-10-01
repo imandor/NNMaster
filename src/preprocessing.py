@@ -8,6 +8,12 @@ def position_as_map(pos_list, xstep, ystep, X_MAX, X_MIN, Y_MAX, Y_MIN):
     pos_list = np.asarray(pos_list)
     x_list = pos_list[0, :]
     y_list = pos_list[1, :]
+    if  np.isscalar(pos_list[0]):
+        x_list = np.array(pos_list[0])
+        y_list = np.array(pos_list[1])
+    else: # if more than one entry in pos_list (standard)
+        x_list = pos_list[0, :]
+        y_list = pos_list[1, :]
     x_list = ((x_list - X_MIN) // xstep).astype(int)
     y_list = ((y_list - Y_MIN) // ystep).astype(int)
     pos_list = np.dstack((x_list, y_list))[0]
@@ -15,6 +21,7 @@ def position_as_map(pos_list, xstep, ystep, X_MAX, X_MIN, Y_MAX, Y_MIN):
     ret = np.zeros(((X_MAX - X_MIN) // xstep, (Y_MAX - Y_MIN) // ystep))
     for pos in pos_list:
         ret[pos[0], pos[1]] = 1
+        ret[int(pos[0]), int(pos[1])] = 1
     return ret
 
 
