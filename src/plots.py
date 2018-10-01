@@ -40,8 +40,8 @@ def load_imagefile(path):
 # PATH = "G:/master_datafiles/trained_networks/MLP_hippocampus_2018-09-20_ff/"
 # PATH_2 = "G:/master_datafiles/trained_networks/MLP_hippocampus_2018-09-18/"
 # PATH = "G:/master_datafiles/trained_networks/MLP_hippocampus_2018-09-12/"
-PATH_2 = "G:/master_datafiles/trained_networks/MLP_OFC_2018-09-28_stride/"
-PATH = "G:/master_datafiles/trained_networks/MLP_hippocampus_2018-09-26_stride/"
+PATH = "G:/master_datafiles/trained_networks/MLP_OFC_2018-09-28_stride/"
+PATH_2 = "G:/master_datafiles/trained_networks/MLP_hippocampus_2018-09-26_stride/"
 
 
 r2_scores_valid_list,r2_scores_train_list,acc_scores_valid_list,acc_scores_train_list,avg_scores_valid_list,avg_scores_train_list,net_dict,time_shift_list = load_imagefile(PATH)
@@ -96,10 +96,11 @@ fig, (ax1) = plt.subplots()
 # ax0.set_xticks(time_shift_list)
 levels = MaxNLocator(nbins=20).tick_values(np.min(acc_scores_valid), np.max(acc_scores_valid))
 cf = ax1.contourf(time_shift_list,distance_list,acc_scores_valid, levels=levels, cmap=cmap)
-fig.colorbar(cf, ax=ax1)
+cbar = plt.colorbar(cf, ax=ax1)
+cbar.set_label('fraction of instances in range', rotation=270)
 # ax1.set_title('Portion of predictions inside given radius wrt time-shift')
 ax1.set_xlabel("time shift [ms]")
-ax1.set_ylabel("maximum position error [cm]")
+ax1.set_ylabel("absolute position error [cm]")
 # ax1.set_xticks(time_shift_list)
 fig.tight_layout()
 plt.ion()
@@ -116,7 +117,7 @@ ax.legend()
 ax.grid(c='k', ls='-', alpha=0.3)
 # ax.set_title(r'$\varnothing$distance of validation wrt time-shift')
 ax.set_xlabel("Time shift [ms]")
-ax.set_ylabel(r'$\varnothing$ distance to actual position in cm')
+ax.set_ylabel(r'$\varnothing$ absolute position error [cm]')
 fig.tight_layout()
 plt.savefig(PATH  +"images/avg_dist" + "_epoch="+ str(training_step_list[-i]) + ".pdf")
 
@@ -133,7 +134,7 @@ fig, ax1 = plt.subplots()
 ax1.plot(time_shift_list,r2_scores_valid)
 ax1.grid(c='k', ls='-', alpha=0.3)
 # ax1.set_title('R2 of validation wrt time-shift')
-ax1.set_xlabel("Time shift in ms")
+ax1.set_xlabel("Time shift [ms]")
 ax1.set_ylabel("R2 score")
 ax1.set_ylim([-1,0.6])
 fig.tight_layout()
@@ -175,11 +176,11 @@ custom_lines = [Patch(facecolor='mediumvioletred', edgecolor='b',
                 Patch(facecolor='green', edgecolor='b',
                             label='acc_2')
                 ]
-ax1.legend(custom_lines, ['integral filter underperforms', 'integral filter overperforms'],bbox_to_anchor=(1, 1),
+ax1.legend(custom_lines, ['prefrontal cortex underperforms', 'prefrontal cortex overperforms'],bbox_to_anchor=(1, 1),
            bbox_transform=plt.gcf().transFigure)
 # ax1.set_title('Portion of predictions inside given radius wrt time-shift')
 ax1.set_xlabel("time shift [ms]")
-ax1.set_ylabel(r'$\Delta$maximum position error [cm]')
+ax1.set_ylabel(r'$\Delta$ absolute position error [cm]')
 # ax1.set_xticks(time_shift_list)
 fig.tight_layout()
 plt.ion()
@@ -200,11 +201,11 @@ custom_lines = [Patch(facecolor='green', edgecolor='b',
                 Patch(facecolor='red', edgecolor='b',
                             label='d_2')
                 ]
-ax.legend(custom_lines, [r'$\varnothing$ distance integral filter', r'$\varnothing$distance hann filter'])
+ax.legend(custom_lines, [r'$\varnothing$ absolute position error pfc', r'$\varnothing$ absolute position error hc'])
 ax.grid(c='k', ls='-', alpha=0.3)
 # ax.set_title(r'$\varnothing$distance of validation wrt time-shift')
 ax.set_xlabel("time shift [ms]")
-ax.set_ylabel(r'$\Delta$distance in cm')
+ax.set_ylabel('absolute position error [cm]')
 f = interp1d(time_shift_list, distance_scores_middle)
 x = np.linspace(time_shift_list[0],time_shift_list[-1],1000)
 ax.fill_between(x, 0, f(x), where=(np.array(f(x))) < 0 , color='green')
@@ -227,7 +228,7 @@ custom_lines = [Patch(facecolor='green', edgecolor='b',
                 Patch(facecolor='red', edgecolor='b',
                             label='R2_2')
                 ]
-ax1.legend(custom_lines, ['R2 integral filter', 'R2 hann filter'])
+ax1.legend(custom_lines, ['R2 prefrontal cortex', 'R2 hippocampus'])
 f = interp1d(time_shift_list, r2_scores_middle)
 x = np.linspace(time_shift_list[0],time_shift_list[-1],1000)
 ax1.fill_between(x, 0, f(x), where=(np.array(f(x))) < 0 , color='maroon')
@@ -239,7 +240,7 @@ ax1.plot(time_shift_list,r2_scores_middle)
 ax1.grid(c='k', ls='-', alpha=0.3)
 # ax1.set_title('R2 of validation wrt time-shift')
 ax1.set_xlabel("time shift [ms]")
-ax1.set_ylabel(r'$\Delta$R2')
+ax1.set_ylabel('R2')
 ax1.set_ylim([-1,0.6])
 fig.tight_layout()
 plt.savefig(PATH + "images/r2_score_middle" + "_epoch=" + str(training_step_list[-i]) + ".pdf")

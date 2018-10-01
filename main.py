@@ -43,7 +43,7 @@ def time_shift_data(X, y, n):
 
 def run_network(net_dict):
     # S = ConvolutionalNeuralNetwork1([None, 147, 40, 1], cnn1)
-    S = MultiLayerPerceptron([None, 147, 100, 1], mlp) # 56 147
+    S = MultiLayerPerceptron([None, 58, 10, 1], mlp) # 56 147
 
     saver = tf.train.Saver()
     sess = tf.Session()
@@ -299,24 +299,26 @@ if __name__ == '__main__':
 
         if LOAD_GLASER_DATA is True:
             with open(RAW_DATA_PATH, 'rb') as f:
-                neural_data, y = pickle.load(f, encoding='latin1')  # If using python 3
-            bins_before = 0  # How many bins of neural data prior to the output are used for decoding
                 neural_data, y_raw = pickle.load(f, encoding='latin1')  # If using python 3
-            bins_before = 0  # How many bins of neural data prior to the output are used for decoding
+            # neural_data = neural_data[135:237]
+            # y_raw = y_raw[135:237]
+            bins_before = 4  # How many bins of neural data prior to the output are used for decoding
             bins_current = 1  # Whether to use concurrent time bin of neural data
-            bins_after = 0  # How many bins of neural data after the output are used for decoding
-            bins_after = 0  # How many bins of neural data after the output are used for decoding
+            bins_after = 5  # How many bins of neural data after the output are used for decoding
             X = get_spikes_with_history(neural_data, bins_before, bins_after, bins_current)
             # X_mean = np.nanmean(X, axis=0)
             # X_std = np.nanstd(X, axis=0)
             # X = (X - X_mean) / X_std
+            y=[]
             for i,posxy_list in reversed(list(enumerate(y_raw))):
                 if np.isnan(posxy_list).any() or np.isnan(X[i].any()):
                     X = np.delete(X,i,axis=0)
                 else:
                     posxy_list = [np.array(posxy_list[0]),np.array(posxy_list[1])]
-                    y.append(position_as_map(posxy_list, X_STEP, Y_STEP,X_MAX, X_MIN, Y_MAX, Y_MIN))
+                    y.append(position_as_map(posxy_list, X_STEP, Y_STEP,300,0, 300, 0))
             X = X.transpose([0,2,1])
+            y = list(reversed(y))
+            X, y = shuffle_io(X, y, net_dict, 3)
 
         # Assign training and testing set
 

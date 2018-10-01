@@ -6,8 +6,6 @@ from itertools import takewhile, dropwhile, repeat
 
 def position_as_map(pos_list, xstep, ystep, X_MAX, X_MIN, Y_MAX, Y_MIN):
     pos_list = np.asarray(pos_list)
-    x_list = pos_list[0, :]
-    y_list = pos_list[1, :]
     if  np.isscalar(pos_list[0]):
         x_list = np.array(pos_list[0])
         y_list = np.array(pos_list[1])
