@@ -2,19 +2,21 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 def get_r2(y_actual, y_pred):
-    R2_list=[] #Initialize a list that will contain the R2s for all the outputs
-    for i in range(y_actual.shape[1]): #Loop through outputs
-        #Compute R2 for each output
-        y_mean=np.mean(y_actual[:, i])
-        R2= 1 - np.sum((y_pred[:,i] - y_actual[:, i]) ** 2) / np.sum((y_pred[:, i] - y_mean) ** 2)
-        R2_list.append(R2) #Append R2 of this output to the list
+    R2_list=[] # Initialize a list that will contain the R2s for all the outputs
+    for i in range(y_actual.shape[1]): # Loop through outputs
+        # Compute R2 for each output
+        y_avg = np.average(y_actual[:, i])
+        R2 = 1 - np.sum((y_pred[:,i] - y_actual[:, i]) ** 2) / np.sum((y_actual[:, i] - y_avg) ** 2)
+        # print("RSS:",np.sum((y_pred[:,i] - y_actual[:, i]) ** 2))
+        # print("TSS:",np.sum((y_actual[:, i] - y_avg) ** 2))
+        R2_list.append(R2) # Append R2 of this output to the list
     R2_array=np.array(R2_list)
-    return R2_array #Return an array of R2s
+    return R2_array # Return an array of R2s
 
 def get_distances(y_actual,y_pred,step_size):
     return np.sqrt(np.square(step_size[0] * (y_actual[:, 0] - y_pred[:, 0])) + np.square(step_size[1] * (y_actual[:, 1] - y_pred[:, 1])))
 
-def get_avg_distance(y_actual, y_pred, step_size, margin=0):
+def get_avg_distance(y_actual, y_pred, step_size):
     distance_list = get_distances(y_actual,y_pred,step_size)
     return np.average(distance_list,axis=0)
 
@@ -60,31 +62,28 @@ def plot_histogram(sess,S,net_dict,X,y):
 
     prediction_list,actual_list = predict(S,sess,X,y)
     distances = get_distances(prediction_list,actual_list,[net_dict["X_STEP"], net_dict["Y_STEP"]])
-    x_axis_labels = np.linspace(0,150,150)
     fig, ax = plt.subplots()
+    x_axis_labels = np.linspace(0,150,15)
     # ax.plot(time_shift_list,distance_scores_train,label='Training set',color='r')
-    ax.hist(distances,x_axis_labels,density=True,rwidth=0.9,color='r')
-    ax.legend('total samples ='+ str(len(y)))
+    ax.hist(distances,x_axis_labels,density=True,cumulative=True,rwidth=0.9,color='b')
     ax.grid(c='k', ls='-', alpha=0.3)
     # ax.set_title(r'$\varnothing$distance of validation wrt time-shift')
     ax.set_xlabel("Prediction error [cm]")
     ax.set_ylabel('Fraction of instances with prediction error')
     fig.tight_layout()
 
+    x_axis_labels = np.linspace(0,150,150)
     fig2, ax2 = plt.subplots()
     # ax.plot(time_shift_list,distance_scores_train,label='Training set',color='r')
     ax2.hist(distances, x_axis_labels, density=False, rwidth=0.9, color='r')
-    ax2.legend('total samples ='+ str(len(y)))
     ax2.grid(c='k', ls='-', alpha=0.3)
     # ax.set_title(r'$\varnothing$distance of validation wrt time-shift')
     ax2.set_xlabel('Prediction error [cm]')
     ax2.set_ylabel("Instances with given prediction error")
+    ax2.set_ylim([0, 31])
     fig.tight_layout()
     plt.show()
-
-
-    plt.show()
-
+    print("plotted histograms")
 
     # plt.savefig(PATH + "images/avg_dist" + "_epoch=" + str(training_step_list[-i]) + ".pdf")
 
@@ -103,7 +102,8 @@ def predict(S,sess,X,Y):
         prediction = S.valid(sess, x)
         a = sigmoid(prediction[0, :, :, 0])
         y = y[0, :, :, 0]
-        bin_1 = average_position(a)
+        # bin_1 = average_position(a)
+        bin_1 = np.unravel_index(a.argmax(), a.shape)
         bin_2 = average_position(y)
         prediction_list[j][0] = bin_1[0]
         prediction_list[j][1] = bin_1[1]

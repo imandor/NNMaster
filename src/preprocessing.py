@@ -4,6 +4,7 @@ import numpy as np
 from scipy import stats, spatial
 from itertools import takewhile, dropwhile, repeat
 
+
 def position_as_map(pos_list, xstep, ystep, X_MAX, X_MIN, Y_MAX, Y_MIN):
     pos_list = np.asarray(pos_list)
     if  np.isscalar(pos_list[0]):
@@ -88,7 +89,7 @@ def time_shift_io(session,shift,net_dict):
     BINS_IN_STRIDE = STRIDE // WIN_SIZE
     SURROUNDING_INDEX = int(0.5 * (SLICE_SIZE - Y_SLICE_SIZE))
     X = []
-    while len(filtered_spikes[0]) >= STRIDE:
+    while len(filtered_spikes[0]) >= SLICE_SIZE:
 
         # Input
         bins_to_X = []

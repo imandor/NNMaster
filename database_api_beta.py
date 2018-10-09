@@ -357,9 +357,14 @@ class Slice:
         print("finished loading session")
         return cls(spikes, licks, position_x, position_y, speed, trial_timestamp)
 
+    def filter_neurons_randomly(self,factor):
+        neurons_removed = int(len(self.spikes)*(1-factor))
+        for i in range(neurons_removed):
+                del self.spikes[np.random.randint(0,len(self.spikes))]
+        self.n_neurons = len(self.spikes)
 
+    def filter_neurons(self, minimum_spikes):
 
-    def neuron_filter(self, minimum_spikes):
         """
         removes neurons from spikes that contain less than a given number of spikes
         :param spikes: list of spikes from raw data
