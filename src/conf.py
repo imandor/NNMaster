@@ -16,7 +16,8 @@ network_1.fc1.out_units = 5
 
 mlp = Map()
 mlp.fc1 = Map()
-mlp.fc1.weights = tf.truncated_normal(shape=(56*10,100), stddev=0.01) # 166 * 17
+mlp.fc1.weights = tf.truncated_normal(shape=(103*10,100), stddev=0.01) # 166 * 17
+# [147, 133, 118, 103, 89, 74, 59, 45, 30, 15]
 mlp.fc1.activation = tf.nn.relu
 mlp.fc2 = Map()
 mlp.fc2.weights = tf.truncated_normal(shape=(100, 100), stddev=0.01)

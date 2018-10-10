@@ -43,7 +43,7 @@ def time_shift_data(X, y, n):
 
 def run_network(net_dict):
     # S = ConvolutionalNeuralNetwork1([None, 147, 40, 1], cnn1)
-    S = MultiLayerPerceptron([None, 56, 10, 1], mlp)  # 56 147
+    S = MultiLayerPerceptron([None, N_NEURONS, 10, 1], mlp)  # 56 147
 
     saver = tf.train.Saver()
     sess = tf.Session()
@@ -155,16 +155,16 @@ if __name__ == '__main__':
 
     # prefrontal cortex
 
-    # MODEL_PATH = "G:/master_datafiles/trained_networks/MLP_OFC_2018-10-01_delete/"
-    # RAW_DATA_PATH = "G:/master_datafiles/raw_data/2018-04-09_14-39-52/"
-    # FILTERED_DATA_PATH = "G:/master_datafiles/filtered_data/neocortex_hann_win_size_100.pkl"
+    MODEL_PATH = "G:/master_datafiles/trained_networks/MLP_PFC_2018-10-10_neuron_filter_70/"
+    RAW_DATA_PATH = "G:/master_datafiles/raw_data/2018-04-09_14-39-52/"
+    FILTERED_DATA_PATH = "G:/master_datafiles/filtered_data/neocortex_hann_win_size_100.pkl"
 
     # hippocampus
 
-    MODEL_PATH = "G:/master_datafiles/trained_networks/MLP_hippocampus_2018-10_09_neuron_filter_90/"
-    RAW_DATA_PATH = "G:/master_datafiles/raw_data/2018-05-16_17-13-37/"
-    FILTERED_DATA_PATH = "G:/master_datafiles/filtered_data/hippocampus_hann_win_size_25_09-5_7.pkl"
-
+    # MODEL_PATH = "G:/master_datafiles/trained_networks/MLP_hippocampus_2018-10_09_neuron_filter_100/"
+    # RAW_DATA_PATH = "G:/master_datafiles/raw_data/2018-05-16_17-13-37/"
+    # FILTERED_DATA_PATH = "G:/master_datafiles/filtered_data/hippocampus_hann_win_size_25_09-5_7.pkl"
+    ASD = 0.7
     # Program execution settings
 
     LOAD_RAW_DATA = True  # load source data from raw data path or load default model
@@ -270,7 +270,8 @@ if __name__ == '__main__':
         # session.to_pickle("slice_OFC.pkl")
         # TODO
         session = Slice.from_pickle("slice_OFC.pkl")
-        session.filter_neurons_randomly(0.9)
+        session.filter_neurons_randomly(ASD)
+        N_NEURONS = session.n_neurons
         session.print_details()
         if SAVE_FILTERED_DATA is True:
             save_as_pickle(FILTERED_DATA_PATH, net_dict)

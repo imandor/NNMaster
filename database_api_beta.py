@@ -360,7 +360,10 @@ class Slice:
     def filter_neurons_randomly(self,factor):
         neurons_removed = int(len(self.spikes)*(1-factor))
         for i in range(neurons_removed):
-                del self.spikes[np.random.randint(0,len(self.spikes))]
+            neuron_index = np.random.randint(0,len(self.spikes))
+            del self.spikes[neuron_index]
+            self.filtered_spikes = np.delete(self.filtered_spikes,neuron_index,axis=0)
+
         self.n_neurons = len(self.spikes)
 
     def filter_neurons(self, minimum_spikes):
