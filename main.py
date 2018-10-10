@@ -6,7 +6,7 @@ import numpy as np
 from src.conf import mlp, sp1, cnn1
 import os
 import errno
-from src.settings import save_as_pickle, load_pickle
+from src.settings import save_as_pickle, load_pickle,save_net_dict
 from src.preprocessing import time_shift_io, shuffle_io, position_as_map
 import datetime
 import pickle
@@ -43,7 +43,7 @@ def time_shift_data(X, y, n):
 
 def run_network(net_dict):
     # S = ConvolutionalNeuralNetwork1([None, 147, 40, 1], cnn1)
-    S = MultiLayerPerceptron([None, N_NEURONS, 10, 1], mlp)  # 56 147
+    S = MultiLayerPerceptron([None, net_dict["N_NEURONS"], 20, 1], mlp)  # 56 147
 
     saver = tf.train.Saver()
     sess = tf.Session()
@@ -53,7 +53,7 @@ def run_network(net_dict):
     avg_scores_valid = []
     acc_scores_train = []
     acc_scores_valid = []
-    early_stop_min = np.inf
+    early_stop_max = -np.inf
     X_train = net_dict["X_train"]
     y_train = net_dict["y_train"]
     if net_dict["LOAD_MODEL"] is True:
@@ -81,18 +81,19 @@ def run_network(net_dict):
 
         # Check if early stopping applies
 
-        if net_dict["EARLY_STOPPING"] is True and i > 200:  # most likely overfitting
-            if i % 20 == 0 and r2_scores_train[-1][0] > 0.97:
+        if net_dict["EARLY_STOPPING"] is True and i >= 10:  # most likely overfitting
+            if i % 10 == 0:
                 r2_valid, avg_valid, acc_valid = test_accuracy(sess, S, net_dict, is_training_data=False,
                                                                print_distance=False)
-                if early_stop_min > acc_valid[19]:
-                    early_stop_min = acc_valid[19]
+                acc = acc_valid[19]
+                if early_stop_max < acc:
+                    early_stop_max = acc
                 else:
-                    if early_stop_min > acc_valid[19] + 0.5:
+                    if acc < early_stop_max - 0.01:
                         stop_early = True
-                        metric_counter = net_dict["METRIC_ITER"]  # one last calculation with local maximum return
+                        # metric_counter = net_dict["METRIC_ITER"]  # one last calculation with local maximum return
 
-        if metric_counter == net_dict["METRIC_ITER"]:
+        if metric_counter == net_dict["METRIC_ITER"] and stop_early is False:
             print(i, ", loss:", t)
             metric_step_counter.append(i)
             # saver.save(sess, net_dict["MODEL_PATH"])
@@ -155,16 +156,16 @@ if __name__ == '__main__':
 
     # prefrontal cortex
 
-    MODEL_PATH = "G:/master_datafiles/trained_networks/MLP_PFC_2018-10-10_neuron_filter_70/"
+    MODEL_PATH = "G:/master_datafiles/trained_networks/MLP_PFC_2018-10-10_400_400_400/"
     RAW_DATA_PATH = "G:/master_datafiles/raw_data/2018-04-09_14-39-52/"
-    FILTERED_DATA_PATH = "G:/master_datafiles/filtered_data/neocortex_hann_win_size_100.pkl"
+    FILTERED_DATA_PATH = "G:/master_datafiles/filtered_data/neocortex_hann_win_size_20.pkl"
 
     # hippocampus
 
     # MODEL_PATH = "G:/master_datafiles/trained_networks/MLP_hippocampus_2018-10_09_neuron_filter_100/"
     # RAW_DATA_PATH = "G:/master_datafiles/raw_data/2018-05-16_17-13-37/"
     # FILTERED_DATA_PATH = "G:/master_datafiles/filtered_data/hippocampus_hann_win_size_25_09-5_7.pkl"
-    ASD = 0.7
+    ASD = 1.0
     # Program execution settings
 
     LOAD_RAW_DATA = True  # load source data from raw data path or load default model
@@ -174,20 +175,20 @@ if __name__ == '__main__':
     MAKE_HISTOGRAM = False
     LOAD_MODEL = False  # load model from model path
     TRAIN_MODEL = True  # train model or just show results
-    EPOCHS = 200
-    INITIAL_TIMESHIFT = 0
+    EPOCHS = 100
+    INITIAL_TIMESHIFT = -3000
     TIME_SHIFT_ITER = 200
-    TIME_SHIFT_STEPS = 1
+    TIME_SHIFT_STEPS = 50
     METRIC_ITER = 10  # after how many epochs network is validated
     SHUFFLE_DATA = True  # wether to randomly shuffle the data in big slices
     SHUFFLE_FACTOR = 20
-    EARLY_STOPPING = False
+    EARLY_STOPPING = True
 
     # Input data parameters
 
-    SLICE_SIZE = 200
-    Y_SLICE_SIZE = 200
-    STRIDE = 200
+    SLICE_SIZE = 400
+    Y_SLICE_SIZE = 400
+    STRIDE = 400
     BATCH_SIZE = 50
     WIN_SIZE = 20
     SEARCH_RADIUS = WIN_SIZE * 2
@@ -270,11 +271,12 @@ if __name__ == '__main__':
         # session.to_pickle("slice_OFC.pkl")
         # TODO
         session = Slice.from_pickle("slice_OFC.pkl")
-        session.filter_neurons_randomly(ASD)
-        N_NEURONS = session.n_neurons
+        # session.filter_neurons_randomly(ASD)
         session.print_details()
         if SAVE_FILTERED_DATA is True:
             save_as_pickle(FILTERED_DATA_PATH, net_dict)
+            save_net_dict(MODEL_PATH,net_dict)
+            net_dict["N_NEURONS"] = session.n_neurons
 
     # Start network with different time-shifts
 
