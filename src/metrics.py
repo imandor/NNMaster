@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-
+from src.preprocessing import position_as_map
 def get_r2(y_actual, y_pred):
     R2_list=[] # Initialize a list that will contain the R2s for all the outputs
     for i in range(y_actual.shape[1]): # Loop through outputs
@@ -30,9 +30,11 @@ def get_accuracy(y_actual, y_pred, margin=0):
 
 def get_radius_accuracy(y_actual, y_pred, step_size, absolute_margin=0):
     """ returns percentage of valid vs predicted with absolute distance <= margin in cm"""
-    distance_list = np.sqrt(np.square(step_size[0] * (y_actual[:, 0] - y_pred[:, 0])) + np.square(step_size[1] * (y_actual[:, 1] - y_pred[:, 1]))) <= absolute_margin
+    distance_list = get_radius_distance_list(y_actual, y_pred, step_size, absolute_margin)
     return np.average(distance_list,axis=0)
 
+def get_radius_distance_list(y_actual, y_pred, step_size, absolute_margin=0):
+    return np.sqrt(np.square(step_size[0] * (y_actual[:, 0] - y_pred[:, 0])) + np.square(step_size[1] * (y_actual[:, 1] - y_pred[:, 1]))) <= absolute_margin
 
 def bin_distance(bin_1,bin_2):
     return [abs(bin_1[0]-bin_2[0]),abs(bin_1[1]-bin_2[1])]
@@ -124,12 +126,43 @@ def test_accuracy(sess, S, net_dict, is_training_data=False,  print_distance=Fal
     r2 = get_r2(actual_list, prediction_list)
     distance = get_avg_distance(prediction_list, actual_list, [net_dict["X_STEP"], net_dict["Y_STEP"]])
     accuracy = []
+    if is_training_data:
+        is_train = "train"
+    else:
+        is_train = "valid"
     for i in range(0, 20):
         # print("accuracy",i,":",get_accuracy(prediction_list, actual_list,margin=i))
-        acc = get_radius_accuracy(prediction_list, actual_list, [net_dict["X_STEP"], net_dict["Y_STEP"]], i)
+        acc = get_radius_accuracy(actual_list,prediction_list , [net_dict["X_STEP"], net_dict["Y_STEP"]], i)
         accuracy.append(acc)
         if i == 19 and print_distance is True: print("accuracy", i, ":", acc)
+    # if True:
+    #     distance_list = get_radius_distance_list(actual_list,prediction_list , [net_dict["X_STEP"], net_dict["Y_STEP"]], absolute_margin=20)
+    #     y_target = []
+    #     y_prediction = []
+    #     for i,dist in enumerate(distance_list):
+    #         if True:
+    #             y_target.append(actual_list[i])
+    #             y_prediction.append(prediction_list[i])
+    #     plot_plane(y_prediction, net_dict,"C:/Users/NN/Desktop/Master/" + is_train + "_all" + "_prediction")
+    #     plot_plane(y_target, net_dict,"C:/Users/NN/Desktop/Master/" + is_train + "_all" + "_target")
+    #     y_target = []
+    #     y_prediction = []
+    #     for i,dist in enumerate(distance_list):
+    #         if dist:
+    #             y_target.append(actual_list[i])
+    #             y_prediction.append(prediction_list[i])
+    #     plot_plane(y_prediction, net_dict,"C:/Users/NN/Desktop/Master/" + is_train + "_better" + "_prediction")
+    #     plot_plane(y_target, net_dict,"C:/Users/NN/Desktop/Master/" + is_train + "_better" + "_target")
+    #     y_target = []
+    #     y_prediction = []
+    #     for i,dist in enumerate(distance_list):
+    #         if not dist:
+    #             y_target.append(actual_list[i])
+    #             y_prediction.append(prediction_list[i])
+    #     plot_plane(y_prediction, net_dict,"C:/Users/NN/Desktop/Master/" + is_train + "_worse" + "_prediction")
+    #     plot_plane(y_target, net_dict,"C:/Users/NN/Desktop/Master/" + is_train + "_worse" + "_target")
     return r2, distance, accuracy
+
 
 
 def print_net_dict(net_dict):
@@ -146,3 +179,30 @@ def print_net_dict(net_dict):
     print("SLICE_SIZE",net_dict["SLICE_SIZE"])
     print("= WIN_SIZE",net_dict["WIN_SIZE"])
     print("= SEARCH_RADIUS",net_dict["SEARCH_RADIUS"])
+
+
+def plot_plane(y,net_dict,path):
+    pos_x_list = []
+    pos_y_list = []
+    for i,posxy in enumerate(y):
+        pos_x_list.append(posxy[0] * net_dict["X_STEP"] + net_dict["X_MIN"])
+        pos_y_list.append(posxy[1] * net_dict["Y_STEP"] + net_dict["Y_MIN"])
+    a = position_as_map([pos_x_list, pos_y_list], net_dict["X_STEP"], net_dict["Y_STEP"], net_dict["X_MAX"], net_dict["X_MIN"], net_dict["Y_MAX"], net_dict["Y_MIN"])
+    Y = a
+    print("plot:","sample size is", len(y))
+    fig, ax = plt.subplots()
+    # fig.suptitle("Samples: "+str(len(y)))
+    ax.axis('off')
+    fig.subplots_adjust(left=0.01, right=0.99, bottom=0.01, top=0.99, hspace=0.01, wspace=0.01)
+    Y -= np.min(y)
+    # Y /= np.max(1,np.max(y))
+    Y *= 255
+    Y[30 // net_dict["X_STEP"], 50 // net_dict["Y_STEP"]] = 30
+    Y[70 // net_dict["X_STEP"], 50 // net_dict["Y_STEP"]] = 30
+    Y[115 // net_dict["X_STEP"], 50 // net_dict["Y_STEP"]] = 30
+    Y[160 // net_dict["X_STEP"], 50 // net_dict["Y_STEP"]] = 30
+    Y[205 // net_dict["X_STEP"], 50 // net_dict["Y_STEP"]] = 30
+
+    ax.imshow(Y, cmap="gray")
+    plt.savefig(path)
+    plt.close()

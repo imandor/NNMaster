@@ -44,8 +44,8 @@ def load_trained_network(path):
     return r2_scores_valid_list, r2_scores_train_list, acc_scores_valid_list, acc_scores_train_list, avg_scores_valid_list, avg_scores_train_list, net_dict, time_shift_list
 
 
-PATH = "G:/master_datafiles/trained_networks/MLP_hippocampus_2018-09-18/"
-PATH_2 = "G:/master_datafiles/trained_networks/MLP_hippocampus_2018-09-18/"
+PATH = "G:/master_datafiles/trained_networks/MLP_HC_2018-10-10_400_400_400/"
+PATH_2 = "G:/master_datafiles/trained_networks/MLP_HC_2018-10-10_400_400_400/"
 SINGLE_ACCURACY = False
 SINGLE_AVERAGE = False
 SINGLE_R2 = False

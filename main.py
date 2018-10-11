@@ -43,7 +43,7 @@ def time_shift_data(X, y, n):
 
 def run_network(net_dict):
     # S = ConvolutionalNeuralNetwork1([None, 147, 40, 1], cnn1)
-    S = MultiLayerPerceptron([None, net_dict["N_NEURONS"], 20, 1], mlp)  # 56 147
+    S = MultiLayerPerceptron([None, net_dict["N_NEURONS"], 10, 1], mlp)  # 56 147
 
     saver = tf.train.Saver()
     sess = tf.Session()
@@ -68,7 +68,7 @@ def run_network(net_dict):
     print("Training model...")
     xshape = [net_dict["BATCH_SIZE"]] + list(X_train[0].shape) + [1]
     yshape = [net_dict["BATCH_SIZE"]] + list(y_train[0].shape) + [1]
-    metric_counter = net_dict["METRIC_ITER"]
+    metric_counter = 0 # net_dict["METRIC_ITER"]
     metric_step_counter = []
     stop_early = False
     for i in range(0, net_dict["EPOCHS"] + 1):
@@ -156,15 +156,15 @@ if __name__ == '__main__':
 
     # prefrontal cortex
 
-    MODEL_PATH = "G:/master_datafiles/trained_networks/MLP_PFC_2018-10-10_400_400_400/"
-    RAW_DATA_PATH = "G:/master_datafiles/raw_data/2018-04-09_14-39-52/"
-    FILTERED_DATA_PATH = "G:/master_datafiles/filtered_data/neocortex_hann_win_size_20.pkl"
+    # MODEL_PATH = "G:/master_datafiles/trained_networks/MLP_PFC_2018-10-10_400_400_400/"
+    # RAW_DATA_PATH = "G:/master_datafiles/raw_data/2018-04-09_14-39-52/"
+    # FILTERED_DATA_PATH = "G:/master_datafiles/filtered_data/neocortex_hann_win_size_20.pkl"
 
     # hippocampus
 
-    # MODEL_PATH = "G:/master_datafiles/trained_networks/MLP_hippocampus_2018-10_09_neuron_filter_100/"
-    # RAW_DATA_PATH = "G:/master_datafiles/raw_data/2018-05-16_17-13-37/"
-    # FILTERED_DATA_PATH = "G:/master_datafiles/filtered_data/hippocampus_hann_win_size_25_09-5_7.pkl"
+    MODEL_PATH = "G:/master_datafiles/trained_networks/MLP_HC_2018-10-10_400_400_400/"
+    RAW_DATA_PATH = "G:/master_datafiles/raw_data/2018-05-16_17-13-37/"
+    FILTERED_DATA_PATH = "G:/master_datafiles/filtered_data/hippocampus_hann_win_size_25_09-5_7.pkl"
     ASD = 1.0
     # Program execution settings
 
@@ -175,20 +175,20 @@ if __name__ == '__main__':
     MAKE_HISTOGRAM = False
     LOAD_MODEL = False  # load model from model path
     TRAIN_MODEL = True  # train model or just show results
-    EPOCHS = 100
-    INITIAL_TIMESHIFT = -3000
+    EPOCHS = 1000
+    INITIAL_TIMESHIFT = 0
     TIME_SHIFT_ITER = 200
-    TIME_SHIFT_STEPS = 50
-    METRIC_ITER = 10  # after how many epochs network is validated
-    SHUFFLE_DATA = True  # wether to randomly shuffle the data in big slices
+    TIME_SHIFT_STEPS = 1
+    METRIC_ITER = 50 # after how many epochs network is validated
+    SHUFFLE_DATA = True  # whether to randomly shuffle the data in big slices
     SHUFFLE_FACTOR = 20
-    EARLY_STOPPING = True
+    EARLY_STOPPING = False
 
     # Input data parameters
 
-    SLICE_SIZE = 400
-    Y_SLICE_SIZE = 400
-    STRIDE = 400
+    SLICE_SIZE = 200
+    Y_SLICE_SIZE = 200
+    STRIDE = 200
     BATCH_SIZE = 50
     WIN_SIZE = 20
     SEARCH_RADIUS = WIN_SIZE * 2
