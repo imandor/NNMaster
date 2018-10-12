@@ -122,7 +122,8 @@ def run_network(net_dict):
             y = np.array(y_train[j:j + net_dict["BATCH_SIZE"]])
             x = np.reshape(x, xshape)
             y = np.reshape(y, yshape)
-            t = np.max(S.train(sess, x, y, dropout=0.5))
+            if net_dict["NAIVE_TEST"] is False or net_dict["TIME_SHIFT"] == 0:
+                t = np.max(S.train(sess, x, y, dropout=0.5))
         metric_counter = metric_counter + 1
         if stop_early is True:
             break
@@ -165,7 +166,7 @@ if __name__ == '__main__':
     MODEL_PATH = "G:/master_datafiles/trained_networks/MLP_HC_2018-10-10_400_400_400/"
     RAW_DATA_PATH = "G:/master_datafiles/raw_data/2018-05-16_17-13-37/"
     FILTERED_DATA_PATH = "G:/master_datafiles/filtered_data/hippocampus_hann_win_size_25_09-5_7.pkl"
-    ASD = 1.0
+    NEURONS_KEPT_FACTOR = 1.0
     # Program execution settings
 
     LOAD_RAW_DATA = True  # load source data from raw data path or load default model
@@ -179,11 +180,11 @@ if __name__ == '__main__':
     INITIAL_TIMESHIFT = 0
     TIME_SHIFT_ITER = 200
     TIME_SHIFT_STEPS = 1
-    METRIC_ITER = 50 # after how many epochs network is validated
+    METRIC_ITER = 10 # after how many epochs network is validated <---
     SHUFFLE_DATA = True  # whether to randomly shuffle the data in big slices
     SHUFFLE_FACTOR = 20
     EARLY_STOPPING = False
-
+    NAIVE_TEST = False
     # Input data parameters
 
     SLICE_SIZE = 200
@@ -256,7 +257,7 @@ if __name__ == '__main__':
     net_dict["WIN_SIZE"] = WIN_SIZE
     net_dict["SEARCH_RADIUS"] = SEARCH_RADIUS
     net_dict["EARLY_STOPPING"] = EARLY_STOPPING
-
+    net_dict["NAIVE_TEST"] = NAIVE_TEST
     # Preprocess data
 
     if LOAD_RAW_DATA is True and LOAD_GLASER_DATA is False:
