@@ -3,12 +3,15 @@ import matplotlib.pyplot as plt
 from src.preprocessing import position_as_map
 
 
-def get_r2(y_predicted, y_target):
+def get_r2(y_predicted, y_target,step_size):
     R2_list = []  # Initialize a list that will contain the R2s for all the outputs
     for i in range(y_predicted.shape[1]):  # Loop through outputs
         # Compute R2 for each output
-        y_avg = np.average(y_predicted[:, i])
-        R2 = np.sum(np.square(y_predicted[:,i]-y_avg)) / np.sum(np.square(y_target[:, i]-y_avg))
+        y_target_i = y_target[:,i]*step_size[i]
+        y_predicted_i = y_predicted[:,i]*step_size[i]
+        y_avg = np.average(y_target[:, i])
+        R2 = 1 - np.sum(np.square(y_target_i-y_predicted_i)) / np.sum(np.square(y_target_i-y_avg))
+        # R2 = np.sum(np.square(y_predicted[:,i]-y_avg)) / np.sum(np.square(y_target[:, i]-y_avg))
             # 1 - np.sum((y_target[:, i] - y_predicted[:, i]) ** 2) / np.sum((y_predicted[:, i] - y_avg) ** 2)
         # print("RSS:",np.sum((y_pred[:,i] - y_actual[:, i]) ** 2))
         # print("TSS:",np.sum((y_actual[:, i] - y_avg) ** 2))
@@ -119,13 +122,13 @@ def test_accuracy(sess, S, net_dict, is_training_data=False, print_distance=Fals
         X = net_dict["X_valid"]
         y = net_dict["y_valid"]
     y_predicted, y_target = predict(S, sess, X, y)
-    r2 = get_r2(y_predicted, y_target)
+    r2 = get_r2(y_predicted, y_target,[net_dict["X_STEP"], net_dict["Y_STEP"]])
     distance = get_avg_distance(y_predicted, y_target, [net_dict["X_STEP"], net_dict["Y_STEP"]])
     accuracy = []
     for i in range(0, 20):
         acc = get_radius_accuracy(y_predicted, y_target, [net_dict["X_STEP"], net_dict["Y_STEP"]], i)
         accuracy.append(acc)
-        if i == 19 and print_distance is True: print("accuracy", i, ":", acc)
+        if i == 5 and print_distance is True: print("accuracy", i, ":", acc)
     if False:  # plot planes
         plot_all_planes(is_training_data, y_predicted, y_target, net_dict)
     return r2, distance, accuracy
