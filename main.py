@@ -42,10 +42,10 @@ def time_shift_data(X, y, n):
 
 
 def run_network(net_dict):
-    # S = ConvolutionalNeuralNetwork1([None, 147, 40, 1], cnn1)
+    # S = ConvolutionalNeuralNetwork1([None, 56, 10, 1], cnn1)
     S = MultiLayerPerceptron([None, net_dict["N_NEURONS"], 10, 1], mlp)  # 56 147
 
-    saver = tf.train.Saver()
+    # saver = tf.train.Saver()
     sess = tf.Session()
     r2_scores_train = []
     avg_scores_train = []
@@ -98,13 +98,16 @@ def run_network(net_dict):
             metric_step_counter.append(i)
             # saver.save(sess, net_dict["MODEL_PATH"])
             print("Epoch", i)
-            print("training data:")
-            r2_train, avg_train, accuracy_train = test_accuracy(sess, S, net_dict, is_training_data=True,
-                                                                print_distance=True)
-            r2_scores_train.append(r2_train)
-            avg_scores_train.append(avg_train)
-            acc_scores_train.append(accuracy_train)
-            print(r2_train, avg_train)
+            # print("training data:")
+            # r2_train, avg_train, accuracy_train = test_accuracy(sess, S, net_dict, is_training_data=True,
+            #                                                     print_distance=True)
+            # r2_scores_train.append(r2_train)
+            # avg_scores_train.append(avg_train)
+            # acc_scores_train.append(accuracy_train)
+            # print(r2_train, avg_train)
+
+
+
             print("validation data:")
             r2_valid, avg_valid, acc_valid = test_accuracy(sess, S, net_dict, is_training_data=False,
                                                            print_distance=True)
@@ -127,7 +130,7 @@ def run_network(net_dict):
         metric_counter = metric_counter + 1
         if stop_early is True:
             break
-    saver.save(sess, net_dict["MODEL_PATH"])
+    # saver.save(sess, net_dict["MODEL_PATH"])
 
     # Add performance to return dict
 
@@ -180,9 +183,9 @@ if __name__ == '__main__':
     INITIAL_TIMESHIFT = 0
     TIME_SHIFT_ITER = 200
     TIME_SHIFT_STEPS = 1
-    METRIC_ITER = 10 # after how many epochs network is validated <---
+    METRIC_ITER = 50 # after how many epochs network is validated <---
     SHUFFLE_DATA = True  # whether to randomly shuffle the data in big slices
-    SHUFFLE_FACTOR = 20
+    SHUFFLE_FACTOR = 500
     EARLY_STOPPING = False
     NAIVE_TEST = False
     # Input data parameters

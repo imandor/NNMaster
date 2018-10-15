@@ -42,10 +42,10 @@ cnn1.conv2.strides = [1, 1, 1, 1]
 cnn1.conv2.padding = "VALID"
 cnn1.conv2.activation = tf.nn.relu
 cnn1.convT1 = Map()
-cnn1.fc1.weights = tf.truncated_normal(shape=(36 * 70, 70), stddev=0.01)
+cnn1.fc1.weights = tf.truncated_normal(shape=(420, 1000), stddev=0.01)
 cnn1.fc1.activation = tf.nn.relu
 cnn1.fc2 = Map()
-cnn1.fc2.weights = tf.truncated_normal(shape=(70, 30 * 80), stddev=0.01)
+cnn1.fc2.weights = tf.truncated_normal(shape=(1000, 30 * 80), stddev=0.01)
 cnn1.fc2.activation = tf.identity
 cnn1.reshape = Map()
 cnn1.reshape.shape = [None, 80, 30, 1]

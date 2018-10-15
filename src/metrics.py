@@ -4,18 +4,72 @@ from src.preprocessing import position_as_map
 
 
 def get_r2(y_predicted, y_target,step_size):
-    R2_list = []  # Initialize a list that will contain the R2s for all the outputs
-    for i in range(y_predicted.shape[1]):  # Loop through outputs
-        # Compute R2 for each output
-        y_target_i = y_target[:,i]*step_size[i]
-        y_predicted_i = y_predicted[:,i]*step_size[i]
-        y_avg = np.average(y_target[:, i])
-        R2 = 1 - np.sum(np.square(y_target_i-y_predicted_i)) / np.sum(np.square(y_target_i-y_avg))
-        # R2 = np.sum(np.square(y_predicted[:,i]-y_avg)) / np.sum(np.square(y_target[:, i]-y_avg))
-            # 1 - np.sum((y_target[:, i] - y_predicted[:, i]) ** 2) / np.sum((y_predicted[:, i] - y_avg) ** 2)
-        # print("RSS:",np.sum((y_pred[:,i] - y_actual[:, i]) ** 2))
-        # print("TSS:",np.sum((y_actual[:, i] - y_avg) ** 2))
-        R2_list.append(R2)  # Append R2 of this output to the list
+    R2_list = []
+    y_predicted = y_predicted * step_size
+    y_target = y_target * step_size
+
+    # begin test
+    # y_mean = 90 # np.mean(y_target[:, 0])
+    # y_pred = y_predicted[:,0]
+    # y_tar = y_target[:,0]
+    # y_p = []
+    # y_t = []
+    # R2_count_pos = 0
+    # R2_count_neg = 0
+    # R2_list = []
+    # R2_min = 1
+    # index = 0
+    # target_90_counter = 0
+    # terrible_counter = 0
+    # for i in range(y_tar.shape[0]):
+    #     y_p.append(y_pred[i])
+    #     y_t.append(y_tar[i])
+    #     if y_tar[i] == 90:
+    #         target_90_counter += 1
+    #     y_P = np.array(y_p)
+    #     y_T = np.array(y_t)
+    #     R2_tot = 1-np.sum((y_P-y_T)**2)/np.sum((y_T-y_mean)**2)
+    #     R2_current = 1 - (y_pred[i]-y_tar[i])**2 / (y_tar[i]-y_mean)**2
+    #     if R2_current < -1000:
+    #         terrible_counter += 1
+    #     if R2_current < R2_min:
+    #         R2_min = R2_current
+    #         index = i
+    #     if i == 2961:
+    #         print("asd")
+    #     R2_list.append(R2_current)
+    #     if R2_current >= 0:
+    #         R2_count_pos +=1
+    #     else:
+    #         R2_count_neg+=1
+    #
+    #     dist_curr = np.abs(y_pred[i]-y_tar[i])
+    #     random_curr = np.abs(y_T[i]-y_mean)
+    #     dist_total = np.average(np.abs(y_P-y_T))
+    #     random_total = np.average(np.abs(y_T-y_mean))
+    #     print("Y_pred",y_pred[i])
+    #     print("Y_tar",y_tar[i])
+    #     print("R2 total:",R2_tot)
+    #     print("R2 current:",R2_current)
+    #     print("dist curr:",dist_curr)
+    #     print("dist total:",dist_total)
+    #     print("dist r current:",random_curr)
+    #     print("dist r total:",random_total)
+    #
+    #     print("fin")
+    # R2_list = np.array(R2_list)
+    # R2_min = np.min(R2_list)
+    # R2_max = np.max(R2_list)
+    # R2_list_avg = np.average(R2_list)
+
+    # end test
+
+    for i in range(y_target.shape[1]):
+        y_mean=np.mean(y_target[:,i])
+
+
+        R2=1-np.sum((y_predicted[:,i]-y_target[:,i])**2)/np.sum((y_target[:,i]-y_mean)**2)
+        R2_list.append(R2)
     R2_array = np.array(R2_list)
     return R2_array  # Return an array of R2s
 
@@ -62,6 +116,8 @@ def average_position(mapping):
 
 
 def plot_histogram(sess, S, net_dict, X, y):
+
+
     y_predicted, y_target = predict(S, sess, X, y)
     distances = get_distances(y_predicted, y_target, [net_dict["X_STEP"], net_dict["Y_STEP"]])
     fig, ax = plt.subplots()
@@ -96,16 +152,16 @@ def predict(S, sess, X, Y):
     yshape = [1] + list(Y[0].shape) + [1]
     y_predicted = np.zeros([len(Y), 2])
     y_target = np.zeros([len(Y), 2])
-    for j in range(0, len(X) - 1, 1):
+    for j in range(0, len(X), 1):
         x = np.array([data_slice for data_slice in X[j:j + 1]])
         y = np.array(Y[j:j + 1])
         x = np.reshape(x, xshape)
         y = np.reshape(y, yshape)
-        prediction = S.valid(sess, x)
-        a = sigmoid(prediction[0, :, :, 0])
+        prediction = S.valid(sess, x)[0, :, :, 0]
+        prediction_a = sigmoid(prediction)
         y = y[0, :, :, 0]
         # bin_1 = average_position(a)
-        bin_1 = np.unravel_index(a.argmax(), a.shape)
+        bin_1 = np.unravel_index(prediction_a.argmax(), prediction_a.shape)
         bin_2 = average_position(y)
         y_predicted[j][0] = bin_1[0]
         y_predicted[j][1] = bin_1[1]
@@ -121,6 +177,9 @@ def test_accuracy(sess, S, net_dict, is_training_data=False, print_distance=Fals
     else:
         X = net_dict["X_valid"]
         y = net_dict["y_valid"]
+    # X = X[0:10]
+    # y = y[0:10]
+
     y_predicted, y_target = predict(S, sess, X, y)
     r2 = get_r2(y_predicted, y_target,[net_dict["X_STEP"], net_dict["Y_STEP"]])
     distance = get_avg_distance(y_predicted, y_target, [net_dict["X_STEP"], net_dict["Y_STEP"]])
@@ -129,43 +188,78 @@ def test_accuracy(sess, S, net_dict, is_training_data=False, print_distance=Fals
         acc = get_radius_accuracy(y_predicted, y_target, [net_dict["X_STEP"], net_dict["Y_STEP"]], i)
         accuracy.append(acc)
         if i == 5 and print_distance is True: print("accuracy", i, ":", acc)
-    if False:  # plot planes
-        plot_all_planes(is_training_data, y_predicted, y_target, net_dict)
+    if True:  # plot planes
+        plot_all_planes(is_training_data, y_predicted, y_target, X,net_dict)
     return r2, distance, accuracy
 
 
-def plot_all_planes(is_training_data, y_predicted, y_target, net_dict):
+def plot_all_planes(is_training_data, y_predicted, y_target,X, net_dict):
     if is_training_data:
         is_train = "train"
+        map_list = net_dict["y_train"]
     else:
         is_train = "valid"
+        map_list = net_dict["y_valid"]
     distance_list = get_radius_distance_list(y_predicted, y_target, [net_dict["X_STEP"], net_dict["Y_STEP"]],
-                                             absolute_margin=20)
-    y_target = []
-    y_prediction = []
-    for i, dist in enumerate(distance_list):
-        if True:
-            y_target.append(y_predicted[i])
-            y_prediction.append(y_target[i])
-    plot_plane(y_prediction, net_dict, "C:/Users/NN/Desktop/Master/" + is_train + "_all" + "_prediction")
-    plot_plane(y_target, net_dict, "C:/Users/NN/Desktop/Master/" + is_train + "_all" + "_target")
-    y_target = []
-    y_prediction = []
+                                             absolute_margin=50)
+    # y_target_f = []
+    # y_prediction_f = []
+    # for i, dist in enumerate(distance_list):
+    #     if True:
+    #         y_target_f.append(y_target[i])
+    #         y_prediction_f.append(y_predicted[i])
+    # plot_plane(y_prediction_f, net_dict, "C:/Users/NN/Desktop/Master/" + is_train + "_all" + "_prediction")
+    # plot_plane(y_target_f, net_dict, "C:/Users/NN/Desktop/Master/" + is_train + "_all" + "_target")
+    y_target_f = []
+    y_prediction_f = []
+    x_list = []
     for i, dist in enumerate(distance_list):
         if dist:
-            y_target.append(y_predicted[i])
-            y_prediction.append(y_target[i])
-    plot_plane(y_prediction, net_dict, "C:/Users/NN/Desktop/Master/" + is_train + "_better" + "_prediction")
-    plot_plane(y_target, net_dict, "C:/Users/NN/Desktop/Master/" + is_train + "_better" + "_target")
-    y_target = []
-    y_prediction = []
+            y_target_f.append(y_target[i])
+            y_prediction_f.append(y_predicted[i])
+            x_list.append(X[i])
+    plot_axis_representation(y_target,"C:/Users/NN/Desktop/Master/experiments/Histogram of positions/all_positions_2d")
+    plot_axis_representation(np.array(y_target_f),"C:/Users/NN/Desktop/Master/experiments/Histogram of positions/all_better_40_target_2d")
+    plot_axis_representation(np.array(y_prediction_f),"C:/Users/NN/Desktop/Master/experiments/Histogram of positions/all_better_40_prediction_2d")
+
+    y_target_t = np.array(y_target_f)
+    y_prediction_t = np.array(y_prediction_f)
+    y_distance = np.abs(y_target_t-y_prediction_t)
+    spikes_per_second = np.mean([len(x) for x in x_list]) /200
+
+
+    # plot_plane(y_prediction_f, net_dict, "C:/Users/NN/Desktop/Master/" + is_train + "_better" + "_prediction")
+    # plot_plane(y_target_f, net_dict, "C:/Users/NN/Desktop/Master/" + is_train + "_better" + "_target")
+    y_target_f = []
+    y_prediction_f = []
+    x_list = []
+    maps = []
     for i, dist in enumerate(distance_list):
         if not dist:
-            y_target.append(y_predicted[i])
-            y_prediction.append(y_target[i])
-    plot_plane(y_prediction, net_dict, "C:/Users/NN/Desktop/Master/" + is_train + "_worse" + "_prediction")
-    plot_plane(y_target, net_dict, "C:/Users/NN/Desktop/Master/" + is_train + "_worse" + "_target")
+            y_target_f.append(y_target[i])
+            y_prediction_f.append(y_predicted[i])
+            x_list.append(X[i])
+            maps.append(map_list[i])
+    plot_axis_representation(np.array(y_target_f),"C:/Users/NN/Desktop/Master/experiments/Histogram of positions/all_worse_40_target_2d")
+    plot_axis_representation(np.array(y_prediction_f),"C:/Users/NN/Desktop/Master/experiments/Histogram of positions/all_worse_40_prediction_2d")
 
+    # y_target_f = np.array(y_target_f)
+    # y_prediction_f = np.array(y_prediction_f)
+    # y_distance = np.abs(y_target_f-y_prediction_f)
+    # spikes_per_second = np.mean([len(x) for x in x_list]) /200
+    # y_avg_distance = np.average(y_distance)
+    plot_plane(y_prediction_f, net_dict, "C:/Users/NN/Desktop/Master/" + is_train + "_worse" + "_prediction")
+    plot_plane(y_target_f, net_dict, "C:/Users/NN/Desktop/Master/" + is_train + "_worse" + "_target")
+
+
+def plot_axis_representation(y_values,path):
+    # plots representation over one axis
+    fig, ax = plt.subplots()
+    ind = np.array([np.arange(80),np.arange(30)])#np.arange(0,80)
+    ax.hist2d(x=y_values[:,0],y=y_values[:,1],bins=[80,30])
+    # ax.hist(y_values,ind)
+    # ax.set_ylim([0, 270])
+    plt.savefig(path)
 
 def print_net_dict(net_dict):
     print("session_filter", net_dict["session_filter"])

@@ -43,6 +43,10 @@ class Network:
     def get_loss(self, sess, x, y):
         return sess.run(self.loss, feed_dict={self.input: x, self.output_target: y})
 
+def gaussian_noise_layer(input_layer, std):
+    noise = tf.random_normal(shape=tf.shape(input_layer), mean=0.0, stddev=std, dtype=tf.float32)
+    return input_layer + noise
+
 
 class OneLayerPerceptron(Network):
     # conf.fc1.weights : initial weights of the net
@@ -51,6 +55,11 @@ class OneLayerPerceptron(Network):
     def __init__(self, input_shape, conf):
         self.weights = []
         self.input = tf.placeholder(shape=input_shape, dtype=DTYPE)
+
+
+
+
+
         input_flat = tf.reshape(self.input, (tf.shape(self.input)[0], -1))
         self.weights.append(tf.Variable(conf.fc1.weights, dtype=DTYPE))
         self.output = tf.matmul(input_flat, self.weights[-1])
@@ -74,6 +83,7 @@ class MultiLayerPerceptron(Network):
     def __init__(self, input_shape, conf):
         self.weights = []
         self.input = tf.placeholder(shape=input_shape, dtype=DTYPE)
+        # noise = gaussian_noise_layer(self.input, 20)
         self.dropout = tf.placeholder_with_default(1.0, shape=())
 
         batch_size = tf.shape(self.input)[0]
@@ -101,7 +111,7 @@ class ConvolutionalNeuralNetwork1(Network):
         self.weights = {}
         self.layers = Layers()
         self.input = tf.placeholder(shape=input_shape, dtype=DTYPE)
-        self.dropout = tf.placeholder_with_default(1.0, shape=())
+        self.dropout = tf.placeholder_with_default(0.0, shape=())
         batch_size = tf.shape(self.input)[0]
 
         # Conv 1
@@ -131,14 +141,15 @@ class ConvolutionalNeuralNetwork1(Network):
         self.weights["fc1"] = tf.Variable(conf.fc1.weights)
         self.layers["fc1"] = conf.fc1.activation(tf.matmul(self.layers["flat"], self.weights["fc1"]))
         # fc2
+        self.layers["dropout"] = tf.nn.dropout(x=self.layers["fc1"], keep_prob=self.dropout)  # TODO
+
         self.weights["fc2"] = tf.Variable(conf.fc2.weights)
-        self.layers["fc2"] = conf.fc2.activation(tf.matmul(self.layers["fc1"], self.weights["fc2"]))
-        self.layers["dropout"] = tf.nn.dropout(x=self.layers["fc2"], keep_prob=self.dropout)  # TODO
+        self.layers["fc2"] = conf.fc2.activation(tf.matmul(self.layers["dropout"], self.weights["fc2"]))
 
         # reshape
         shape = conf.reshape.shape
         shape[0] = batch_size
-        self.layers["reshape"] = tf.reshape(self.layers["dropout"], shape)
+        self.layers["reshape"] = tf.reshape(self.layers["fc2"], shape)
         self.output = self.layers["reshape"]
         self.output_target = tf.placeholder(shape=self.output.shape, dtype=DTYPE)
         self.loss = conf_to_loss(conf.loss_type, self.output, self.output_target)
