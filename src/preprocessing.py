@@ -14,18 +14,51 @@ def position_as_map(pos_list, xstep, ystep, X_MAX, X_MIN, Y_MAX, Y_MIN):
         y_list = pos_list[1, :]
     asd_1 = x_list
     asd_2 = y_list
-    x_list = ((x_list - X_MIN) // xstep).astype(int)
-    y_list = ((y_list - Y_MIN) // ystep).astype(int)
     pos_list = np.dstack((x_list, y_list))[0]
     pos_list = np.unique(pos_list, axis=0)
     ret = np.zeros(((X_MAX - X_MIN) // xstep, (Y_MAX - Y_MIN) // ystep))
     for pos in pos_list:
         try:
-            ret[pos[0], pos[1]] = 1
+            # ret[pos[0], pos[1]] = 1
             ret[int(pos[0]), int(pos[1])] = 1
         except IndexError:
             print("Warning, check if pos_list is formatted correctly ([[x,x,x,x,x],[y,y,y,y,y]]")
     return ret
+
+
+def filter_overrepresentation(x,y,max_occurrences,net_dict,axis=0):
+    print("Filtering overrepresentation")
+    x_return = []
+    y_return = []
+    y = np.array(y)
+    # y = y[0, :, :, 0]
+    if axis == 0:
+        pos_counter = np.zeros((net_dict["X_MAX"]-net_dict["X_MIN"]) // net_dict["X_STEP"])
+    else:
+        pos_counter = np.zeros((net_dict["Y_MAX"]-net_dict["Y_MIN"]) // net_dict["Y_STEP"])
+
+    for i,e in enumerate(y):
+        y_pos = np.unravel_index(e.argmax(), e.shape)[axis] # TODO should not work 100%
+        if pos_counter[y_pos]<max_occurrences:
+            x_return.append(x[i])
+            pos_counter[y_pos]+=1
+            y_return.append(e)
+            # y_return.append(position_as_map([e[0],e[1]], net_dict["X_STEP"],net_dict["Y_STEP"],net_dict["X_MAX"], net_dict["X_MIN"], net_dict["Y_MAX"], net_dict["Y_MIN"]))
+    count = np.count_nonzero(pos_counter == max_occurrences)
+    avg = np.average(pos_counter)
+    n_samples = np.sum(pos_counter)
+    return x_return,y_return
+
+
+def count_occurrences(y,net_dict,axis=0):
+    if axis == 0:
+        pos_counter = np.zeros((net_dict["X_MAX"]-net_dict["X_MIN"]) // net_dict["X_STEP"])
+    else:
+        pos_counter = np.zeros((net_dict["Y_MAX"]-net_dict["Y_MIN"]) // net_dict["Y_STEP"])
+    for i,e in enumerate(y):
+        y_pos = np.unravel_index(e.argmax(), e.shape)[axis] # TODO should not work 100%
+        pos_counter[y_pos] += 1
+    return pos_counter
 
 def shuffle_io(X,y,net_dict,seed_no):
 
@@ -111,7 +144,10 @@ def time_shift_io(session,shift,net_dict):
         norm_x = pos_x[:SLICE_SIZE]
         norm_y = pos_y[:SLICE_SIZE]
         right_index_border = len(norm_x) - SURROUNDING_INDEX
-        posxy_list =  [(norm_x[SURROUNDING_INDEX:right_index_border]),(norm_y[SURROUNDING_INDEX:right_index_border]) ] # remove surrounding positional data and form average
+        x_list = (((norm_x[SURROUNDING_INDEX:right_index_border]) - X_MIN) // X_STEP).astype(int)
+        y_list = (((norm_y[SURROUNDING_INDEX:right_index_border]) - Y_MIN) // Y_STEP).astype(int)
+
+        posxy_list =  [x_list,y_list] # remove surrounding positional data and form average
         y.append(position_as_map(posxy_list, X_STEP, Y_STEP, X_MAX, X_MIN, Y_MAX, Y_MIN))
         pos_x = pos_x[BINS_IN_STRIDE*WIN_SIZE:]
         pos_y = pos_y[BINS_IN_STRIDE*WIN_SIZE:]

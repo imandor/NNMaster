@@ -187,7 +187,7 @@ def test_accuracy(sess, S, net_dict, is_training_data=False, print_distance=Fals
     for i in range(0, 20):
         acc = get_radius_accuracy(y_predicted, y_target, [net_dict["X_STEP"], net_dict["Y_STEP"]], i)
         accuracy.append(acc)
-        if i == 5 and print_distance is True: print("accuracy", i, ":", acc)
+        if i == 19 and print_distance is True: print("Fraction pos error less than", i, ":", acc)
     if True:  # plot planes
         plot_all_planes(is_training_data, y_predicted, y_target, X,net_dict)
     return r2, distance, accuracy
@@ -218,9 +218,9 @@ def plot_all_planes(is_training_data, y_predicted, y_target,X, net_dict):
             y_target_f.append(y_target[i])
             y_prediction_f.append(y_predicted[i])
             x_list.append(X[i])
-    plot_axis_representation(y_target,"C:/Users/NN/Desktop/Master/experiments/Histogram of positions/all_positions_2d")
-    plot_axis_representation(np.array(y_target_f),"C:/Users/NN/Desktop/Master/experiments/Histogram of positions/all_better_40_target_2d")
-    plot_axis_representation(np.array(y_prediction_f),"C:/Users/NN/Desktop/Master/experiments/Histogram of positions/all_better_40_prediction_2d")
+    plot_axis_representation_1d(y_target,"C:/Users/NN/Desktop/Master/experiments/Histogram of positions/all_positions",is_training_data)
+    plot_axis_representation_1d(np.array(y_target_f),"C:/Users/NN/Desktop/Master/experiments/Histogram of positions/all_better_40_target",is_training_data)
+    plot_axis_representation_1d(np.array(y_prediction_f),"C:/Users/NN/Desktop/Master/experiments/Histogram of positions/all_better_40_prediction",is_training_data)
 
     y_target_t = np.array(y_target_f)
     y_prediction_t = np.array(y_prediction_f)
@@ -240,8 +240,8 @@ def plot_all_planes(is_training_data, y_predicted, y_target,X, net_dict):
             y_prediction_f.append(y_predicted[i])
             x_list.append(X[i])
             maps.append(map_list[i])
-    plot_axis_representation(np.array(y_target_f),"C:/Users/NN/Desktop/Master/experiments/Histogram of positions/all_worse_40_target_2d")
-    plot_axis_representation(np.array(y_prediction_f),"C:/Users/NN/Desktop/Master/experiments/Histogram of positions/all_worse_40_prediction_2d")
+    plot_axis_representation_1d(np.array(y_target_f),"C:/Users/NN/Desktop/Master/experiments/Histogram of positions/all_worse_40_target",is_training_data)
+    plot_axis_representation_1d(np.array(y_prediction_f),"C:/Users/NN/Desktop/Master/experiments/Histogram of positions/all_worse_40_prediction",is_training_data)
 
     # y_target_f = np.array(y_target_f)
     # y_prediction_f = np.array(y_prediction_f)
@@ -252,14 +252,27 @@ def plot_all_planes(is_training_data, y_predicted, y_target,X, net_dict):
     plot_plane(y_target_f, net_dict, "C:/Users/NN/Desktop/Master/" + is_train + "_worse" + "_target")
 
 
-def plot_axis_representation(y_values,path):
+def plot_axis_representation_2d(y_values,path):
     # plots representation over one axis
     fig, ax = plt.subplots()
-    ind = np.array([np.arange(80),np.arange(30)])#np.arange(0,80)
     ax.hist2d(x=y_values[:,0],y=y_values[:,1],bins=[80,30])
-    # ax.hist(y_values,ind)
-    # ax.set_ylim([0, 270])
-    plt.savefig(path)
+    plt.savefig(path + "_2d")
+    plt.close('all')
+
+
+def plot_axis_representation_1d(y_values,path,is_training):
+    # plots representation over one axis
+    fig, ax = plt.subplots()
+    ind = np.arange(0,80)
+    if is_training:
+        classification = "_train_"
+        c = "r"
+    else:
+        classification = "_valid_"
+        c = "k"
+    ax.hist(y_values[:, 0], ind, density=True,color=c)
+    plt.savefig(path + classification+"_1d")
+    plt.close('all')
 
 def print_net_dict(net_dict):
     print("session_filter", net_dict["session_filter"])
@@ -281,12 +294,12 @@ def plot_plane(y, net_dict, path):
     pos_x_list = []
     pos_y_list = []
     for i, posxy in enumerate(y):
-        pos_x_list.append(posxy[0] * net_dict["X_STEP"] + net_dict["X_MIN"])
-        pos_y_list.append(posxy[1] * net_dict["Y_STEP"] + net_dict["Y_MIN"])
+        pos_x_list.append(posxy[0])
+        pos_y_list.append(posxy[1])
     a = position_as_map([pos_x_list, pos_y_list], net_dict["X_STEP"], net_dict["Y_STEP"], net_dict["X_MAX"],
                         net_dict["X_MIN"], net_dict["Y_MAX"], net_dict["Y_MIN"])
     Y = a
-    print("plot:", "sample size is", len(y))
+    # print("plot:", "sample size is", len(y))
     fig, ax = plt.subplots()
     # fig.suptitle("Samples: "+str(len(y)))
     ax.axis('off')

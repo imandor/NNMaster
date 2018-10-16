@@ -6,8 +6,8 @@ import numpy as np
 from src.conf import mlp, sp1, cnn1
 import os
 import errno
-from src.settings import save_as_pickle, load_pickle,save_net_dict
-from src.preprocessing import time_shift_io, shuffle_io, position_as_map
+from src.settings import save_as_pickle, load_pickle, save_net_dict
+from src.preprocessing import time_shift_io, shuffle_io, position_as_map, filter_overrepresentation, count_occurrences
 import datetime
 import pickle
 import random
@@ -68,14 +68,13 @@ def run_network(net_dict):
     print("Training model...")
     xshape = [net_dict["BATCH_SIZE"]] + list(X_train[0].shape) + [1]
     yshape = [net_dict["BATCH_SIZE"]] + list(y_train[0].shape) + [1]
-    metric_counter = 0 # net_dict["METRIC_ITER"]
+    metric_counter = 0  # net_dict["METRIC_ITER"]
     metric_step_counter = []
     stop_early = False
     for i in range(0, net_dict["EPOCHS"] + 1):
         # Train model
         X_train, y_train = shuffle_io(X_train, y_train, net_dict, i + 1)
         t = None
-
 
         # Test accuracy and add validation to output. Check if early stopping is necessary
 
@@ -94,30 +93,27 @@ def run_network(net_dict):
                         # metric_counter = net_dict["METRIC_ITER"]  # one last calculation with local maximum return
 
         if metric_counter == net_dict["METRIC_ITER"] and stop_early is False:
-            print(i, ", loss:", t)
             metric_step_counter.append(i)
             # saver.save(sess, net_dict["MODEL_PATH"])
-            print("Epoch", i)
-            # print("training data:")
-            # r2_train, avg_train, accuracy_train = test_accuracy(sess, S, net_dict, is_training_data=True,
-            #                                                     print_distance=True)
-            # r2_scores_train.append(r2_train)
-            # avg_scores_train.append(avg_train)
-            # acc_scores_train.append(accuracy_train)
-            # print(r2_train, avg_train)
 
-
-
-            print("validation data:")
+            print("_-_-_-_-_-_-_-_-_-_-Epoch", i,"_-_-_-_-_-_-_-_-_-_-")
+            print("Training results:")
+            r2_train, avg_train, accuracy_train = test_accuracy(sess, S, net_dict, is_training_data=True,
+                                                                print_distance=True)
+            r2_scores_train.append(r2_train)
+            avg_scores_train.append(avg_train)
+            acc_scores_train.append(accuracy_train)
+            print("R2-score:",r2_train)
+            print("Avg-distance:",avg_train,"\n")
+            print("Validation results:")
             r2_valid, avg_valid, acc_valid = test_accuracy(sess, S, net_dict, is_training_data=False,
                                                            print_distance=True)
-            print(r2_valid, avg_valid)
             r2_scores_valid.append(r2_valid)
             avg_scores_valid.append(avg_valid)
             acc_scores_valid.append(acc_valid)
-
+            print("R2-score:",r2_valid)
+            print("Avg-distance:",avg_valid)
             # saver.save(sess, net_dict["MODEL_PATH"], global_step=i, write_meta_graph=False)
-            print("____________________")
             metric_counter = 0
             # a = get_radius_accuracy(prediction_list, actual_list, [network_dict["X_STEP"], network_dict["Y_STEP"]], 19)
         for j in range(0, len(X_train) - net_dict["BATCH_SIZE"], net_dict["BATCH_SIZE"]):
@@ -183,7 +179,7 @@ if __name__ == '__main__':
     INITIAL_TIMESHIFT = 0
     TIME_SHIFT_ITER = 200
     TIME_SHIFT_STEPS = 1
-    METRIC_ITER = 50 # after how many epochs network is validated <---
+    METRIC_ITER = 10  # after how many epochs network is validated <---
     SHUFFLE_DATA = True  # whether to randomly shuffle the data in big slices
     SHUFFLE_FACTOR = 500
     EARLY_STOPPING = False
@@ -192,7 +188,7 @@ if __name__ == '__main__':
 
     SLICE_SIZE = 200
     Y_SLICE_SIZE = 200
-    STRIDE = 200
+    STRIDE = 20
     BATCH_SIZE = 50
     WIN_SIZE = 20
     SEARCH_RADIUS = WIN_SIZE * 2
@@ -279,7 +275,7 @@ if __name__ == '__main__':
         session.print_details()
         if SAVE_FILTERED_DATA is True:
             save_as_pickle(FILTERED_DATA_PATH, net_dict)
-            save_net_dict(MODEL_PATH,net_dict)
+            save_net_dict(MODEL_PATH, net_dict)
             net_dict["N_NEURONS"] = session.n_neurons
 
     # Start network with different time-shifts
@@ -315,7 +311,9 @@ if __name__ == '__main__':
                 if np.isnan(posxy_list).any() or np.isnan(X[i].any()):
                     X = np.delete(X, i, axis=0)
                 else:
-                    posxy_list = [np.array(posxy_list[0]), np.array(posxy_list[1])]
+                    x_list = ((np.array(posxy_list[0]) - X_MIN) // X_STEP).astype(int)
+                    y_list = ((np.array(posxy_list[1]) - Y_MIN) // Y_STEP).astype(int)
+                    posxy_list = [y_list, y_list]
                     y.append(position_as_map(posxy_list, X_STEP, Y_STEP, 300, 0, 300, 0))
             X = X.transpose([0, 2, 1])
             y = list(reversed(y))
@@ -324,11 +322,17 @@ if __name__ == '__main__':
         # Assign training and testing set
 
         valid_length = int(len(X) * VALID_RATIO)
+        # net_dict["X_train"], net_dict["y_train"] = filter_overrepresentation(X[valid_length:], y[valid_length:], 60,
+        #                                                                      net_dict, axis=0)
+        # net_dict["X_valid"], net_dict["y_valid"] = filter_overrepresentation(X[:valid_length], y[:valid_length], 6,
+        #                                                                      net_dict, axis=0)
         net_dict["X_valid"] = X[:valid_length]
         net_dict["X_train"] = X[valid_length:]
         net_dict["y_valid"] = y[:valid_length]
         net_dict["y_train"] = y[valid_length:]
         net_dict["TIME_SHIFT"] = z
+        train_oc = count_occurrences(net_dict["y_train"], net_dict)
+        valid_oc = count_occurrences(net_dict["y_valid"], net_dict)
 
         if TIME_SHIFT_STEPS == 1:
             save_dict = run_network(net_dict)
