@@ -43,7 +43,7 @@ def time_shift_data(X, y, n):
 
 def run_network(net_dict):
     # S = ConvolutionalNeuralNetwork1([None, 56, 10, 1], cnn1)
-    S = MultiLayerPerceptron([None, net_dict["N_NEURONS"], 10, 1], mlp)  # 56 147
+    S = MultiLayerPerceptron([None, net_dict["N_NEURONS"], 50, 1], mlp)  # 56 147
 
     # saver = tf.train.Saver()
     sess = tf.Session()
@@ -74,39 +74,22 @@ def run_network(net_dict):
     for i in range(0, net_dict["EPOCHS"] + 1):
         # Train model
         X_train, y_train = shuffle_io(X_train, y_train, net_dict, i + 1)
-        t = None
-
-        # Test accuracy and add validation to output. Check if early stopping is necessary
-
-        # Check if early stopping applies
-
-        if net_dict["EARLY_STOPPING"] is True and i >= 10:  # most likely overfitting
-            if i % 10 == 0:
-                r2_valid, avg_valid, acc_valid = test_accuracy(sess, S, net_dict, is_training_data=False,
-                                                               print_distance=False)
-                acc = acc_valid[19]
-                if early_stop_max < acc:
-                    early_stop_max = acc
-                else:
-                    if acc < early_stop_max - 0.01:
-                        stop_early = True
-                        # metric_counter = net_dict["METRIC_ITER"]  # one last calculation with local maximum return
-
         if metric_counter == net_dict["METRIC_ITER"] and stop_early is False:
             metric_step_counter.append(i)
             # saver.save(sess, net_dict["MODEL_PATH"])
+            print("\n_-_-_-_-_-_-_-_-_-_-Epoch", i,"_-_-_-_-_-_-_-_-_-_-\n")
+            # print("Training results:")
+            # if True:
+            #     r2_train, avg_train, accuracy_train = test_accuracy(sess, S, net_dict, net_dict["X_train"], net_dict["y_train"],
+            #                                                         print_distance=True)
+            #     r2_scores_train.append(r2_train)
+            #     avg_scores_train.append(avg_train)
+            #     acc_scores_train.append(accuracy_train)
+            #     print("R2-score:",r2_train)
+            #     print("Avg-distance:",avg_train,"\n")
 
-            print("_-_-_-_-_-_-_-_-_-_-Epoch", i,"_-_-_-_-_-_-_-_-_-_-")
-            print("Training results:")
-            r2_train, avg_train, accuracy_train = test_accuracy(sess, S, net_dict, is_training_data=True,
-                                                                print_distance=True)
-            r2_scores_train.append(r2_train)
-            avg_scores_train.append(avg_train)
-            acc_scores_train.append(accuracy_train)
-            print("R2-score:",r2_train)
-            print("Avg-distance:",avg_train,"\n")
             print("Validation results:")
-            r2_valid, avg_valid, acc_valid = test_accuracy(sess, S, net_dict, is_training_data=False,
+            r2_valid, avg_valid, acc_valid = test_accuracy(sess, S, net_dict, net_dict["X_valid"],net_dict["y_valid"],
                                                            print_distance=True)
             r2_scores_valid.append(r2_valid)
             avg_scores_valid.append(avg_valid)
@@ -115,6 +98,26 @@ def run_network(net_dict):
             print("Avg-distance:",avg_valid)
             # saver.save(sess, net_dict["MODEL_PATH"], global_step=i, write_meta_graph=False)
             metric_counter = 0
+            if net_dict["EARLY_STOPPING"] is True and i >= 5:  # most likely overfitting instead of training
+                if i % 1 == 0:
+
+                    _,_,acc_train = test_accuracy(sess, S, net_dict, net_dict["X_test"],net_dict["y_test"],
+                                                                   print_distance=False)
+                    acc = acc_train[19]
+                    if early_stop_max < acc:
+                        early_stop_max = acc
+                    else:
+                        if acc < early_stop_max - 0.01:
+                            stop_early = True
+                            r2_scores_train = r2_scores_train[0:-1] # Remove latest result which was worse
+                            avg_scores_train = avg_scores_train[0:-1]
+                            acc_scores_train = acc_scores_train[0:-1]
+                            r2_scores_valid = r2_scores_valid[0:-1]
+                            avg_scores_valid = avg_scores_valid[0:-1]
+                            acc_scores_valid = acc_scores_valid[0:-1]
+
+                            # metric_counter = net_dict["METRIC_ITER"]  # one last calculation with local maximum return
+
             # a = get_radius_accuracy(prediction_list, actual_list, [network_dict["X_STEP"], network_dict["Y_STEP"]], 19)
         for j in range(0, len(X_train) - net_dict["BATCH_SIZE"], net_dict["BATCH_SIZE"]):
             x = np.array([data_slice for data_slice in X_train[j:j + net_dict["BATCH_SIZE"]]])
@@ -122,8 +125,9 @@ def run_network(net_dict):
             x = np.reshape(x, xshape)
             y = np.reshape(y, yshape)
             if net_dict["NAIVE_TEST"] is False or net_dict["TIME_SHIFT"] == 0:
-                t = np.max(S.train(sess, x, y, dropout=0.5))
+                t = np.max(S.train(sess, x, y, dropout=0.65))
         metric_counter = metric_counter + 1
+        net_dict["epochs_trained"] = i
         if stop_early is True:
             break
     # saver.save(sess, net_dict["MODEL_PATH"])
@@ -136,7 +140,6 @@ def run_network(net_dict):
     net_dict["acc_scores_valid"] = acc_scores_valid
     net_dict["avg_scores_train"] = avg_scores_train
     net_dict["avg_scores_valid"] = avg_scores_valid
-    net_dict["trained_steps"] = net_dict["trained_steps"] + net_dict["METRIC_ITER"]
     net_dict["metric_step_counter"] = metric_step_counter
     # Close session and add current time shift to network save file
     if net_dict["MAKE_HISTOGRAM"] is True:
@@ -162,10 +165,11 @@ if __name__ == '__main__':
 
     # hippocampus
 
-    MODEL_PATH = "G:/master_datafiles/trained_networks/MLP_HC_2018-10-10_400_400_400/"
+    MODEL_PATH = "G:/master_datafiles/trained_networks/MLP_HC_2018-10-19_1000_200_100/"
     RAW_DATA_PATH = "G:/master_datafiles/raw_data/2018-05-16_17-13-37/"
     FILTERED_DATA_PATH = "G:/master_datafiles/filtered_data/hippocampus_hann_win_size_25_09-5_7.pkl"
     NEURONS_KEPT_FACTOR = 1.0
+
     # Program execution settings
 
     LOAD_RAW_DATA = True  # load source data from raw data path or load default model
@@ -179,22 +183,21 @@ if __name__ == '__main__':
     INITIAL_TIMESHIFT = 0
     TIME_SHIFT_ITER = 200
     TIME_SHIFT_STEPS = 1
-    METRIC_ITER = 10  # after how many epochs network is validated <---
+    METRIC_ITER = 1  # after how many epochs network is validated <---
     SHUFFLE_DATA = True  # whether to randomly shuffle the data in big slices
     SHUFFLE_FACTOR = 500
-    EARLY_STOPPING = False
+    EARLY_STOPPING = True
     NAIVE_TEST = False
+    K_CROSS_VALIDATION = 1
     # Input data parameters
 
-    SLICE_SIZE = 200
+    SLICE_SIZE = 1000
     Y_SLICE_SIZE = 200
-    STRIDE = 20
+    STRIDE = 100
     BATCH_SIZE = 50
     WIN_SIZE = 20
     SEARCH_RADIUS = WIN_SIZE * 2
     VALID_RATIO = 0.1
-    BINS_BEFORE = 0
-    BINS_AFTER = 0
     X_MAX = 240
     Y_MAX = 190
     X_MIN = 0
@@ -242,10 +245,8 @@ if __name__ == '__main__':
     net_dict["TRAIN_MODEL"] = TRAIN_MODEL
     net_dict["METRIC_ITER"] = METRIC_ITER
     net_dict["BATCH_SIZE"] = BATCH_SIZE
-    net_dict["BINS_BEFORE"] = BINS_BEFORE
-    net_dict["BINS_AFTER"] = BINS_AFTER
     net_dict["SLICE_SIZE"] = SLICE_SIZE
-    net_dict["trained_steps"] = 0
+    net_dict["epochs_trained"] = 0
     net_dict["RAW_DATA_PATH"] = RAW_DATA_PATH
     net_dict["X_MAX"] = X_MAX
     net_dict["Y_MAX"] = Y_MAX
@@ -283,73 +284,80 @@ if __name__ == '__main__':
     print_net_dict(net_dict)  # show network parameters in console
 
     for z in range(INITIAL_TIMESHIFT, INITIAL_TIMESHIFT + TIME_SHIFT_STEPS * TIME_SHIFT_ITER, TIME_SHIFT_ITER):
-        iter = int(z - INITIAL_TIMESHIFT) // TIME_SHIFT_ITER
-        if LOAD_GLASER_DATA is False:
-            print("Time shift is now", z)
+        for k in range (0,K_CROSS_VALIDATION):
+            iter = int(z - INITIAL_TIMESHIFT) // TIME_SHIFT_ITER
+            if LOAD_GLASER_DATA is False:
+                print("Time shift is now", z)
 
-            # Time-Shift input and output
+                # Time-Shift input and output
 
-            X, y = time_shift_io(session, z, net_dict)
-            if len(X) != len(y):
-                raise ValueError("Error: Length of x and y are not identical")
-            X, y = shuffle_io(X, y, net_dict, 3)
+                X, y = time_shift_io(session, z, net_dict)
+                if len(X) != len(y):
+                    raise ValueError("Error: Length of x and y are not identical")
+                X, y = shuffle_io(X, y, net_dict, 3)
 
-        if LOAD_GLASER_DATA is True:
-            with open(RAW_DATA_PATH, 'rb') as f:
-                neural_data, y_raw = pickle.load(f, encoding='latin1')  # If using python 3
-            # neural_data = neural_data[135:237]
-            # y_raw = y_raw[135:237]
-            bins_before = 4  # How many bins of neural data prior to the output are used for decoding
-            bins_current = 1  # Whether to use concurrent time bin of neural data
-            bins_after = 5  # How many bins of neural data after the output are used for decoding
-            X = get_spikes_with_history(neural_data, bins_before, bins_after, bins_current)
-            # X_mean = np.nanmean(X, axis=0)
-            # X_std = np.nanstd(X, axis=0)
-            # X = (X - X_mean) / X_std
-            y = []
-            for i, posxy_list in reversed(list(enumerate(y_raw))):
-                if np.isnan(posxy_list).any() or np.isnan(X[i].any()):
-                    X = np.delete(X, i, axis=0)
-                else:
-                    x_list = ((np.array(posxy_list[0]) - X_MIN) // X_STEP).astype(int)
-                    y_list = ((np.array(posxy_list[1]) - Y_MIN) // Y_STEP).astype(int)
-                    posxy_list = [y_list, y_list]
-                    y.append(position_as_map(posxy_list, X_STEP, Y_STEP, 300, 0, 300, 0))
-            X = X.transpose([0, 2, 1])
-            y = list(reversed(y))
-            X, y = shuffle_io(X, y, net_dict, 3)
+            if LOAD_GLASER_DATA is True:
+                with open(RAW_DATA_PATH, 'rb') as f:
+                    neural_data, y_raw = pickle.load(f, encoding='latin1')  # If using python 3
+                # neural_data = neural_data[135:237]
+                # y_raw = y_raw[135:237]
+                bins_before = 4  # How many bins of neural data prior to the output are used for decoding
+                bins_current = 1  # Whether to use concurrent time bin of neural data
+                bins_after = 5  # How many bins of neural data after the output are used for decoding
+                X = get_spikes_with_history(neural_data, bins_before, bins_after, bins_current)
+                # X_mean = np.nanmean(X, axis=0)
+                # X_std = np.nanstd(X, axis=0)
+                # X = (X - X_mean) / X_std
+                y = []
+                for i, posxy_list in reversed(list(enumerate(y_raw))):
+                    if np.isnan(posxy_list).any() or np.isnan(X[i].any()):
+                        X = np.delete(X, i, axis=0)
+                    else:
+                        x_list = ((np.array(posxy_list[0]) - X_MIN) // X_STEP).astype(int)
+                        y_list = ((np.array(posxy_list[1]) - Y_MIN) // Y_STEP).astype(int)
+                        posxy_list = [y_list, y_list]
+                        y.append(position_as_map(posxy_list, X_STEP, Y_STEP, 300, 0, 300, 0))
+                X = X.transpose([0, 2, 1])
+                y = list(reversed(y))
+                X, y = shuffle_io(X, y, net_dict, 3)
 
-        # Assign training and testing set
+            # Assign training and testing set
 
-        valid_length = int(len(X) * VALID_RATIO)
-        # net_dict["X_train"], net_dict["y_train"] = filter_overrepresentation(X[valid_length:], y[valid_length:], 60,
-        #                                                                      net_dict, axis=0)
-        # net_dict["X_valid"], net_dict["y_valid"] = filter_overrepresentation(X[:valid_length], y[:valid_length], 6,
-        #                                                                      net_dict, axis=0)
-        net_dict["X_valid"] = X[:valid_length]
-        net_dict["X_train"] = X[valid_length:]
-        net_dict["y_valid"] = y[:valid_length]
-        net_dict["y_train"] = y[valid_length:]
-        net_dict["TIME_SHIFT"] = z
-        train_oc = count_occurrences(net_dict["y_train"], net_dict)
-        valid_oc = count_occurrences(net_dict["y_valid"], net_dict)
+            if K_CROSS_VALIDATION == 1:
+                valid_length = int(len(X) * VALID_RATIO)
+            # net_dict["X_train"], net_dict["y_train"] = filter_overrepresentation(X[valid_length:], y[valid_length:], 70,
+            #                                                                      net_dict, axis=0)
+            # net_dict["X_valid"], net_dict["y_valid"] = filter_overrepresentation(X[:valid_length], y[:valid_length], 7,
+            #                                                                      net_dict, axis=0)
 
-        if TIME_SHIFT_STEPS == 1:
-            save_dict = run_network(net_dict)
-        else:
-            with multiprocessing.Pool(
-                    1) as p:  # keeping network inside process prevents memory issues when restarting session
-                save_dict = p.map(run_network, [net_dict])[0]
-                p.close()
+                net_dict["X_train"] = X[valid_length:]
+                net_dict["y_train"] = y[valid_length:]
+                net_dict["X_valid"] = X[:valid_length//2]
+                net_dict["y_valid"] = y[:valid_length//2]
+                net_dict["X_test"] = X[valid_length//2:valid_length]
+                net_dict["y_test"] = y[valid_length//2:valid_length]
+                net_dict["TIME_SHIFT"] = z
+            # train_oc = count_occurrences(net_dict["y_train"], net_dict)
+            # valid_oc = count_occurrences(net_dict["y_valid"], net_dict)
+
+            if TIME_SHIFT_STEPS == 1:
+                save_dict = run_network(net_dict)
+            else:
+                with multiprocessing.Pool(
+                        1) as p:  # keeping network inside process prevents memory issues when restarting session
+                    save_dict = p.map(run_network, [net_dict])[0]
+                    p.close()
 
         # Remove raw data for faster later loading and save to file
 
         save_dict.pop('X', None)
         save_dict.pop('X_train', None)
         save_dict.pop('X_valid', None)
+        save_dict.pop('X_test', None)
         save_dict.pop('y', None)
         save_dict.pop('y_valid', None)
         save_dict.pop('y_train', None)
+        save_dict.pop('y_test', None)
         save_dict.pop('y_list', None)
 
         path = MODEL_PATH + "output/" + chr(65 + iter) + "_" + now[0:10] + "_network_output_timeshift=" + str(

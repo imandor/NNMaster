@@ -1,9 +1,10 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from src.preprocessing import position_as_map
+from src.settings import save_as_pickle
 
 
-def get_r2(y_predicted, y_target,step_size):
+def get_r2(y_predicted, y_target, step_size):
     R2_list = []
     y_predicted = y_predicted * step_size
     y_target = y_target * step_size
@@ -65,10 +66,9 @@ def get_r2(y_predicted, y_target,step_size):
     # end test
 
     for i in range(y_target.shape[1]):
-        y_mean=np.mean(y_target[:,i])
+        y_mean = np.mean(y_target[:, i])
 
-
-        R2=1-np.sum((y_predicted[:,i]-y_target[:,i])**2)/np.sum((y_target[:,i]-y_mean)**2)
+        R2 = 1 - np.sum((y_predicted[:, i] - y_target[:, i]) ** 2) / np.sum((y_target[:, i] - y_mean) ** 2)
         R2_list.append(R2)
     R2_array = np.array(R2_list)
     return R2_array  # Return an array of R2s
@@ -116,8 +116,6 @@ def average_position(mapping):
 
 
 def plot_histogram(sess, S, net_dict, X, y):
-
-
     y_predicted, y_target = predict(S, sess, X, y)
     distances = get_distances(y_predicted, y_target, [net_dict["X_STEP"], net_dict["Y_STEP"]])
     fig, ax = plt.subplots()
@@ -170,36 +168,26 @@ def predict(S, sess, X, Y):
     return y_predicted, y_target
 
 
-def test_accuracy(sess, S, net_dict, is_training_data=False, print_distance=False):
-    if is_training_data:
-        X = net_dict["X_train"]
-        y = net_dict["y_train"]
-    else:
-        X = net_dict["X_valid"]
-        y = net_dict["y_valid"]
-    # X = X[0:10]
-    # y = y[0:10]
-
+def test_accuracy(sess, S, net_dict,X,y, print_distance=False):
     y_predicted, y_target = predict(S, sess, X, y)
-    r2 = get_r2(y_predicted, y_target,[net_dict["X_STEP"], net_dict["Y_STEP"]])
+    r2 = get_r2(y_predicted, y_target, [net_dict["X_STEP"], net_dict["Y_STEP"]])
     distance = get_avg_distance(y_predicted, y_target, [net_dict["X_STEP"], net_dict["Y_STEP"]])
     accuracy = []
     for i in range(0, 20):
         acc = get_radius_accuracy(y_predicted, y_target, [net_dict["X_STEP"], net_dict["Y_STEP"]], i)
         accuracy.append(acc)
         if i == 19 and print_distance is True: print("Fraction pos error less than", i, ":", acc)
-    if True:  # plot planes
-        plot_all_planes(is_training_data, y_predicted, y_target, X,net_dict)
+    if False:  # plot planes
+        plot_all_planes(X,y, y_predicted, y_target, net_dict)
+    if True:
+        save_as_pickle("C:/Users/NN/AppData/Local/Temp/animation/predicted/step=" + str(net_dict["epochs_trained"]),
+                       y_predicted[0])
+        save_as_pickle("C:/Users/NN/AppData/Local/Temp/animation/target/step=" + str(net_dict["epochs_trained"]), y_target[0])
     return r2, distance, accuracy
 
 
-def plot_all_planes(is_training_data, y_predicted, y_target,X, net_dict):
-    if is_training_data:
-        is_train = "train"
-        map_list = net_dict["y_train"]
-    else:
-        is_train = "valid"
-        map_list = net_dict["y_valid"]
+def plot_all_planes(X,y, is_training_data, y_predicted, y_target, net_dict):
+    map_list = y
     distance_list = get_radius_distance_list(y_predicted, y_target, [net_dict["X_STEP"], net_dict["Y_STEP"]],
                                              absolute_margin=50)
     # y_target_f = []
@@ -218,15 +206,19 @@ def plot_all_planes(is_training_data, y_predicted, y_target,X, net_dict):
             y_target_f.append(y_target[i])
             y_prediction_f.append(y_predicted[i])
             x_list.append(X[i])
-    plot_axis_representation_1d(y_target,"C:/Users/NN/Desktop/Master/experiments/Histogram of positions/all_positions",is_training_data)
-    plot_axis_representation_1d(np.array(y_target_f),"C:/Users/NN/Desktop/Master/experiments/Histogram of positions/all_better_40_target",is_training_data)
-    plot_axis_representation_1d(np.array(y_prediction_f),"C:/Users/NN/Desktop/Master/experiments/Histogram of positions/all_better_40_prediction",is_training_data)
+    plot_axis_representation_1d(y_target, "C:/Users/NN/Desktop/Master/experiments/Histogram of positions/all_positions",
+                                is_training_data)
+    plot_axis_representation_1d(np.array(y_target_f),
+                                "C:/Users/NN/Desktop/Master/experiments/Histogram of positions/all_better_40_target",
+                                is_training_data)
+    plot_axis_representation_1d(np.array(y_prediction_f),
+                                "C:/Users/NN/Desktop/Master/experiments/Histogram of positions/all_better_40_prediction",
+                                is_training_data)
 
     y_target_t = np.array(y_target_f)
     y_prediction_t = np.array(y_prediction_f)
-    y_distance = np.abs(y_target_t-y_prediction_t)
-    spikes_per_second = np.mean([len(x) for x in x_list]) /200
-
+    y_distance = np.abs(y_target_t - y_prediction_t)
+    spikes_per_second = np.mean([len(x) for x in x_list]) / 200
 
     # plot_plane(y_prediction_f, net_dict, "C:/Users/NN/Desktop/Master/" + is_train + "_better" + "_prediction")
     # plot_plane(y_target_f, net_dict, "C:/Users/NN/Desktop/Master/" + is_train + "_better" + "_target")
@@ -240,8 +232,12 @@ def plot_all_planes(is_training_data, y_predicted, y_target,X, net_dict):
             y_prediction_f.append(y_predicted[i])
             x_list.append(X[i])
             maps.append(map_list[i])
-    plot_axis_representation_1d(np.array(y_target_f),"C:/Users/NN/Desktop/Master/experiments/Histogram of positions/all_worse_40_target",is_training_data)
-    plot_axis_representation_1d(np.array(y_prediction_f),"C:/Users/NN/Desktop/Master/experiments/Histogram of positions/all_worse_40_prediction",is_training_data)
+    plot_axis_representation_1d(np.array(y_target_f),
+                                "C:/Users/NN/Desktop/Master/experiments/Histogram of positions/all_worse_40_target",
+                                is_training_data)
+    plot_axis_representation_1d(np.array(y_prediction_f),
+                                "C:/Users/NN/Desktop/Master/experiments/Histogram of positions/all_worse_40_prediction",
+                                is_training_data)
 
     # y_target_f = np.array(y_target_f)
     # y_prediction_f = np.array(y_prediction_f)
@@ -252,27 +248,28 @@ def plot_all_planes(is_training_data, y_predicted, y_target,X, net_dict):
     plot_plane(y_target_f, net_dict, "C:/Users/NN/Desktop/Master/" + is_train + "_worse" + "_target")
 
 
-def plot_axis_representation_2d(y_values,path):
+def plot_axis_representation_2d(y_values, path):
     # plots representation over one axis
     fig, ax = plt.subplots()
-    ax.hist2d(x=y_values[:,0],y=y_values[:,1],bins=[80,30])
+    ax.hist2d(x=y_values[:, 0], y=y_values[:, 1], bins=[80, 30])
     plt.savefig(path + "_2d")
     plt.close('all')
 
 
-def plot_axis_representation_1d(y_values,path,is_training):
+def plot_axis_representation_1d(y_values, path, is_training):
     # plots representation over one axis
     fig, ax = plt.subplots()
-    ind = np.arange(0,80)
+    ind = np.arange(0, 80)
     if is_training:
         classification = "_train_"
         c = "r"
     else:
         classification = "_valid_"
         c = "k"
-    ax.hist(y_values[:, 0], ind, density=True,color=c)
-    plt.savefig(path + classification+"_1d")
+    ax.hist(y_values[:, 0], ind, density=True, color=c)
+    plt.savefig(path + classification + "_1d")
     plt.close('all')
+
 
 def print_net_dict(net_dict):
     print("session_filter", net_dict["session_filter"])

@@ -16,20 +16,21 @@ network_1.fc1.out_units = 5
 
 mlp = Map()
 mlp.fc1 = Map()
-mlp.fc1.weights = tf.truncated_normal(shape=(56*10,50), stddev=0.01) # 166 * 17
+mlp.fc1.weights = tf.truncated_normal(shape=(56*50,400), stddev=0.01) # 166 * 17
 # [147, 133, 118, 103, 89, 74, 59, 45, 30, 15]
 mlp.fc1.activation = tf.nn.relu
 mlp.fc2 = Map()
-mlp.fc2.weights = tf.truncated_normal(shape=(50, 50), stddev=0.01)
+mlp.fc2.weights = tf.truncated_normal(shape=(400, 400), stddev=0.01)
 mlp.fc2.activation = tf.nn.relu
 mlp.fc3 = Map()
-mlp.fc3.weights = tf.truncated_normal(shape=(50, 30*80), stddev=0.01)
+mlp.fc3.weights = tf.truncated_normal(shape=(400, 30*80), stddev=0.01)
 mlp.fc3.activation = tf.identity
 mlp.reshape = Map()
 mlp.reshape.shape = [None, 80, 30, 1]
 mlp.loss_type = "sigmoid_cross_entropy"
 mlp.optimizer = tf.train.AdamOptimizer(0.0005, epsilon=1e-14)
-
+# mlp.optimizer = tf.train.GradientDescentOptimizer(0.00005)
+# mlp.optimizer = tf.train.AdagradOptimizer(learning_rate=0.1)
 cnn1 = Map()
 cnn1.conv1 = Map()
 cnn1.conv1.weights = tf.truncated_normal(shape=(56, 1, 1, 70), stddev=0.01)
