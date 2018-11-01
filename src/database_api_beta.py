@@ -127,10 +127,6 @@ class Slice:
         self._convolve()
 
 
-
-
-
-
     def _convolve(self):
         search_radius, step_size = self._filter.search_radius, self._filter.step_size
         if step_size > 2 * search_radius:

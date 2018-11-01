@@ -179,7 +179,7 @@ def test_accuracy(sess, S, net_dict,X,y, print_distance=False):
         if i == 19 and print_distance is True: print("Fraction pos error less than", i, ":", acc)
     if False:  # plot planes
         plot_all_planes(X,y, y_predicted, y_target, net_dict)
-    if True:
+    if False:
         save_as_pickle("C:/Users/NN/AppData/Local/Temp/animation/predicted/step=" + str(net_dict["epochs_trained"]),
                        y_predicted[0])
         save_as_pickle("C:/Users/NN/AppData/Local/Temp/animation/target/step=" + str(net_dict["epochs_trained"]), y_target[0])

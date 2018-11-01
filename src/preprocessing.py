@@ -1,8 +1,6 @@
-from database_api_beta import Slice
 from random import seed,shuffle
 import numpy as np
-from scipy import stats, spatial
-from itertools import takewhile, dropwhile, repeat
+
 
 def position_as_map(pos_list, xstep, ystep, X_MAX, X_MIN, Y_MAX, Y_MIN):
     pos_list = np.asarray(pos_list)

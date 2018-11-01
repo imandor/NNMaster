@@ -1,7 +1,7 @@
 import numpy as np
 from src.settings import load_pickle, save_as_pickle
 from src.filters import bin_filter
-from database_api_beta import Slice
+from src.database_api_beta import Slice
 from tmp.position_cnn import cnn_model_fn
 import tensorflow as tf
 import random

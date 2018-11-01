@@ -1,5 +1,5 @@
 import numpy as np
-from database_api_beta import Slice
+from src.database_api_beta import Slice
 from tmp.lickwell_position_cnn import lickwell_position_model_fn
 import tensorflow as tf
 import os

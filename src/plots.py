@@ -44,15 +44,15 @@ def load_trained_network(path):
     return r2_scores_valid_list, r2_scores_train_list, acc_scores_valid_list, acc_scores_train_list, avg_scores_valid_list, avg_scores_train_list, net_dict, time_shift_list
 
 
-PATH = "G:/master_datafiles/trained_networks/MLP_HC_2018-10-10_400_400_400/"
-PATH_2 = "G:/master_datafiles/trained_networks/MLP_HC_2018-10-10_400_400_400/"
+PATH = "G:/master_datafiles/trained_networks/MLP_HC_2018-10-19_1000_200_100/"
+PATH_2 = "G:/master_datafiles/trained_networks/MLP_HC_2018-10-19_1000_200_100/"
 SINGLE_ACCURACY = False
 SINGLE_AVERAGE = False
 SINGLE_R2 = False
 COMPARE_ACCURACY = False
 COMPARE_DISTANCE = False
 COMPARE_R2 = False
-PAIRED_T_TEST = True
+PAIRED_T_TEST = False
 FILTER_NEURON_TEST = True
 r2_scores_valid_list, r2_scores_train_list, acc_scores_valid_list, acc_scores_train_list, avg_scores_valid_list, avg_scores_train_list, net_dict, time_shift_list = load_trained_network(
     PATH)
@@ -65,11 +65,11 @@ for i in range(0, len(r2_scores_valid_list[0]) - 1):
 
 
 r2_scores_valid = [x[-1] for x in r2_scores_valid_list]
-r2_scores_train = [x[-1] for x in r2_scores_train_list]
+# r2_scores_train = [x[-1] for x in r2_scores_train_list]
 acc_scores_valid = list(map(list, zip(*[e[-1] for e in acc_scores_valid_list])))
-acc_scores_train = list(map(list, zip(*[e[-1] for e in acc_scores_train_list])))
+# acc_scores_train = list(map(list, zip(*[e[-1] for e in acc_scores_train_list])))
 distance_scores_valid = [x[-1] for x in avg_scores_valid_list]  # takes the latest trained value for each time shift
-distance_scores_train = [x[-1] for x in avg_scores_train_list]
+# distance_scores_train = [x[-1] for x in avg_scores_train_list]
 plt.ion()
 #
 #     # Get data for current amount of training steps
@@ -99,7 +99,7 @@ plt.ion()
 # ax0.set_xticks(time_shift_list)
 if SINGLE_AVERAGE is True:
     distance_list = np.linspace(0, 20, 20)
-    levels = MaxNLocator(nbins=20).tick_values(np.min(acc_scores_train), np.max(acc_scores_train))
+    levels = MaxNLocator(nbins=20).tick_values(np.min(acc_scores_valid), np.max(acc_scores_valid))
     cmap = plt.get_cmap('inferno')
     norm = BoundaryNorm(levels, ncolors=cmap.N, clip=True)
     # fig, (ax0, ax1) = plt.subplots(nrows=2)
@@ -302,112 +302,113 @@ if PAIRED_T_TEST is True:
     ax.fill_between(x, 0, f(x), where=(np.array(f(x))) < 0, color='green')
     ax.fill_between(x, 0, f(x), where=(np.array(f(x))) > 0, color='red')
     fig.tight_layout()
+    plt.show()
     plt.savefig(PATH + "images/t_score_avg" + "_epoch=" + str(training_step_list[-i]) + ".pdf")
 
 
 if FILTER_NEURON_TEST is True:
     # PATH_100 = "G:/master_datafiles/trained_networks/MLP_hippocampus_2018-10_09_neuron_filter_100/"
-    # PATH_90 = "G:/master_datafiles/trained_networks/MLP_hippocampus_2018-10_09_neuron_filter_90/"
+    # # PATH_90 = "G:/master_datafiles/trained_networks/MLP_hippocampus_2018-10_09_neuron_filter_90/"
     # PATH_80 = "G:/master_datafiles/trained_networks/MLP_hippocampus_2018-10_09_neuron_filter_80/"
-    # PATH_70 = "G:/master_datafiles/trained_networks/MLP_hippocampus_2018-10_09_neuron_filter_70/"
+    # # PATH_70 = "G:/master_datafiles/trained_networks/MLP_hippocampus_2018-10_09_neuron_filter_70/"
     # PATH_60 = "G:/master_datafiles/trained_networks/MLP_hippocampus_2018-10_09_neuron_filter_60/"
-    # PATH_50 = "G:/master_datafiles/trained_networks/MLP_hippocampus_2018-10_09_neuron_filter_50/"
+    # # PATH_50 = "G:/master_datafiles/trained_networks/MLP_hippocampus_2018-10_09_neuron_filter_50/"
     # PATH_40 = "G:/master_datafiles/trained_networks/MLP_hippocampus_2018-10_09_neuron_filter_40/"
-    # PATH_30 = "G:/master_datafiles/trained_networks/MLP_hippocampus_2018-10_09_neuron_filter_30/"
+    # # PATH_30 = "G:/master_datafiles/trained_networks/MLP_hippocampus_2018-10_09_neuron_filter_30/"
     # PATH_20 = "G:/master_datafiles/trained_networks/MLP_hippocampus_2018-10_09_neuron_filter_20/"
     # PATH_10 = "G:/master_datafiles/trained_networks/MLP_hippocampus_2018-10_09_neuron_filter_10/"
     PATH_100 = "G:/master_datafiles/trained_networks/MLP_PFC_2018-10-10_neuron_filter_100/"
-    PATH_90 = "G:/master_datafiles/trained_networks/MLP_PFC_2018-10-10_neuron_filter_90/"
+    # PATH_90 = "G:/master_datafiles/trained_networks/MLP_PFC_2018-10-10_neuron_filter_90/"
     PATH_80 = "G:/master_datafiles/trained_networks/MLP_PFC_2018-10-10_neuron_filter_80/"
-    PATH_70 = "G:/master_datafiles/trained_networks/MLP_PFC_2018-10-10_neuron_filter_70/"
+    # PATH_70 = "G:/master_datafiles/trained_networks/MLP_PFC_2018-10-10_neuron_filter_70/"
     PATH_60 = "G:/master_datafiles/trained_networks/MLP_PFC_2018-10-10_neuron_filter_60/"
-    PATH_50 = "G:/master_datafiles/trained_networks/MLP_PFC_2018-10-10_neuron_filter_50/"
+    # PATH_50 = "G:/master_datafiles/trained_networks/MLP_PFC_2018-10-10_neuron_filter_50/"
     PATH_40 = "G:/master_datafiles/trained_networks/MLP_PFC_2018-10-10_neuron_filter_40/"
-    PATH_30 = "G:/master_datafiles/trained_networks/MLP_PFC_2018-10-10_neuron_filter_30/"
+    # PATH_30 = "G:/master_datafiles/trained_networks/MLP_PFC_2018-10-10_neuron_filter_30/"
     PATH_20 = "G:/master_datafiles/trained_networks/MLP_PFC_2018-10-10_neuron_filter_20/"
-    PATH_10 = "G:/master_datafiles/trained_networks/MLP_PFC_2018-10-10_neuron_filter_10/"
+    # PATH_10 = "G:/master_datafiles/trained_networks/MLP_PFC_2018-10-10_neuron_filter_10/"
     r2_scores_valid_list_100, r2_scores_train_list_100, acc_scores_valid_list_100, acc_scores_train_list_100, avg_scores_valid_list_100, avg_scores_train_list_100, net_dict_100, time_shift_list_100 = load_trained_network(
         PATH_100)
-    r2_scores_valid_list_90, r2_scores_train_list_90, acc_scores_valid_list_90, acc_scores_train_list_90, avg_scores_valid_list_90, avg_scores_train_list_90, net_dict_90, time_shift_list_90 = load_trained_network(
-        PATH_90)
+    # r2_scores_valid_list_90, r2_scores_train_list_90, acc_scores_valid_list_90, acc_scores_train_list_90, avg_scores_valid_list_90, avg_scores_train_list_90, net_dict_90, time_shift_list_90 = load_trained_network(
+    #     PATH_90)
     r2_scores_valid_list_80, r2_scores_train_list_80, acc_scores_valid_list_80, acc_scores_train_list_80, avg_scores_valid_list_80, avg_scores_train_list_80, net_dict_80, time_shift_list_80 = load_trained_network(
         PATH_80)
-    r2_scores_valid_list_70, r2_scores_train_list_70, acc_scores_valid_list_70, acc_scores_train_list_70, avg_scores_valid_list_70, avg_scores_train_list_70, net_dict_70, time_shift_list_70 = load_trained_network(
-        PATH_70)
+    # r2_scores_valid_list_70, r2_scores_train_list_70, acc_scores_valid_list_70, acc_scores_train_list_70, avg_scores_valid_list_70, avg_scores_train_list_70, net_dict_70, time_shift_list_70 = load_trained_network(
+    #     PATH_70)
     r2_scores_valid_list_60, r2_scores_train_list_60, acc_scores_valid_list_60, acc_scores_train_list_60, avg_scores_valid_list_60, avg_scores_train_list_60, net_dict_60, time_shift_list_60 = load_trained_network(
         PATH_60)
-    r2_scores_valid_list_50, r2_scores_train_list_50, acc_scores_valid_list_50, acc_scores_train_list_50, avg_scores_valid_list_50, avg_scores_train_list_50, net_dict_50, time_shift_list_50 = load_trained_network(
-        PATH_50 )
+    # r2_scores_valid_list_50, r2_scores_train_list_50, acc_scores_valid_list_50, acc_scores_train_list_50, avg_scores_valid_list_50, avg_scores_train_list_50, net_dict_50, time_shift_list_50 = load_trained_network(
+    #     PATH_50 )
     r2_scores_valid_list_40, r2_scores_train_list_40, acc_scores_valid_list_40, acc_scores_train_list_40, avg_scores_valid_list_40, avg_scores_train_list_40, net_dict_40, time_shift_list_40 = load_trained_network(
         PATH_40 )
-    r2_scores_valid_list_30, r2_scores_train_list_30, acc_scores_valid_list_30, acc_scores_train_list_30, avg_scores_valid_list_30, avg_scores_train_list_30, net_dict_30, time_shift_list_30 = load_trained_network(
-        PATH_30)
+    # r2_scores_valid_list_30, r2_scores_train_list_30, acc_scores_valid_list_30, acc_scores_train_list_30, avg_scores_valid_list_30, avg_scores_train_list_30, net_dict_30, time_shift_list_30 = load_trained_network(
+    #     PATH_30)
     r2_scores_valid_list_20, r2_scores_train_list_20, acc_scores_valid_list_20, acc_scores_train_list_20, avg_scores_valid_list_20, avg_scores_train_list_20, net_dict_20, time_shift_list_20 = load_trained_network(
         PATH_20)
-    r2_scores_valid_list_10, r2_scores_train_list_10, acc_scores_valid_list_10, acc_scores_train_list_10, avg_scores_valid_list_10, avg_scores_train_list_10, net_dict_10, time_shift_list_10 = load_trained_network(
-        PATH_10)
+    # r2_scores_valid_list_10, r2_scores_train_list_10, acc_scores_valid_list_10, acc_scores_train_list_10, avg_scores_valid_list_10, avg_scores_train_list_10, net_dict_10, time_shift_list_10 = load_trained_network(
+    #     PATH_10)
 
     r2_scores_100 = r2_scores_valid_list_100[0]
     distance_scores_100 = avg_scores_valid_list_100[0]
-    r2_scores_90 = r2_scores_valid_list_90[0]
-    distance_scores_90 = avg_scores_valid_list_90[0]
+    # r2_scores_90 = r2_scores_valid_list_90[0]
+    # distance_scores_90 = avg_scores_valid_list_90[0]
     r2_scores_80 = r2_scores_valid_list_80[0]
     distance_scores_80 = avg_scores_valid_list_80[0]
-    r2_scores_70 = r2_scores_valid_list_70[0]
-    distance_scores_70 = avg_scores_valid_list_70[0]
+    # r2_scores_70 = r2_scores_valid_list_70[0]
+    # distance_scores_70 = avg_scores_valid_list_70[0]
     r2_scores_60 = r2_scores_valid_list_60[0]
     distance_scores_60 = avg_scores_valid_list_60[0]
-    r2_scores_50 = r2_scores_valid_list_50[0]
-    distance_scores_50 = avg_scores_valid_list_50[0]
+    # r2_scores_50 = r2_scores_valid_list_50[0]
+    # distance_scores_50 = avg_scores_valid_list_50[0]
     r2_scores_40 = r2_scores_valid_list_40[0]
     distance_scores_40 = avg_scores_valid_list_40[0]
-    r2_scores_30 = r2_scores_valid_list_30[0]
-    distance_scores_30 = avg_scores_valid_list_30[0]
+    # r2_scores_30 = r2_scores_valid_list_30[0]
+    # distance_scores_30 = avg_scores_valid_list_30[0]
     r2_scores_20 = r2_scores_valid_list_20[0]
     distance_scores_20 = avg_scores_valid_list_20[0]
-    r2_scores_10 = r2_scores_valid_list_10[0]
-    distance_scores_10 = avg_scores_valid_list_10[0]
+    # r2_scores_10 = r2_scores_valid_list_10[0]
+    # distance_scores_10 = avg_scores_valid_list_10[0]
     acc_scores_100 = [a[19] for a in acc_scores_valid_list_100[0]]
-    acc_scores_90 = [a[19] for a in acc_scores_valid_list_90[0]]
+    # acc_scores_90 = [a[19] for a in acc_scores_valid_list_90[0]]
     acc_scores_80 = [a[19] for a in acc_scores_valid_list_80[0]]
-    acc_scores_70 = [a[19] for a in acc_scores_valid_list_70[0]]
+    # acc_scores_70 = [a[19] for a in acc_scores_valid_list_70[0]]
     acc_scores_60 = [a[19] for a in acc_scores_valid_list_60[0]]
-    acc_scores_50 = [a[19] for a in acc_scores_valid_list_50[0]]
+    # acc_scores_50 = [a[19] for a in acc_scores_valid_list_50[0]]
     acc_scores_40 = [a[19] for a in acc_scores_valid_list_40[0]]
-    acc_scores_30 = [a[19] for a in acc_scores_valid_list_30[0]]
+    # acc_scores_30 = [a[19] for a in acc_scores_valid_list_30[0]]
     acc_scores_20 = [a[19] for a in acc_scores_valid_list_20[0]]
-    acc_scores_10 = [a[19] for a in acc_scores_valid_list_10[0]]
+    # acc_scores_10 = [a[19] for a in acc_scores_valid_list_10[0]]
 
     #     # Get data for current amount of training steps
     #
-    no_neurons_list = [56, 51, 45, 40, 34, 28, 23, 17, 12, 6]
-    # no_neurons_list = [147, 133, 118, 103, 89, 74, 59, 45, 30, 15]
+    # no_neurons_list = [56, 51, 45, 40, 34, 28, 23, 17, 12, 6]
+    no_neurons_list = [147, 133, 118, 103, 89, 74, 59, 45, 30, 15]
 
-    training_step_list_filter = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180,
-                                 190, 200]
+    training_step_list_filter = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18,
+                                 19, 20]
     fig, ax = plt.subplots()
     # ax.plot(training_step_list_filter, distance_scores_100, color='b',label="56 (1.0)")
-    # # ax.plot(training_step_list_filter, distance_scores_90, color='g',label="51 (0.9)")
+    # # # ax.plot(training_step_list_filter, distance_scores_90, color='g',label="51 (0.9)")
     # ax.plot(training_step_list_filter, distance_scores_80, color='r',label="45 (0.8)")
-    # # ax.plot(training_step_list_filter, distance_scores_70, color='c',label="40 (0.7)")
+    # # # ax.plot(training_step_list_filter, distance_scores_70, color='c',label="40 (0.7)")
     # ax.plot(training_step_list_filter, distance_scores_60, color='m',label="34 (0.6)")
-    # # ax.plot(training_step_list_filter, distance_scores_50, color='y',label="28 (0.5)")
+    # # # ax.plot(training_step_list_filter, distance_scores_50, color='y',label="28 (0.5)")
     # ax.plot(training_step_list_filter, distance_scores_40, color='k',label="23 (0.4)")
-    # # ax.plot(training_step_list_filter, distance_scores_30, color='w',label="17 (0.3)")
+    # # # ax.plot(training_step_list_filter, distance_scores_30, color='w',label="17 (0.3)")
     # ax.plot(training_step_list_filter, distance_scores_20, color='maroon',label="12 (0.2)")
-    # ax.plot(training_step_list_filter, distance_scores_10, color='darkgreen',label=" 6 (0.1)")
+    # # ax.plot(training_step_list_filter, distance_scores_10, color='darkgreen',label=" 6 (0.1)")
 
 
     ax.plot(training_step_list_filter, distance_scores_100, color='b',label="147 (1.0)")
     # ax.plot(training_step_list_filter, distance_scores_90, color='g',label="133 (0.9)")
     ax.plot(training_step_list_filter, distance_scores_80, color='r',label="118 (0.8)")
-    # ax.plot(training_step_list_filter, distance_scores_70, color='c',label="103 (0.7)")
+    # # ax.plot(training_step_list_filter, distance_scores_70, color='c',label="103 (0.7)")
     ax.plot(training_step_list_filter, distance_scores_60, color='m',label=" 89 (0.6)")
-    # ax.plot(training_step_list_filter, distance_scores_50, color='y',label=" 74 (0.5)")
+    # # ax.plot(training_step_list_filter, distance_scores_50, color='y',label=" 74 (0.5)")
     ax.plot(training_step_list_filter, distance_scores_40, color='k',label=" 59 (0.4)")
-    # ax.plot(training_step_list_filter, distance_scores_30, color='w',label=" 45 (0.3)")
+    # # ax.plot(training_step_list_filter, distance_scores_30, color='w',label=" 45 (0.3)")
     ax.plot(training_step_list_filter, distance_scores_20, color='maroon',label=" 30 (0.2)")
-    ax.plot(training_step_list_filter, distance_scores_10, color='darkgreen',label=" 15 (0.1)")
+    # ax.plot(training_step_list_filter, distance_scores_10, color='darkgreen',label=" 15 (0.1)")
     ax.legend()
     ax.grid(c='k', ls='-', alpha=0.3)
     # ax.set_title(r'$\varnothing$ distance of validation wrt time-shift')
@@ -420,20 +421,20 @@ if FILTER_NEURON_TEST is True:
     fig.tight_layout()
     plt.savefig(PATH + "images/avg_dist_middle" + "_epoch=" + str(training_step_list[-i]) + ".pdf")
 
-    fig, ax = plt.subplots()
+    # fig, ax = plt.subplots()
     # # ax.plot(time_shift_list,distance_scores_train,label='Training set',color='r')
     # ax.plot(training_step_list_filter, acc_scores_100, color='b',label="56 (1.0)")
-    # # ax.plot(training_step_list_filter, acc_scores_90, color='g',label="51 (0.9)")
+    # # # ax.plot(training_step_list_filter, acc_scores_90, color='g',label="51 (0.9)")
     # ax.plot(training_step_list_filter, acc_scores_80, color='r',label="45 (0.8)")
-    # # ax.plot(training_step_list_filter, acc_scores_70, color='c',label="40 (0.7)")
+    # # # ax.plot(training_step_list_filter, acc_scores_70, color='c',label="40 (0.7)")
     # ax.plot(training_step_list_filter, acc_scores_60, color='m',label="34 (0.6)")
-    # # ax.plot(training_step_list_filter, acc_scores_50, color='y',label="28 (0.5)")
+    # # # ax.plot(training_step_list_filter, acc_scores_50, color='y',label="28 (0.5)")
     # ax.plot(training_step_list_filter, acc_scores_40, color='k',label="23 (0.4)")
-    # # ax.plot(training_step_list_filter, acc_scores_30, color='w',label="17 (0.3)")
+    # # # ax.plot(training_step_list_filter, acc_scores_30, color='w',label="17 (0.3)")
     # ax.plot(training_step_list_filter, acc_scores_20, color='maroon',label="12 (0.2)")
-    # ax.plot(training_step_list_filter, acc_scores_10, color='darkgreen',label=" 6 (0.1)")
+    # # ax.plot(training_step_list_filter, acc_scores_10, color='darkgreen',label=" 6 (0.1)")
 
-    # no_neurons_list = [147, 133, 118, 103, 89, 74, 59, 45, 30, 15]
+    no_neurons_list = [147, 133, 118, 103, 89, 74, 59, 45, 30, 15]
     ax.plot(training_step_list_filter, acc_scores_100, color='b',label="147 (1.0)")
     # ax.plot(training_step_list_filter, acc_scores_90, color='g',label="133 (0.9)")
     ax.plot(training_step_list_filter, acc_scores_80, color='r',label="118 (0.8)")
@@ -443,23 +444,23 @@ if FILTER_NEURON_TEST is True:
     ax.plot(training_step_list_filter, acc_scores_40, color='k',label=" 59 (0.4)")
     # ax.plot(training_step_list_filter, acc_scores_30, color='w',label=" 45 (0.3)")
     ax.plot(training_step_list_filter, acc_scores_20, color='maroon',label=" 30 (0.2)")
-    ax.plot(training_step_list_filter, acc_scores_10, color='darkgreen',label=" 15 (0.1)")
+    # ax.plot(training_step_list_filter, acc_scores_10, color='darkgreen',label=" 15 (0.1)")
 
     ax.legend()
-    # custom_lines = [Patch(facecolor='green', edgecolor='b',
-    #                       label='d_1'),
-    #                 Patch(facecolor='red', edgecolor='b',
-    #                       label='d_2')
-    #                 ]
+    custom_lines = [Patch(facecolor='green', edgecolor='b',
+                          label='d_1'),
+                    Patch(facecolor='red', edgecolor='b',
+                          label='d_2')
+                    ]
     # ax.legend(custom_lines,
     #           [r'$\varnothing$ absolute position error PFC', r'$\varnothing$ absolute position error HC'])
-    # ax.grid(c='k', ls='-', alpha=0.3)
-    # # ax.set_title(r'$\varnothing$ distance of validation wrt time-shift')
+    ax.grid(c='k', ls='-', alpha=0.3)
+    ax.set_title(r'$\varnothing$ distance of validation wrt time-shift')
     ax.set_xlabel("epoch")
     ax.set_ylabel('fraction of instances in range')
-    f = interp1d(time_shift_list, distance_scores_middle)
-    x = np.linspace(time_shift_list[0], time_shift_list[-1], 1000)
-    ax.fill_between(x, 0, f(x), where=(np.array(f(x))) < 0, color='green')
-    ax.fill_between(x, 0, f(x), where=(np.array(f(x))) > 0, color='red')
+    # f = interp1d(time_shift_list, distance_scores_middle)
+    # x = np.linspace(time_shift_list[0], time_shift_list[-1], 1000)
+    # ax.fill_between(x, 0, f(x), where=(np.array(f(x))) < 0, color='green')
+    # ax.fill_between(x, 0, f(x), where=(np.array(f(x))) > 0, color='red')
     fig.tight_layout()
     plt.savefig(PATH + "images/avg_dist_middle" + "_epoch=" + str(training_step_list[-i]) + ".pdf")

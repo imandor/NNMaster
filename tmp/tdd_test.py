@@ -1,8 +1,8 @@
-from database_api_beta import Slice
+from src.database_api_beta import Slice
 from src.settings import save_as_pickle, load_pickle
 from numpy.random import seed
 from src.settings import config
-from src.filters import bin_filter
+
 
 def test_objects():
     seed(1)
