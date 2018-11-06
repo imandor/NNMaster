@@ -1,18 +1,15 @@
 from src.database_api_beta import Slice, Filter, hann
-from src.metrics import print_net_dict
+from src.metrics import  print_net_dict
 import numpy as np
 import os
 import errno
 from src.settings import save_as_pickle, load_pickle, save_net_dict
-from src.preprocessing import time_shift_io_positions, shuffle_io, position_as_map
+from src.preprocessing import time_shift_io_positions, shuffle_io, position_as_map, lickwells_io
 import datetime
 import pickle
 import multiprocessing
 from external.preprocessing_funcs import get_spikes_with_history
-from src.network_functions import run_network
-from scipy import stats, spatial
-
-# Begin
+from src.network_functions import  run_network
 
 now = datetime.datetime.now().isoformat()
 
@@ -23,16 +20,16 @@ now = datetime.datetime.now().isoformat()
 
 # prefrontal cortex
 
-# MODEL_PATH = "G:/master_datafiles/trained_networks/MLP_PFC_2018-10-10_400_400_400_neuron_filter=20/"
-# RAW_DATA_PATH = "G:/master_datafiles/raw_data/2018-04-09_14-39-52/"
-# FILTERED_DATA_PATH = "G:/master_datafiles/filtered_data/neocortex_hann_win_size_20.pkl"
+MODEL_PATH = "G:/master_datafiles/trained_networks/MLP_PFC_2018-10-10_400_400_400_neuron_filter=20/"
+RAW_DATA_PATH = "G:/master_datafiles/raw_data/2018-04-09_14-39-52/"
+FILTERED_DATA_PATH = "G:/master_datafiles/filtered_data/neocortex_hann_win_size_20.pkl"
 
 # hippocampus
 
-MODEL_PATH = "G:/master_datafiles/trained_networks/MLP_HC_2018-10-19_1000_200_100_neuron_filter=60/"
-RAW_DATA_PATH = "G:/master_datafiles/raw_data/2018-05-16_17-13-37/"
-FILTERED_DATA_PATH = "G:/master_datafiles/filtered_data/hippocampus_hann_win_size_25_09-5_7.pkl"
-NEURONS_KEPT_FACTOR = 0.6
+# MODEL_PATH = "G:/master_datafiles/trained_networks/MLP_HC_2018-10-19_1000_200_100/"
+# RAW_DATA_PATH = "G:/master_datafiles/raw_data/2018-05-16_17-13-37/"
+# FILTERED_DATA_PATH = "G:/master_datafiles/filtered_data/hippocampus_hann_win_size_25_09-5_7.pkl"
+NEURONS_KEPT_FACTOR = 0.2
 
 # Program execution settings
 
@@ -151,49 +148,15 @@ for z in range(INITIAL_TIMESHIFT, INITIAL_TIMESHIFT + TIME_SHIFT_STEPS * TIME_SH
     iter = int(z - INITIAL_TIMESHIFT) // TIME_SHIFT_ITER
     net_dict["TIME_SHIFT"] = z
 
-    if LOAD_GLASER_DATA is False:
-        print("Time shift is now", z)
+    print("Time shift is now", z)
 
-        # Time-Shift input and output
+    # Time-Shift input and output
 
-        X, y = time_shift_io_positions(session, z, net_dict)
-        if len(X) != len(y):
-            raise ValueError("Error: Length of x and y are not identical")
-        X, y = shuffle_io(X, y, net_dict, 3)
+    X, y = lickwells_io(session, z, net_dict)
+    if len(X) != len(y):
+        raise ValueError("Error: Length of x and y are not identical")
+    X, y = shuffle_io(X, y, net_dict, 3)
 
-    if LOAD_GLASER_DATA is True:
-        with open(RAW_DATA_PATH, 'rb') as f:
-            neural_data, y_raw = pickle.load(f, encoding='latin1')  # If using python 3
-        # neural_data = neural_data[135:237]
-        # y_raw = y_raw[135:237]
-        bins_before = 4  # How many bins of neural data prior to the output are used for decoding
-        bins_current = 1  # Whether to use concurrent time bin of neural data
-        bins_after = 5  # How many bins of neural data after the output are used for decoding
-        X = get_spikes_with_history(neural_data, bins_before, bins_after, bins_current)
-        # X_mean = np.nanmean(X, axis=0)
-        # X_std = np.nanstd(X, axis=0)
-        # X = (X - X_mean) / X_std
-        y = []
-        for i, posxy_list in reversed(list(enumerate(y_raw))):
-            if np.isnan(posxy_list).any() or np.isnan(X[i].any()):
-                X = np.delete(X, i, axis=0)
-            else:
-                x_list = ((np.array(posxy_list[0]) - X_MIN) // X_STEP).astype(int)
-                y_list = ((np.array(posxy_list[1]) - Y_MIN) // Y_STEP).astype(int)
-                posxy_list = [y_list, y_list]
-                y.append(position_as_map(posxy_list, X_STEP, Y_STEP, 300, 0, 300, 0))
-        X = X.transpose([0, 2, 1])
-        y = list(reversed(y))
-        X, y = shuffle_io(X, y, net_dict, 3)
-
-    # Assign training and testing set
-
-    # net_dict["X_train"], net_dict["y_train"] = filter_overrepresentation(X[valid_length:], y[valid_length:], 70,
-    #                                                                      net_dict, axis=0)
-    # net_dict["X_valid"], net_dict["y_valid"] = filter_overrepresentation(X[:valid_length], y[:valid_length], 7,
-    #                                                                      net_dict, axis=0)
-    # train_oc = count_occurrences(net_dict["y_train"], net_dict)
-    # valid_oc = count_occurrences(net_dict["y_valid"], net_dict)
     r2_score_k_valid = []
     avg_score_k_valid = []
     acc_score_k_valid = []
@@ -237,10 +200,9 @@ for z in range(INITIAL_TIMESHIFT, INITIAL_TIMESHIFT + TIME_SHIFT_STEPS * TIME_SH
         r2_score_k_train.append(save_dict["r2_scores_train"])
         acc_score_k_train.append(save_dict["acc_scores_train"])
         avg_score_k_train.append(save_dict["avg_scores_train"])
-    if k  > 1:
-        save_dict["r2_scores_valid"] = np.average(np.array(r2_score_k_valid),axis=1)
-        save_dict["acc_scores_valid"] = np.average(np.array(acc_score_k_valid),axis=1)
-        save_dict["avg_scores_valid"] = np.average(np.array(avg_score_k_valid),axis=1)
+    save_dict["r2_scores_valid"] = np.average(np.array(r2_score_k_valid),axis=1)
+    save_dict["acc_scores_valid"] = np.average(np.array(acc_score_k_valid),axis=1)
+    save_dict["avg_scores_valid"] = np.average(np.array(avg_score_k_valid),axis=1)
     # save_dict["r2_scores_train"] = np.average(np.array(r2_score_k_train),axis=0)
     # save_dict["acc_scores_train"] = np.average(np.array(acc_score_k_train),axis=0)
     # save_dict["avg_scores_train"] = np.average(np.array(avg_score_k_train),axis=0)

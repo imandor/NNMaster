@@ -58,6 +58,7 @@ def count_occurrences(y,net_dict,axis=0):
         pos_counter[y_pos] += 1
     return pos_counter
 
+
 def shuffle_io(X,y,net_dict,seed_no):
 
     # Shuffle data
@@ -90,7 +91,7 @@ def shuffle_io(X,y,net_dict,seed_no):
     return X,y
 
 
-def time_shift_io(session,shift,net_dict):
+def time_shift_io_positions(session, shift, net_dict):
     SLICE_SIZE = net_dict["SLICE_SIZE"]
     WIN_SIZE = net_dict["WIN_SIZE"]
     X_STEP = net_dict["X_STEP"]
@@ -154,5 +155,23 @@ def time_shift_io(session,shift,net_dict):
     return X, y
 
 
+def lickwells_io(session,shift, net_dict, filter="None"):
+    SLICE_SIZE = net_dict["SLICE_SIZE"]
+    WIN_SIZE = net_dict["WIN_SIZE"]
+    STRIDE = net_dict["STRIDE"]
+    Y_SLICE_SIZE = net_dict["Y_SLICE_SIZE"]
+    # Shift positions
 
+    X = session.filtered_spikes
+
+    y = []
+    BINS_IN_SAMPLE = SLICE_SIZE // WIN_SIZE
+    BINS_IN_STRIDE = STRIDE // WIN_SIZE
+    SURROUNDING_INDEX = int(0.5 * (SLICE_SIZE - Y_SLICE_SIZE))
+    licklist = [session.licks["time"]]
+    bins = np.arange(session.start,)
+    digitized = np.digitize(session.licks, bins)
+
+
+    return filtered_spikes, y
 

@@ -1,129 +1,131 @@
+
+from src.database_api_beta import Slice, Filter, hann
+from src.metrics import  print_net_dict
+import numpy as np
+import os
+import errno
+from src.settings import save_as_pickle, load_pickle, save_net_dict
+from src.preprocessing import time_shift_io_positions, shuffle_io, position_as_map
+import datetime
+import pickle
+import multiprocessing
+from external.preprocessing_funcs import get_spikes_with_history
+from src.network_functions import  run_network
+from scipy import stats, spatial
+
+
+now = datetime.datetime.now().isoformat()
+
+# Glaser data set
+# MODEL_PATH = "G:/master_datafiles/trained_networks/MLP_Custom_2018-20-09/"
+# RAW_DATA_PATH = "C:/Users/NN\Desktop/Neural_Decoding-master/example_data_hc.pickle"
+# FILTERED_DATA_PATH = "G:/master_datafiles/filtered_data/neocortex_hann_win_size_100.pkl"
+
+# prefrontal cortex
+
+MODEL_PATH = "G:/master_datafiles/trained_networks/MLP_PFC_2018-10-10_1000_200_100/"
+RAW_DATA_PATH = "G:/master_datafiles/raw_data/2018-04-09_14-39-52/"
+FILTERED_DATA_PATH = "G:/master_datafiles/filtered_data/neocortex_hann_win_size_20.pkl"
+
+# hippocampus
+
+# MODEL_PATH = "G:/master_datafiles/trained_networks/MLP_HC_2018-10-19_1000_200_100/"
+# RAW_DATA_PATH = "G:/master_datafiles/raw_data/2018-05-16_17-13-37/"
+# FILTERED_DATA_PATH = "G:/master_datafiles/filtered_data/hippocampus_hann_win_size_25_09-5_7.pkl"
+NEURONS_KEPT_FACTOR = 1
+
+# Program execution settings
+
+LOAD_RAW_DATA = True  # load source data from raw data path or load default model
+# LOAD_RAW_DATA = True # load source data from raw data path or load default model
+LOAD_GLASER_DATA = False
+SAVE_FILTERED_DATA = True
+MAKE_HISTOGRAM = False
+LOAD_MODEL = False  # load model from model path
+TRAIN_MODEL = True  # train model or just show results
+EPOCHS = 30
+INITIAL_TIMESHIFT = 0
+TIME_SHIFT_ITER = 200
+TIME_SHIFT_STEPS = 100
+METRIC_ITER = 1  # after how many epochs network is validated <---
+SHUFFLE_DATA = True  # whether to randomly shuffle the data in big slices
+SHUFFLE_FACTOR = 500
+EARLY_STOPPING = False
+NAIVE_TEST = False # TODO
+K_CROSS_VALIDATION = 1
+# Input data parameters
+
+SLICE_SIZE = 1000
+Y_SLICE_SIZE = 200
+STRIDE = 100
+BATCH_SIZE = 50
+WIN_SIZE = 20
+SEARCH_RADIUS = WIN_SIZE * 2
+VALID_RATIO = 0.1
+X_MAX = 240
+Y_MAX = 190
+X_MIN = 0
+Y_MIN = 100
+X_STEP = 3
+Y_STEP = 3
+session_filter = Filter(func=hann, search_radius=SEARCH_RADIUS, step_size=WIN_SIZE)
+
+# Create save file directories
+
+try:
+    os.makedirs(os.path.dirname(MODEL_PATH))
+    os.makedirs(os.path.dirname(MODEL_PATH + "output/"))
+    os.makedirs(os.path.dirname(MODEL_PATH + "images/"))
+except OSError as exc:  # Guard against race condition
+    if exc.errno != errno.EEXIST:
+        raise
+
+# Update network dict values
+
+if LOAD_RAW_DATA is False:
+    net_dict = load_pickle(FILTERED_DATA_PATH)
+else:
+    net_dict = dict()
+net_dict["MAKE_HISTOGRAM"] = MAKE_HISTOGRAM
+net_dict["STRIDE"] = STRIDE
+net_dict["Y_SLICE_SIZE"] = Y_SLICE_SIZE
+net_dict["network_type"] = "Multi Layer Perceptron"
+net_dict["EPOCHS"] = EPOCHS
+net_dict["session_filter"] = session_filter
+net_dict["TIME_SHIFT_STEPS"] = TIME_SHIFT_STEPS
+net_dict["SHUFFLE_DATA"] = SHUFFLE_DATA
+net_dict["SHUFFLE_FACTOR"] = SHUFFLE_FACTOR
+net_dict["TIME_SHIFT_ITER"] = TIME_SHIFT_ITER
+net_dict["MODEL_PATH"] = MODEL_PATH
+net_dict["learning_rate"] = "placeholder"  # TODO
+net_dict["r2_scores_train"] = []
+net_dict["r2_scores_valid"] = []
+net_dict["acc_scores_train"] = []
+net_dict["acc_scores_valid"] = []
+net_dict["avg_scores_train"] = []
+net_dict["avg_scores_valid"] = []
+net_dict["LOAD_MODEL"] = LOAD_MODEL
+net_dict["INITIAL_TIMESHIFT"] = INITIAL_TIMESHIFT
+net_dict["TRAIN_MODEL"] = TRAIN_MODEL
+net_dict["METRIC_ITER"] = METRIC_ITER
+net_dict["BATCH_SIZE"] = BATCH_SIZE
+net_dict["SLICE_SIZE"] = SLICE_SIZE
+net_dict["epochs_trained"] = 0
+net_dict["RAW_DATA_PATH"] = RAW_DATA_PATH
+net_dict["X_MAX"] = X_MAX
+net_dict["Y_MAX"] = Y_MAX
+net_dict["X_MIN"] = X_MIN
+net_dict["Y_MIN"] = Y_MIN
+net_dict["X_STEP"] = X_STEP
+net_dict["Y_STEP"] = Y_STEP
+net_dict["WIN_SIZE"] = WIN_SIZE
+net_dict["SEARCH_RADIUS"] = SEARCH_RADIUS
+net_dict["EARLY_STOPPING"] = EARLY_STOPPING
+net_dict["NAIVE_TEST"] = NAIVE_TEST
+# Preprocess data
+
+
 if __name__ == '__main__':
-    from src.database_api_beta import Slice, Filter, hann
-    from src.metrics import  print_net_dict
-    import numpy as np
-    import os
-    import errno
-    from src.settings import save_as_pickle, load_pickle, save_net_dict
-    from src.preprocessing import time_shift_io_positions, shuffle_io, position_as_map
-    import datetime
-    import pickle
-    import multiprocessing
-    from external.preprocessing_funcs import get_spikes_with_history
-    from src.network_functions import  run_network
-
-
-
-
-    now = datetime.datetime.now().isoformat()
-
-    # Glaser data set
-    # MODEL_PATH = "G:/master_datafiles/trained_networks/MLP_Custom_2018-20-09/"
-    # RAW_DATA_PATH = "C:/Users/NN\Desktop/Neural_Decoding-master/example_data_hc.pickle"
-    # FILTERED_DATA_PATH = "G:/master_datafiles/filtered_data/neocortex_hann_win_size_100.pkl"
-
-    # prefrontal cortex
-
-    MODEL_PATH = "G:/master_datafiles/trained_networks/MLP_PFC_2018-10-10_400_400_400_neuron_filter=20/"
-    RAW_DATA_PATH = "G:/master_datafiles/raw_data/2018-04-09_14-39-52/"
-    FILTERED_DATA_PATH = "G:/master_datafiles/filtered_data/neocortex_hann_win_size_20.pkl"
-
-    # hippocampus
-
-    # MODEL_PATH = "G:/master_datafiles/trained_networks/MLP_HC_2018-10-19_1000_200_100/"
-    # RAW_DATA_PATH = "G:/master_datafiles/raw_data/2018-05-16_17-13-37/"
-    # FILTERED_DATA_PATH = "G:/master_datafiles/filtered_data/hippocampus_hann_win_size_25_09-5_7.pkl"
-    NEURONS_KEPT_FACTOR = 0.2
-
-    # Program execution settings
-
-    LOAD_RAW_DATA = True  # load source data from raw data path or load default model
-    # LOAD_RAW_DATA = True # load source data from raw data path or load default model
-    LOAD_GLASER_DATA = False
-    SAVE_FILTERED_DATA = True
-    MAKE_HISTOGRAM = False
-    LOAD_MODEL = False  # load model from model path
-    TRAIN_MODEL = True  # train model or just show results
-    EPOCHS = 20
-    INITIAL_TIMESHIFT = 0
-    TIME_SHIFT_ITER = 200
-    TIME_SHIFT_STEPS = 100
-    METRIC_ITER = 1  # after how many epochs network is validated <---
-    SHUFFLE_DATA = True  # whether to randomly shuffle the data in big slices
-    SHUFFLE_FACTOR = 500
-    EARLY_STOPPING = False
-    NAIVE_TEST = False # TODO
-    K_CROSS_VALIDATION = 1
-    # Input data parameters
-
-    SLICE_SIZE = 1000
-    Y_SLICE_SIZE = 200
-    STRIDE = 100
-    BATCH_SIZE = 50
-    WIN_SIZE = 20
-    SEARCH_RADIUS = WIN_SIZE * 2
-    VALID_RATIO = 0.1
-    X_MAX = 240
-    Y_MAX = 190
-    X_MIN = 0
-    Y_MIN = 100
-    X_STEP = 3
-    Y_STEP = 3
-    session_filter = Filter(func=hann, search_radius=SEARCH_RADIUS, step_size=WIN_SIZE)
-
-    # Create save file directories
-
-    try:
-        os.makedirs(os.path.dirname(MODEL_PATH))
-        os.makedirs(os.path.dirname(MODEL_PATH + "output/"))
-        os.makedirs(os.path.dirname(MODEL_PATH + "images/"))
-    except OSError as exc:  # Guard against race condition
-        if exc.errno != errno.EEXIST:
-            raise
-
-    # Update network dict values
-
-    if LOAD_RAW_DATA is False:
-        net_dict = load_pickle(FILTERED_DATA_PATH)
-    else:
-        net_dict = dict()
-    net_dict["MAKE_HISTOGRAM"] = MAKE_HISTOGRAM
-    net_dict["STRIDE"] = STRIDE
-    net_dict["Y_SLICE_SIZE"] = Y_SLICE_SIZE
-    net_dict["network_type"] = "Multi Layer Perceptron"
-    net_dict["EPOCHS"] = EPOCHS
-    net_dict["session_filter"] = session_filter
-    net_dict["TIME_SHIFT_STEPS"] = TIME_SHIFT_STEPS
-    net_dict["SHUFFLE_DATA"] = SHUFFLE_DATA
-    net_dict["SHUFFLE_FACTOR"] = SHUFFLE_FACTOR
-    net_dict["TIME_SHIFT_ITER"] = TIME_SHIFT_ITER
-    net_dict["MODEL_PATH"] = MODEL_PATH
-    net_dict["learning_rate"] = "placeholder"  # TODO
-    net_dict["r2_scores_train"] = []
-    net_dict["r2_scores_valid"] = []
-    net_dict["acc_scores_train"] = []
-    net_dict["acc_scores_valid"] = []
-    net_dict["avg_scores_train"] = []
-    net_dict["avg_scores_valid"] = []
-    net_dict["LOAD_MODEL"] = LOAD_MODEL
-    net_dict["INITIAL_TIMESHIFT"] = INITIAL_TIMESHIFT
-    net_dict["TRAIN_MODEL"] = TRAIN_MODEL
-    net_dict["METRIC_ITER"] = METRIC_ITER
-    net_dict["BATCH_SIZE"] = BATCH_SIZE
-    net_dict["SLICE_SIZE"] = SLICE_SIZE
-    net_dict["epochs_trained"] = 0
-    net_dict["RAW_DATA_PATH"] = RAW_DATA_PATH
-    net_dict["X_MAX"] = X_MAX
-    net_dict["Y_MAX"] = Y_MAX
-    net_dict["X_MIN"] = X_MIN
-    net_dict["Y_MIN"] = Y_MIN
-    net_dict["X_STEP"] = X_STEP
-    net_dict["Y_STEP"] = Y_STEP
-    net_dict["WIN_SIZE"] = WIN_SIZE
-    net_dict["SEARCH_RADIUS"] = SEARCH_RADIUS
-    net_dict["EARLY_STOPPING"] = EARLY_STOPPING
-    net_dict["NAIVE_TEST"] = NAIVE_TEST
-    # Preprocess data
 
     if LOAD_RAW_DATA is True and LOAD_GLASER_DATA is False:
         # TODO
