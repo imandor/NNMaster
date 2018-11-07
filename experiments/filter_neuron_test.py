@@ -29,10 +29,10 @@ now = datetime.datetime.now().isoformat()
 
 # hippocampus
 
-MODEL_PATH = "G:/master_datafiles/trained_networks/MLP_HC_2018-10-19_1000_200_100_neuron_filter=60/"
+MODEL_PATH = "G:/master_datafiles/trained_networks/MLP_HC_2018-10-19_1000_200_100_neuron_filter=10/"
 RAW_DATA_PATH = "G:/master_datafiles/raw_data/2018-05-16_17-13-37/"
 FILTERED_DATA_PATH = "G:/master_datafiles/filtered_data/hippocampus_hann_win_size_25_09-5_7.pkl"
-NEURONS_KEPT_FACTOR = 0.6
+NEURONS_KEPT_FACTOR = 0.1
 
 # Program execution settings
 

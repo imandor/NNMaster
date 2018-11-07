@@ -44,14 +44,14 @@ MAKE_HISTOGRAM = False
 LOAD_MODEL = False  # load model from model path
 TRAIN_MODEL = True  # train model or just show results
 EPOCHS = 30
-INITIAL_TIMESHIFT = -8000
+INITIAL_TIMESHIFT = 0
 TIME_SHIFT_ITER = 200
-TIME_SHIFT_STEPS = 1
+TIME_SHIFT_STEPS = 10
 METRIC_ITER = 1  # after how many epochs network is validated <---
 SHUFFLE_DATA = True  # whether to randomly shuffle the data in big slices
 SHUFFLE_FACTOR = 500
 EARLY_STOPPING = True
-NAIVE_TEST = False # TODO
+NAIVE_TEST = True
 K_CROSS_VALIDATION = 1
 # Input data parameters
 
@@ -162,31 +162,6 @@ if __name__ == '__main__':
             X, y = time_shift_io_positions(session, z, net_dict)
             if len(X) != len(y):
                 raise ValueError("Error: Length of x and y are not identical")
-            X, y = shuffle_io(X, y, net_dict, 3)
-
-        if LOAD_GLASER_DATA is True:
-            with open(RAW_DATA_PATH, 'rb') as f:
-                neural_data, y_raw = pickle.load(f, encoding='latin1')  # If using python 3
-            # neural_data = neural_data[135:237]
-            # y_raw = y_raw[135:237]
-            bins_before = 4  # How many bins of neural data prior to the output are used for decoding
-            bins_current = 1  # Whether to use concurrent time bin of neural data
-            bins_after = 5  # How many bins of neural data after the output are used for decoding
-            X = get_spikes_with_history(neural_data, bins_before, bins_after, bins_current)
-            # X_mean = np.nanmean(X, axis=0)
-            # X_std = np.nanstd(X, axis=0)
-            # X = (X - X_mean) / X_std
-            y = []
-            for i, posxy_list in reversed(list(enumerate(y_raw))):
-                if np.isnan(posxy_list).any() or np.isnan(X[i].any()):
-                    X = np.delete(X, i, axis=0)
-                else:
-                    x_list = ((np.array(posxy_list[0]) - X_MIN) // X_STEP).astype(int)
-                    y_list = ((np.array(posxy_list[1]) - Y_MIN) // Y_STEP).astype(int)
-                    posxy_list = [y_list, y_list]
-                    y.append(position_as_map(posxy_list, X_STEP, Y_STEP, 300, 0, 300, 0))
-            X = X.transpose([0, 2, 1])
-            y = list(reversed(y))
             X, y = shuffle_io(X, y, net_dict, 3)
 
         # Assign training and testing set

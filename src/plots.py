@@ -25,7 +25,7 @@ def load_trained_network(path):
     dict_files = [i[0] for i in sorted_list]
     for file_path in dict_files:
         print("processing", file_path)
-        net_dict = load_pickle(file_path)
+        net_dict_i = load_pickle(file_path)
         r2_scores_train_list.append(net_dict_i["r2_scores_train"])
         r2_scores_valid_list.append(net_dict_i["r2_scores_valid"])
         acc_scores_train_list.append(net_dict_i["acc_scores_train"])
@@ -44,15 +44,15 @@ def load_trained_network(path):
     return r2_scores_valid_list, r2_scores_train_list, acc_scores_valid_list, acc_scores_train_list, avg_scores_valid_list, avg_scores_train_list, net_dict_i, time_shift_list
 
 
-PATH = "G:/master_datafiles/trained_networks/MLP_HC_2018-10-19_1000_200_100/"
-PATH_2 = "G:/master_datafiles/trained_networks/MLP_HC_2018-10-19_1000_200_100/"
+PATH_2 = "G:/master_datafiles/trained_networks/MLP_HC_2018-11-06_1000_200_100_dmf/"
+PATH = "G:/master_datafiles/trained_networks/MLP_PFC_2018-11-06_1000_200_100_dmf/"
 SINGLE_ACCURACY = False
 SINGLE_AVERAGE = False
 SINGLE_R2 = False
 COMPARE_ACCURACY = False
 COMPARE_DISTANCE = False
 COMPARE_R2 = False
-PAIRED_T_TEST = False
+PAIRED_T_TEST = True
 FILTER_NEURON_TEST = True
 
 r2_scores_valid_list, r2_scores_train_list, acc_scores_valid_list, acc_scores_train_list, avg_scores_valid_list, avg_scores_train_list, net_dict, time_shift_list = load_trained_network(
@@ -117,7 +117,7 @@ if SINGLE_AVERAGE is True:
     plt.ion()
     plt.show()
     plt.savefig(PATH + "images/acc_score" + "_epoch=" + str(training_step_list[-i]) + ".pdf")
-
+    plt.close()
 if SINGLE_ACCURACY is True:
     fig, ax = plt.subplots()
     # ax.plot(time_shift_list,distance_scores_train,label='Training set',color='r')
@@ -129,7 +129,7 @@ if SINGLE_ACCURACY is True:
     ax.set_ylabel(r'$\varnothing$ absolute position error [cm]')
     fig.tight_layout()
     plt.savefig(PATH + "images/avg_dist" + "_epoch=" + str(training_step_list[-i]) + ".pdf")
-
+    plt.close()
 if SINGLE_R2 is True:
     # fig, (ax0, ax1) = plt.subplots(nrows=2,sharey=True)
     fig, ax1 = plt.subplots()
@@ -146,7 +146,7 @@ if SINGLE_R2 is True:
     ax1.set_ylim([-1, 0.6])
     fig.tight_layout()
     plt.savefig(PATH + "images/r2_score" + "_epoch=" + str(training_step_list[-i]) + ".pdf")
-
+    plt.close()
 # ---------------------------------------------------------------
 
 # Comparisons
@@ -188,7 +188,7 @@ if COMPARE_ACCURACY is True:
     fig.tight_layout()
     plt.ion()
     plt.savefig(PATH + "images/acc_score_middle" + "_epoch=" + str(training_step_list[-i]) + ".pdf")
-
+    plt.close()
 # Compare distances plot
 
 if COMPARE_DISTANCE is True:
@@ -214,7 +214,7 @@ if COMPARE_DISTANCE is True:
     ax.fill_between(x, 0, f(x), where=(np.array(f(x))) > 0, color='red')
     fig.tight_layout()
     plt.savefig(PATH + "images/avg_dist_middle" + "_epoch=" + str(training_step_list[-i]) + ".pdf")
-
+    plt.close()
 if COMPARE_R2 is True:
     # fig, (ax0, ax1) = plt.subplots(nrows=2,sharey=True)
     fig, ax1 = plt.subplots()
@@ -244,7 +244,7 @@ if COMPARE_R2 is True:
     ax1.set_ylim([-1, 0.6])
     fig.tight_layout()
     plt.savefig(PATH + "images/r2_score_middle" + "_epoch=" + str(training_step_list[-i]) + ".pdf")
-
+    plt.close()
 # paired t test
 
 if PAIRED_T_TEST is True:
