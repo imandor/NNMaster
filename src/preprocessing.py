@@ -59,12 +59,12 @@ def count_occurrences(y,net_dict,axis=0):
     return pos_counter
 
 
-def shuffle_io(X,y,net_dict,seed_no):
+def shuffle_io(X,y,nd,seed_no):
 
     # Shuffle data
-    if net_dict["SHUFFLE_DATA"] is False:
+    if nd.SHUFFLE_DATA is False:
         return X,y
-    SHUFFLE_FACTOR = net_dict["SHUFFLE_FACTOR"]
+    SHUFFLE_FACTOR = nd.SHUFFLE_FACTOR
     seed(seed_no)
 
     # crop length to fit shuffle factor
@@ -91,17 +91,17 @@ def shuffle_io(X,y,net_dict,seed_no):
     return X,y
 
 
-def time_shift_io_positions(session, shift, net_dict):
-    SLICE_SIZE = net_dict["SLICE_SIZE"]
-    WIN_SIZE = net_dict["WIN_SIZE"]
-    X_STEP = net_dict["X_STEP"]
-    Y_STEP = net_dict["Y_STEP"]
-    X_MAX = net_dict["X_MAX"]
-    X_MIN = net_dict["X_MIN"]
-    Y_MAX = net_dict["Y_MAX"]
-    Y_MIN = net_dict["Y_MIN"]
-    STRIDE = net_dict["STRIDE"]
-    Y_SLICE_SIZE = net_dict["Y_SLICE_SIZE"]
+def time_shift_positions(session, shift, nd):
+    SLICE_SIZE = nd.SLICE_SIZE
+    WIN_SIZE = nd.WIN_SIZE
+    X_STEP = nd.X_STEP
+    Y_STEP = nd.Y_STEP
+    X_MAX = nd.X_MAX
+    X_MIN = nd.X_MIN
+    Y_MAX = nd.Y_MAX
+    Y_MIN = nd.Y_MIN
+    STRIDE = nd.STRIDE
+    Y_SLICE_SIZE = nd.Y_SLICE_SIZE
     # Shift positions
 
     shift_in_filtered_spikes = int(shift/WIN_SIZE)

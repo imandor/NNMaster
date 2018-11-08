@@ -1,16 +1,16 @@
 if __name__ == '__main__':
     from src.database_api_beta import Slice, Filter, hann
-    from src.metrics import  print_net_dict
+    from src.metrics import  print_Net_data
     import numpy as np
     import os
     import errno
     from src.settings import save_as_pickle, load_pickle, save_net_dict
-    from src.preprocessing import time_shift_io_positions, shuffle_io, position_as_map
+    from src.preprocessing import time_shift_positions, shuffle_io, position_as_map
     import datetime
     import pickle
     import multiprocessing
     from external.preprocessing_funcs import get_spikes_with_history
-    from src.network_functions import  run_network
+    from src.network_functions import  run_network_process
 
 
 
@@ -146,7 +146,7 @@ if __name__ == '__main__':
 
     # Start network with different time-shifts
 
-    print_net_dict(net_dict)  # show network parameters in console
+    print_Net_data(net_dict)  # show network parameters in console
 
     for z in range(INITIAL_TIMESHIFT, INITIAL_TIMESHIFT + TIME_SHIFT_STEPS * TIME_SHIFT_ITER, TIME_SHIFT_ITER):
         iter = int(z - INITIAL_TIMESHIFT) // TIME_SHIFT_ITER
@@ -157,7 +157,7 @@ if __name__ == '__main__':
 
             # Time-Shift input and output
 
-            X, y = time_shift_io_positions(session, z, net_dict)
+            X, y = time_shift_positions(session, z, net_dict)
             if len(X) != len(y):
                 raise ValueError("Error: Length of x and y are not identical")
             X, y = shuffle_io(X, y, net_dict, 3)
@@ -226,11 +226,11 @@ if __name__ == '__main__':
                 net_dict["y_valid"] = y[k_slice_valid]
 
             if TIME_SHIFT_STEPS == 1:
-                save_dict = run_network(net_dict)
+                save_dict = run_network_process(net_dict)
             else:
                 with multiprocessing.Pool(
                         1) as p:  # keeping network inside process prevents memory issues when restarting session
-                    save_dict = p.map(run_network, [net_dict])[0]
+                    save_dict = p.map(run_network_process, [net_dict])[0]
                     p.close()
             r2_score_k_valid.append(save_dict["r2_scores_valid"])
             acc_score_k_valid.append(save_dict["acc_scores_valid"])

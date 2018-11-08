@@ -26,7 +26,6 @@ def bin(x):
         return 0
 
 
-
 class Filter:
     def __init__(self, func, search_radius, step_size):
         self._func = func
@@ -42,7 +41,7 @@ class Filter:
 
     def __call__(self, x):
         # print("func:",self._func(x / self.search_radius), " value is:",x)
-        return self._func(x)#self._func(x / self.search_radius) / self._integral_on_search_window
+        return self._func(x)  # self._func(x / self.search_radius) / self._integral_on_search_window
 
 
 hann_500_500 = Filter(hann, 500, 500)
@@ -69,8 +68,6 @@ bin_50_50 = Filter(bin, 50, 50)
 bin_50_25 = Filter(bin, 50, 25)
 
 
-
-
 def _convolve_thread_func(filter_func, n_bin_points, neuron_counter, n_neurons, neuron_spikes):
     # print("Convolving neuron ",neuron_counter, " of ", n_neurons,"...")
     curr_search_window_min_bound = - filter_func.search_radius
@@ -89,15 +86,69 @@ def _convolve_thread_func(filter_func, n_bin_points, neuron_counter, n_neurons, 
         # filtered_spikes[index] = (np.average(curr_spikes_in_search_window) - np.average(
         #     [curr_search_window_min_bound, curr_search_window_max_bound])) / len(curr_spikes_in_search_window)
         filtered_spikes[index] = sum(map(
-        lambda x: filter_func((x - index * filter_func.step_size)/filter_func.search_radius),
-        curr_spikes_in_search_window))
-        for spike_index, spike in enumerate(neuron_spikes[index_first_spike_in_window:index_first_spike_in_window+curr_search_window_max_bound]): # upper bound because a maximum of 1 spike per ms can occurr and runtime of slice operation is O(i2-i1)
+            lambda x: filter_func((x - index * filter_func.step_size) / filter_func.search_radius),
+            curr_spikes_in_search_window))
+        for spike_index, spike in enumerate(neuron_spikes[
+                                            index_first_spike_in_window:index_first_spike_in_window + curr_search_window_max_bound]):  # upper bound because a maximum of 1 spike per ms can occurr and runtime of slice operation is O(i2-i1)
             if spike >= curr_search_window_min_bound:
                 index_first_spike_in_window = index_first_spike_in_window + spike_index
                 break
 
     # print("Finished convolving neuron ",neuron_counter, " of ", n_neurons,"...")
     return filtered_spikes
+
+
+class Net_data:
+    def __init__(self, MAKE_HISTOGRAM, STRIDE, Y_SLICE_SIZE, network_type, EPOCHS, session_filter, TIME_SHIFT_STEPS,
+                 SHUFFLE_DATA, SHUFFLE_FACTOR, TIME_SHIFT_ITER, MODEL_PATH, r2_scores_train, r2_scores_valid,
+                 acc_scores_train, acc_scores_valid, avg_scores_train, avg_scores_valid, INITIAL_TIMESHIFT, METRIC_ITER,
+                 BATCH_SIZE, SLICE_SIZE, RAW_DATA_PATH, X_MAX, Y_MAX, X_MIN, Y_MIN, X_STEP, Y_STEP, WIN_SIZE,
+                 EARLY_STOPPING, SEARCH_RADIUS, NAIVE_TEST, VALID_RATIO, K_CROSS_VALIDATION, LOAD_MODEL,TRAIN_MODEL):
+        self.MAKE_HISTOGRAM = MAKE_HISTOGRAM
+        self.STRIDE = STRIDE
+        self.TRAIN_MODEL = TRAIN_MODEL
+        self.Y_SLICE_SIZE = Y_SLICE_SIZE
+        self.network_type = network_type
+        self.EPOCHS = EPOCHS
+        self.session_filter = session_filter
+        self.TIME_SHIFT_STEPS = TIME_SHIFT_STEPS
+        self.SHUFFLE_DATA = SHUFFLE_DATA
+        self.SHUFFLE_FACTOR = SHUFFLE_FACTOR
+        self.TIME_SHIFT_ITER = TIME_SHIFT_ITER
+        self.MODEL_PATH = MODEL_PATH
+        self.learning_rate = "placeholder"  # TODO
+        self.r2_scores_train = r2_scores_train
+        self.r2_scores_valid = r2_scores_valid
+        self.acc_scores_train = acc_scores_train
+        self.acc_scores_valid = acc_scores_valid
+        self.avg_scores_train = avg_scores_train
+        self.avg_scores_valid = avg_scores_valid
+        self.INITIAL_TIMESHIFT = INITIAL_TIMESHIFT
+        self.METRIC_ITER = METRIC_ITER
+        self.BATCH_SIZE = BATCH_SIZE
+        self.SLICE_SIZE = SLICE_SIZE
+        self.RAW_DATA_PATH = RAW_DATA_PATH
+        self.X_MAX = X_MAX
+        self.Y_MAX = Y_MAX
+        self.X_MIN = X_MIN
+        self.Y_MIN = Y_MIN
+        self.X_STEP = X_STEP
+        self.Y_STEP = Y_STEP
+        self.WIN_SIZE = WIN_SIZE
+        self.SEARCH_RADIUS = SEARCH_RADIUS
+        self.EARLY_STOPPING = EARLY_STOPPING
+        self.NAIVE_TEST = NAIVE_TEST
+        self.VALID_RATIO = VALID_RATIO
+        self.K_CROSS_VALIDATION = K_CROSS_VALIDATION
+        self.N_NEURONS = None
+        self.X_train = None
+        self.y_train = None
+        self.X_valid = None
+        self.y_valid = None
+        self.X_eval = None
+        self.y_eval = None
+        self.LOAD_MODEL = LOAD_MODEL
+
 
 class Slice:
     def __init__(self, spikes, licks, position_x, position_y, speed, trial_timestamp):
@@ -118,14 +169,13 @@ class Slice:
 
     def __eq__(self, other):
         return self.spikes == other.spikes and self.licks == other.licks \
-            and np.array_equal(self.position_x, other.position_x) \
-            and np.array_equal(self.position_y, other.position_y) \
-            and self.trial_timestamp == other.trial_timestamp
+               and np.array_equal(self.position_x, other.position_x) \
+               and np.array_equal(self.position_y, other.position_y) \
+               and self.trial_timestamp == other.trial_timestamp
 
     def set_filter(self, filter):
         self._filter = filter
         self._convolve()
-
 
     def _convolve(self):
         search_radius, step_size = self._filter.search_radius, self._filter.step_size
@@ -134,7 +184,9 @@ class Slice:
         n_bin_points = int(len(self.position_x) // step_size)
         self.filtered_spikes = np.zeros((len(self.spikes), n_bin_points))
         with ThreadPool(processes=1) as p:
-            ret = p.starmap(_convolve_thread_func, zip(repeat(self._filter), repeat(n_bin_points),range(0,len(self.spikes)), repeat(len(self.spikes)),self.spikes))
+            ret = p.starmap(_convolve_thread_func,
+                            zip(repeat(self._filter), repeat(n_bin_points), range(0, len(self.spikes)),
+                                repeat(len(self.spikes)), self.spikes))
             for i, r in enumerate(ret):
                 self.filtered_spikes[i] = r
 
@@ -154,30 +206,30 @@ class Slice:
         print("")
 
     def print_details(self):
-        average_spikes_per_second = np.mean([len(x) for x in self.spikes])*1000/len(self.position_x)
-        session_length_in_minutes = len(self.position_x)/(1000*60)
+        average_spikes_per_second = np.mean([len(x) for x in self.spikes]) * 1000 / len(self.position_x)
+        session_length_in_minutes = len(self.position_x) / (1000 * 60)
         average_speed = np.average(self.speed)
         maximum_speed = np.max(self.speed)
-        print("Average spikes per second:",average_spikes_per_second)
-        print("Session length in minutes:",session_length_in_minutes)
-        print("Average speed in cm/s:",average_speed)
-        print("Maximum speed in cm/s:",maximum_speed)
+        print("Average spikes per second:", average_spikes_per_second)
+        print("Session length in minutes:", session_length_in_minutes)
+        print("Average speed in cm/s:", average_speed)
+        print("Maximum speed in cm/s:", maximum_speed)
 
-
-    def timeshift_position(self,timeshift):
+    def timeshift_position(self, timeshift):
         if timeshift == 0: return self
         if timeshift > 0:
-            other= self[:-timeshift]
+            other = self[:-timeshift]
             other.position_x = self.position_x[timeshift:]
             other.position_y = self.position_y[timeshift:]
         else:
-            other= self[-timeshift:]
+            other = self[-timeshift:]
             other.position_x = self.position_x[:timeshift]
             other.position_y = self.position_y[:timeshift]
 
         return other
 
-    def plot(self, ax_filtered_spikes=None, ax_raw_spikes=None, ax_licks=None, ax_trial_timestamps=None, filtered_spikes_kwargs={}):
+    def plot(self, ax_filtered_spikes=None, ax_raw_spikes=None, ax_licks=None, ax_trial_timestamps=None,
+             filtered_spikes_kwargs={}):
         share_axis_set = set([ax_raw_spikes, ax_licks, ax_trial_timestamps])
         share_axis_set.discard(None)
         if len(share_axis_set) > 2:
@@ -238,8 +290,8 @@ class Slice:
         if time_slice.stop is None:
             stop = self.end_time
         else:
-            if time_slice.stop<0:
-                stop = len(self.position_x)+time_slice.stop
+            if time_slice.stop < 0:
+                stop = len(self.position_x) + time_slice.stop
             else:
                 stop = time_slice.stop
         keys_containing_time = [k for k in ld[0] if "time" in k]
@@ -260,8 +312,8 @@ class Slice:
         if time_slice.stop is None:
             stop = self.end_time
         else:
-            if time_slice.stop<0:
-                stop = len(self.position_x)+time_slice.stop
+            if time_slice.stop < 0:
+                stop = len(self.position_x) + time_slice.stop
             else:
                 stop = time_slice.stop
         spikes = self.slice_spikes(time_slice)
@@ -327,7 +379,8 @@ class Slice:
         sample_rate = float(all_channels_dict["header"]["sampleRate"])
         # timestamp for foster data
         foster_timestamp = [(x - timestamps[0]) / sample_rate * 1000 for ind, x in enumerate(timestamps)
-                            if (eventtype_ttl[ind], eventch_ttl[ind], eventid_ttl[ind], recording_num[ind]) == (3, 2, 1, 0)]
+                            if (eventtype_ttl[ind], eventch_ttl[ind], eventid_ttl[ind], recording_num[ind]) == (
+                            3, 2, 1, 0)]
 
         if len(initial_detection) > len(foster_timestamp):
             foster_data = foster_data[:, 0:foster_timestamp.size]
@@ -349,16 +402,17 @@ class Slice:
         licks = [{"time": initial_detection_timestamp[i],
                   "lickwell": lickwells[i],
                   "rewarded": rewarded[i]}
-                 for i in range(1,len(initial_detection_timestamp))] # Please note that first lick is deleted by default TODO
+                 for i in
+                 range(1, len(initial_detection_timestamp))]  # Please note that first lick is deleted by default TODO
         print("finished loading session")
         return cls(spikes, licks, position_x, position_y, speed, trial_timestamp)
 
-    def filter_neurons_randomly(self,factor):
-        neurons_removed = int(len(self.spikes)*(1-factor))
+    def filter_neurons_randomly(self, factor):
+        neurons_removed = int(len(self.spikes) * (1 - factor))
         for i in range(neurons_removed):
-            neuron_index = np.random.randint(0,len(self.spikes))
+            neuron_index = np.random.randint(0, len(self.spikes))
             del self.spikes[neuron_index]
-            self.filtered_spikes = np.delete(self.filtered_spikes,neuron_index,axis=0)
+            self.filtered_spikes = np.delete(self.filtered_spikes, neuron_index, axis=0)
 
         self.n_neurons = len(self.spikes)
 
@@ -374,7 +428,6 @@ class Slice:
             if len(self.spikes[i]) < minimum_spikes:
                 del self.spikes[i]
         self.n_neurons = len(self.spikes)
-
 
     @classmethod
     def from_pickle(cls, path):

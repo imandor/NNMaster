@@ -115,9 +115,9 @@ def average_position(mapping):
         return "Value error, check validation output"
 
 
-def plot_histogram(sess, S, net_dict, X, y):
+def plot_histogram(sess, S, nd, X, y):
     y_predicted, y_target = predict(S, sess, X, y)
-    distances = get_distances(y_predicted, y_target, [net_dict["X_STEP"], net_dict["Y_STEP"]])
+    distances = get_distances(y_predicted, y_target, [nd.X_STEP, nd.Y_STEP])
     fig, ax = plt.subplots()
     x_axis_labels = np.linspace(0, 150, 15)
     # ax.plot(time_shift_list,distance_scores_train,label='Training set',color='r')
@@ -168,27 +168,27 @@ def predict(S, sess, X, Y):
     return y_predicted, y_target
 
 
-def test_accuracy(sess, S, net_dict,X,y, print_distance=False):
+def test_accuracy(sess, S, nd,X,y, print_distance=False):
     y_predicted, y_target = predict(S, sess, X, y)
-    r2 = get_r2(y_predicted, y_target, [net_dict["X_STEP"], net_dict["Y_STEP"]])
-    distance = get_avg_distance(y_predicted, y_target, [net_dict["X_STEP"], net_dict["Y_STEP"]])
+    r2 = get_r2(y_predicted, y_target, [nd.X_STEP, nd.Y_STEP])
+    distance = get_avg_distance(y_predicted, y_target, [nd.X_STEP, nd.Y_STEP])
     accuracy = []
     for i in range(0, 20):
-        acc = get_radius_accuracy(y_predicted, y_target, [net_dict["X_STEP"], net_dict["Y_STEP"]], i)
+        acc = get_radius_accuracy(y_predicted, y_target, [nd.X_STEP, nd.Y_STEP], i)
         accuracy.append(acc)
         if i == 19 and print_distance is True: print("Fraction pos error less than", i, ":", acc)
     if False:  # plot planes
-        plot_all_planes(X,y, y_predicted, y_target, net_dict)
+        plot_all_planes(X,y, y_predicted, y_target, nd)
     if False:
-        save_as_pickle("C:/Users/NN/AppData/Local/Temp/animation/predicted/step=" + str(net_dict["epochs_trained"]),
+        save_as_pickle("C:/Users/NN/AppData/Local/Temp/animation/predicted/step=" + str(nd.epochs_trained),
                        y_predicted[0])
-        save_as_pickle("C:/Users/NN/AppData/Local/Temp/animation/target/step=" + str(net_dict["epochs_trained"]), y_target[0])
+        save_as_pickle("C:/Users/NN/AppData/Local/Temp/animation/target/step=" + str(nd.epochs_trained), y_target[0])
     return r2, distance, accuracy
 
 
-def plot_all_planes(X,y, is_training_data, y_predicted, y_target, net_dict):
+def plot_all_planes(X,y, is_training_data, y_predicted, y_target, nd):
     map_list = y
-    distance_list = get_radius_distance_list(y_predicted, y_target, [net_dict["X_STEP"], net_dict["Y_STEP"]],
+    distance_list = get_radius_distance_list(y_predicted, y_target, [nd.X_STEP, nd.Y_STEP],
                                              absolute_margin=50)
     # y_target_f = []
     # y_prediction_f = []
@@ -196,8 +196,8 @@ def plot_all_planes(X,y, is_training_data, y_predicted, y_target, net_dict):
     #     if True:
     #         y_target_f.append(y_target[i])
     #         y_prediction_f.append(y_predicted[i])
-    # plot_plane(y_prediction_f, net_dict, "C:/Users/NN/Desktop/Master/" + is_train + "_all" + "_prediction")
-    # plot_plane(y_target_f, net_dict, "C:/Users/NN/Desktop/Master/" + is_train + "_all" + "_target")
+    # plot_plane(y_prediction_f, nd, "C:/Users/NN/Desktop/Master/" + is_train + "_all" + "_prediction")
+    # plot_plane(y_target_f, nd, "C:/Users/NN/Desktop/Master/" + is_train + "_all" + "_target")
     y_target_f = []
     y_prediction_f = []
     x_list = []
@@ -220,8 +220,8 @@ def plot_all_planes(X,y, is_training_data, y_predicted, y_target, net_dict):
     y_distance = np.abs(y_target_t - y_prediction_t)
     spikes_per_second = np.mean([len(x) for x in x_list]) / 200
 
-    # plot_plane(y_prediction_f, net_dict, "C:/Users/NN/Desktop/Master/" + is_train + "_better" + "_prediction")
-    # plot_plane(y_target_f, net_dict, "C:/Users/NN/Desktop/Master/" + is_train + "_better" + "_target")
+    # plot_plane(y_prediction_f, nd, "C:/Users/NN/Desktop/Master/" + is_train + "_better" + "_prediction")
+    # plot_plane(y_target_f, nd, "C:/Users/NN/Desktop/Master/" + is_train + "_better" + "_target")
     y_target_f = []
     y_prediction_f = []
     x_list = []
@@ -244,8 +244,8 @@ def plot_all_planes(X,y, is_training_data, y_predicted, y_target, net_dict):
     # y_distance = np.abs(y_target_f-y_prediction_f)
     # spikes_per_second = np.mean([len(x) for x in x_list]) /200
     # y_avg_distance = np.average(y_distance)
-    plot_plane(y_prediction_f, net_dict, "C:/Users/NN/Desktop/Master/" + is_train + "_worse" + "_prediction")
-    plot_plane(y_target_f, net_dict, "C:/Users/NN/Desktop/Master/" + is_train + "_worse" + "_target")
+    plot_plane(y_prediction_f, nd, "C:/Users/NN/Desktop/Master/" + is_training_data + "_worse" + "_prediction")
+    plot_plane(y_target_f, nd, "C:/Users/NN/Desktop/Master/" + is_training_data + "_worse" + "_target")
 
 
 def plot_axis_representation_2d(y_values, path):
@@ -271,30 +271,30 @@ def plot_axis_representation_1d(y_values, path, is_training):
     plt.close('all')
 
 
-def print_net_dict(net_dict):
-    print("session_filter", net_dict["session_filter"])
-    print("SLICE_SIZE", net_dict["SLICE_SIZE"])
-    print("Y_SLICE_SIZE", net_dict["Y_SLICE_SIZE"])
-    print("STRIDE", net_dict["STRIDE"])
-    print("WIN_SIZE", net_dict["WIN_SIZE"])
-    print("EPOCHS", net_dict["EPOCHS"])
-    print("TIME_SHIFT_STEPS", net_dict["TIME_SHIFT_STEPS"])
-    print("SHUFFLE_DATA", net_dict["SHUFFLE_DATA"])
-    print("SHUFFLE_FACTOR", net_dict["SHUFFLE_FACTOR"])
-    print("TIME_SHIFT_ITER", net_dict["TIME_SHIFT_ITER"])
-    print("METRIC_ITER", net_dict["METRIC_ITER"])
-    print("BATCH_SIZE", net_dict["BATCH_SIZE"])
-    print("= SEARCH_RADIUS", net_dict["SEARCH_RADIUS"])
+def print_Net_data(nd):
+    print("session_filter", nd.session_filter)
+    print("SLICE_SIZE", nd.SLICE_SIZE)
+    print("Y_SLICE_SIZE", nd.Y_SLICE_SIZE)
+    print("STRIDE", nd.STRIDE)
+    print("WIN_SIZE", nd.WIN_SIZE)
+    print("EPOCHS", nd.EPOCHS)
+    print("TIME_SHIFT_STEPS", nd.TIME_SHIFT_STEPS)
+    print("SHUFFLE_DATA", nd.SHUFFLE_DATA)
+    print("SHUFFLE_FACTOR", nd.SHUFFLE_FACTOR)
+    print("TIME_SHIFT_ITER", nd.TIME_SHIFT_ITER)
+    print("METRIC_ITER", nd.METRIC_ITER)
+    print("BATCH_SIZE", nd.BATCH_SIZE)
+    print("= SEARCH_RADIUS", nd.SEARCH_RADIUS)
 
 
-def plot_plane(y, net_dict, path):
+def plot_plane(y, nd, path):
     pos_x_list = []
     pos_y_list = []
     for i, posxy in enumerate(y):
         pos_x_list.append(posxy[0])
         pos_y_list.append(posxy[1])
-    a = position_as_map([pos_x_list, pos_y_list], net_dict["X_STEP"], net_dict["Y_STEP"], net_dict["X_MAX"],
-                        net_dict["X_MIN"], net_dict["Y_MAX"], net_dict["Y_MIN"])
+    a = position_as_map([pos_x_list, pos_y_list], nd.X_STEP, nd.Y_STEP, nd.X_MAX,
+                        nd.X_MIN, nd.Y_MAX, nd.Y_MIN)
     Y = a
     # print("plot:", "sample size is", len(y))
     fig, ax = plt.subplots()
@@ -304,11 +304,11 @@ def plot_plane(y, net_dict, path):
     Y -= np.min(y)
     # Y /= np.max(1,np.max(y))
     Y *= 255
-    Y[30 // net_dict["X_STEP"], 50 // net_dict["Y_STEP"]] = 30
-    Y[70 // net_dict["X_STEP"], 50 // net_dict["Y_STEP"]] = 30
-    Y[115 // net_dict["X_STEP"], 50 // net_dict["Y_STEP"]] = 30
-    Y[160 // net_dict["X_STEP"], 50 // net_dict["Y_STEP"]] = 30
-    Y[205 // net_dict["X_STEP"], 50 // net_dict["Y_STEP"]] = 30
+    Y[30 // nd.X_STEP, 50 // nd.Y_STEP] = 30
+    Y[70 // nd.X_STEP, 50 // nd.Y_STEP] = 30
+    Y[115 // nd.X_STEP, 50 // nd.Y_STEP] = 30
+    Y[160 // nd.X_STEP, 50 // nd.Y_STEP] = 30
+    Y[205 // nd.X_STEP, 50 // nd.Y_STEP] = 30
 
     ax.imshow(Y, cmap="gray")
     plt.savefig(path)

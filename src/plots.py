@@ -44,15 +44,15 @@ def load_trained_network(path):
     return r2_scores_valid_list, r2_scores_train_list, acc_scores_valid_list, acc_scores_train_list, avg_scores_valid_list, avg_scores_train_list, net_dict_i, time_shift_list
 
 
-PATH_2 = "G:/master_datafiles/trained_networks/MLP_HC_2018-11-06_1000_200_100_dmf/"
-PATH = "G:/master_datafiles/trained_networks/MLP_PFC_2018-11-06_1000_200_100_dmf/"
+PATH = "G:/master_datafiles/trained_networks/MLP_HC_2018-11-08_1000_200_100_naive/"
+PATH_2 = "G:/master_datafiles/trained_networks/MLP_HC_2018-11-08_1000_200_100_naive/"
 SINGLE_ACCURACY = False
 SINGLE_AVERAGE = False
 SINGLE_R2 = False
 COMPARE_ACCURACY = False
 COMPARE_DISTANCE = False
 COMPARE_R2 = False
-PAIRED_T_TEST = True
+PAIRED_T_TEST = False
 FILTER_NEURON_TEST = True
 
 r2_scores_valid_list, r2_scores_train_list, acc_scores_valid_list, acc_scores_train_list, avg_scores_valid_list, avg_scores_train_list, net_dict, time_shift_list = load_trained_network(
@@ -308,26 +308,26 @@ if PAIRED_T_TEST is True:
 
 
 if FILTER_NEURON_TEST is True:
-    PATH_100 = "G:/master_datafiles/trained_networks/MLP_HC_2018-10-19_1000_200_100_neuron_filter=100/"
-    # # PATH_90 = "G:/master_datafiles/trained_networks/MLP_HC_2018-10-19_1000_200_100_neuron_filter=90/"
-    PATH_80 = "G:/master_datafiles/trained_networks/MLP_HC_2018-10-19_1000_200_100_neuron_filter=80/"
-    # # PATH_70 = "G:/master_datafiles/trained_networks/MLP_HC_2018-10-19_1000_200_100_neuron_filter=70/"
-    PATH_60 = "G:/master_datafiles/trained_networks/MLP_HC_2018-10-19_1000_200_100_neuron_filter=60/"
-    # # PATH_50 = "G:/master_datafiles/trained_networks/MLP_HC_2018-10-19_1000_200_100_neuron_filter=50/"
-    PATH_40 = "G:/master_datafiles/trained_networks/MLP_HC_2018-10-19_1000_200_100_neuron_filter=40/"
-    # # PATH_30 = "G:/master_datafiles/trained_networks/MLP_HC_2018-10-19_1000_200_100_neuron_filter=30/"
-    PATH_20 = "G:/master_datafiles/trained_networks/MLP_HC_2018-10-19_1000_200_100_neuron_filter=20/"
-    # PATH_10 = "G:/master_datafiles/trained_networks/MLP_HC_2018-10-19_1000_200_100_neuron_filter=10/"
-    # PATH_100 = "G:/master_datafiles/trained_networks/MLP_PFC_2018-10-10_400_400_400_neuron_filter=100/"
-    # PATH_90 = "G:/master_datafiles/trained_networks/MLP_PFC_2018-10-10_400_400_400_neuron_filter=90/"
-    # PATH_80 = "G:/master_datafiles/trained_networks/MLP_PFC_2018-10-10_400_400_400_neuron_filter=80/"
-    # PATH_70 = "G:/master_datafiles/trained_networks/MLP_PFC_2018-10-10_400_400_400_neuron_filter=70/"
-    # PATH_60 = "G:/master_datafiles/trained_networks/MLP_PFC_2018-10-10_400_400_400_neuron_filter=60/"
-    # PATH_50 = "G:/master_datafiles/trained_networks/MLP_PFC_2018-10-10_400_400_400_neuron_filter=50/"
-    # PATH_40 = "G:/master_datafiles/trained_networks/MLP_PFC_2018-10-10_400_400_400_neuron_filter=40/"
-    # PATH_30 = "G:/master_datafiles/trained_networks/MLP_PFC_2018-10-10_400_400_400_neuron_filter=30/"
-    # PATH_20 = "G:/master_datafiles/trained_networks/MLP_PFC_2018-10-10_400_400_400_neuron_filter=20/"
-    # PATH_10 = "G:/master_datafiles/trained_networks/MLP_PFC_2018-10-10_400_400_400_neuron_filter=10/"
+    # PATH_100 = "G:/master_datafiles/trained_networks/MLP_HC_2018-11-08_1000_200_100_neuron_filter=100/"
+    # # # PATH_90 = "G:/master_datafiles/trained_networks/MLP_HC_2018-11-08_1000_200_100_neuron_filter=90/"
+    # PATH_80 = "G:/master_datafiles/trained_networks/MLP_HC_2018-11-08_1000_200_100_neuron_filter=80/"
+    # # # PATH_70 = "G:/master_datafiles/trained_networks/MLP_HC_2018-11-08_1000_200_100_neuron_filter=70/"
+    # PATH_60 = "G:/master_datafiles/trained_networks/MLP_HC_2018-11-08_1000_200_100_neuron_filter=60/"
+    # # # PATH_50 = "G:/master_datafiles/trained_networks/MLP_HC_2018-11-08_1000_200_100_neuron_filter=50/"
+    # PATH_40 = "G:/master_datafiles/trained_networks/MLP_HC_2018-11-08_1000_200_100_neuron_filter=40/"
+    # # # PATH_30 = "G:/master_datafiles/trained_networks/MLP_HC_2018-11-08_1000_200_100_neuron_filter=30/"
+    # PATH_20 = "G:/master_datafiles/trained_networks/MLP_HC_2018-11-08_1000_200_100_neuron_filter=20/"
+    # PATH_10 = "G:/master_datafiles/trained_networks/MLP_HC_2018-11-08_1000_200_100_neuron_filter=10/"
+    PATH_100 = "G:/master_datafiles/trained_networks/MLP_PFC_2018-11-08_1000_200_100_neuron_filter=100/"
+    # PATH_90 = "G:/master_datafiles/trained_networks/MLP_PFC_2018-11-08_1000_200_100_neuron_filter=90/"
+    PATH_80 = "G:/master_datafiles/trained_networks/MLP_PFC_2018-11-08_1000_200_100_neuron_filter=80/"
+    # PATH_70 = "G:/master_datafiles/trained_networks/MLP_PFC_2018-11-08_1000_200_100_neuron_filter=70/"
+    PATH_60 = "G:/master_datafiles/trained_networks/MLP_PFC_2018-11-08_1000_200_100_neuron_filter=60/"
+    # PATH_50 = "G:/master_datafiles/trained_networks/MLP_PFC_2018-11-08_1000_200_100_neuron_filter=50/"
+    PATH_40 = "G:/master_datafiles/trained_networks/MLP_PFC_2018-11-08_1000_200_100_neuron_filter=40/"
+    # PATH_30 = "G:/master_datafiles/trained_networks/MLP_PFC_2018-11-08_1000_200_100_neuron_filter=30/"
+    PATH_20 = "G:/master_datafiles/trained_networks/MLP_PFC_2018-11-08_1000_200_100_neuron_filter=20/"
+    # PATH_10 = "G:/master_datafiles/trained_networks/MLP_PFC_2018-11-08_1000_200_100_neuron_filter=10/"
     r2_scores_valid_list_100, r2_scores_train_list_100, acc_scores_valid_list_100, acc_scores_train_list_100, avg_scores_valid_list_100, avg_scores_train_list_100, net_dict_100, time_shift_list_100 = load_trained_network(
         PATH_100)
     # r2_scores_valid_list_90, r2_scores_train_list_90, acc_scores_valid_list_90, acc_scores_train_list_90, avg_scores_valid_list_90, avg_scores_train_list_90, net_dict_90, time_shift_list_90 = load_trained_network(
@@ -382,8 +382,8 @@ if FILTER_NEURON_TEST is True:
 
     #     # Get data for current amount of training steps
     #
-    # no_neurons_list = [56, 51, 45, 40, 34, 28, 23, 17, 12, 6]
-    no_neurons_list = [147, 133, 118, 103, 89, 74, 59, 45, 30, 15]
+    no_neurons_list = [56, 51, 45, 40, 34, 28, 23, 17, 12, 6]
+    # no_neurons_list = [147, 133, 118, 103, 89, 74, 59, 45, 30, 15]
 
     training_step_list_filter = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18,
                                  19, 20]
@@ -423,28 +423,27 @@ if FILTER_NEURON_TEST is True:
     plt.savefig(PATH + "images/avg_dist_middle" + "_epoch=" + str(training_step_list[-i]) + ".pdf")
     plt.close()
     fig, ax = plt.subplots()
-    # # ax.plot(time_shift_list,distance_scores_train,label='Training set',color='r')
-    # ax.plot(training_step_list_filter, acc_scores_100, color='b',label="56 (1.0)")
-    # # # ax.plot(training_step_list_filter, acc_scores_90, color='g',label="51 (0.9)")
-    # ax.plot(training_step_list_filter, acc_scores_80, color='r',label="45 (0.8)")
-    # # # ax.plot(training_step_list_filter, acc_scores_70, color='c',label="40 (0.7)")
-    # ax.plot(training_step_list_filter, acc_scores_60, color='m',label="34 (0.6)")
-    # # # ax.plot(training_step_list_filter, acc_scores_50, color='y',label="28 (0.5)")
-    # ax.plot(training_step_list_filter, acc_scores_40, color='k',label="23 (0.4)")
-    # # # ax.plot(training_step_list_filter, acc_scores_30, color='w',label="17 (0.3)")
-    # ax.plot(training_step_list_filter, acc_scores_20, color='maroon',label="12 (0.2)")
-    # # ax.plot(training_step_list_filter, acc_scores_10, color='darkgreen',label=" 6 (0.1)")
-    no_neurons_list = [147, 133, 118, 103, 89, 74, 59, 45, 30, 15]
-    ax.plot(training_step_list_filter, acc_scores_100, color='b',label="147 (1.0)")
-    # ax.plot(training_step_list_filter, acc_scores_90, color='g',label="133 (0.9)")
-    ax.plot(training_step_list_filter, acc_scores_80, color='r',label="118 (0.8)")
-    # ax.plot(training_step_list_filter, acc_scores_70, color='c',label="103 (0.7)")
-    ax.plot(training_step_list_filter, acc_scores_60, color='m',label=" 89 (0.6)")
-    # ax.plot(training_step_list_filter, acc_scores_50, color='y',label=" 74 (0.5)")
-    ax.plot(training_step_list_filter, acc_scores_40, color='k',label=" 59 (0.4)")
-    # ax.plot(training_step_list_filter, acc_scores_30, color='w',label=" 45 (0.3)")
-    ax.plot(training_step_list_filter, acc_scores_20, color='maroon',label=" 30 (0.2)")
-    # ax.plot(training_step_list_filter, acc_scores_10, color='darkgreen',label=" 15 (0.1)")
+    # ax.plot(time_shift_list,distance_scores_train,label='Training set',color='r')
+    ax.plot(training_step_list_filter, acc_scores_100, color='b',label="56 (1.0)")
+    # # ax.plot(training_step_list_filter, acc_scores_90, color='g',label="51 (0.9)")
+    ax.plot(training_step_list_filter, acc_scores_80, color='r',label="45 (0.8)")
+    # # ax.plot(training_step_list_filter, acc_scores_70, color='c',label="40 (0.7)")
+    ax.plot(training_step_list_filter, acc_scores_60, color='m',label="34 (0.6)")
+    # # ax.plot(training_step_list_filter, acc_scores_50, color='y',label="28 (0.5)")
+    ax.plot(training_step_list_filter, acc_scores_40, color='k',label="23 (0.4)")
+    # # ax.plot(training_step_list_filter, acc_scores_30, color='w',label="17 (0.3)")
+    ax.plot(training_step_list_filter, acc_scores_20, color='maroon',label="12 (0.2)")
+    # ax.plot(training_step_list_filter, acc_scores_10, color='darkgreen',label=" 6 (0.1)")
+    # ax.plot(training_step_list_filter, acc_scores_100, color='b',label="147 (1.0)")
+    # # ax.plot(training_step_list_filter, acc_scores_90, color='g',label="133 (0.9)")
+    # ax.plot(training_step_list_filter, acc_scores_80, color='r',label="118 (0.8)")
+    # # ax.plot(training_step_list_filter, acc_scores_70, color='c',label="103 (0.7)")
+    # ax.plot(training_step_list_filter, acc_scores_60, color='m',label=" 89 (0.6)")
+    # # ax.plot(training_step_list_filter, acc_scores_50, color='y',label=" 74 (0.5)")
+    # ax.plot(training_step_list_filter, acc_scores_40, color='k',label=" 59 (0.4)")
+    # # ax.plot(training_step_list_filter, acc_scores_30, color='w',label=" 45 (0.3)")
+    # ax.plot(training_step_list_filter, acc_scores_20, color='maroon',label=" 30 (0.2)")
+    # # ax.plot(training_step_list_filter, acc_scores_10, color='darkgreen',label=" 15 (0.1)")
 
     ax.legend()
     custom_lines = [Patch(facecolor='green', edgecolor='b',
