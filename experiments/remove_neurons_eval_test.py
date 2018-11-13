@@ -14,22 +14,20 @@ if __name__ == '__main__':
 
     # hippocampus
 
-    MODEL_PATH = "G:/master_datafiles/trained_networks/MLP_HC_2018-11-13_1000_200_100_dmf/"
+    MODEL_PATH = "G:/master_datafiles/trained_networks/MLP_HC_2018-11-11_1000_200_100_dmf/"
     RAW_DATA_PATH = "G:/master_datafiles/raw_data/2018-05-16_17-13-37/"
     FILTERED_DATA_PATH = "G:/master_datafiles/filtered_data/hippocampus_hann_win_size_25_09-5_7.pkl"
-    NEURONS_KEPT_FACTOR = 1
+    NEURONS_KEPT_FACTOR = 1.0
 
     WIN_SIZE = 20
     SEARCH_RADIUS = WIN_SIZE * 2
     session_filter = Filter(func=hann, search_radius=SEARCH_RADIUS, step_size=WIN_SIZE)
 
     nd = Net_data(
-        INITIAL_TIMESHIFT=0,
-        EPOCHS=30,
+        EPOCHS=20,
         TIME_SHIFT_STEPS=1,
-        EARLY_STOPPING=True,
-        MODEL_PATH=MODEL_PATH,
-        RAW_DATA_PATH=RAW_DATA_PATH,
+        EARLY_STOPPING=False,
+        NEURONS_KEPT_FACTOR=1.0
     )
     X, y, session = initiate_network(nd)
     run_network(X, y, nd, session)

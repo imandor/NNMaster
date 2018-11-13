@@ -3,21 +3,21 @@ import os
 import errno
 import datetime
 
-from src.network_functions import run_network_process,run_network
+from src.network_functions import run_network_process,initiate_network,run_network
 
 if __name__ == '__main__':
 
     # prefrontal cortex
 
-    # MODEL_PATH = "G:/master_datafiles/trained_networks/MLP_PFC_2018-11-06_1000_200_100_dmf/"
-    # RAW_DATA_PATH = "G:/master_datafiles/raw_data/2018-04-09_14-39-52/"
-    # FILTERED_DATA_PATH = "G:/master_datafiles/filtered_data/neocortex_hann_win_size_20.pkl"
+    MODEL_PATH = "G:/master_datafiles/trained_networks/MLP_PFC_2018-11-11_1000_200_100_naive/"
+    RAW_DATA_PATH = "G:/master_datafiles/raw_data/2018-04-09_14-39-52/"
+    FILTERED_DATA_PATH = "G:/master_datafiles/filtered_data/neocortex_hann_win_size_20.pkl"
 
     # hippocampus
 
-    MODEL_PATH = "G:/master_datafiles/trained_networks/MLP_HC_2018-11-08_1000_200_100_naive/"
-    RAW_DATA_PATH = "G:/master_datafiles/raw_data/2018-05-16_17-13-37/"
-    FILTERED_DATA_PATH = "G:/master_datafiles/filtered_data/hippocampus_hann_win_size_25_09-5_7.pkl"
+    # MODEL_PATH = "G:/master_datafiles/trained_networks/MLP_HC_2018-11-08_1000_200_100_naive/"
+    # RAW_DATA_PATH = "G:/master_datafiles/raw_data/2018-05-16_17-13-37/"
+    # FILTERED_DATA_PATH = "G:/master_datafiles/filtered_data/hippocampus_hann_win_size_25_09-5_7.pkl"
     NEURONS_KEPT_FACTOR = 1
 
     WIN_SIZE = 20
@@ -28,18 +28,16 @@ if __name__ == '__main__':
 
         # Program execution settings
 
-        network_type="MLP",
-        MAKE_HISTOGRAM=False,
         EPOCHS=30,
         SEARCH_RADIUS=SEARCH_RADIUS,
         WIN_SIZE=WIN_SIZE,
         INITIAL_TIMESHIFT=0,
-        TIME_SHIFT_ITER=200,
-        TIME_SHIFT_STEPS=25,
+        TIME_SHIFT_ITER=-200,
+        TIME_SHIFT_STEPS=20,
         METRIC_ITER=1,  # after how many epochs network is validated <---
         SHUFFLE_DATA=True,  # whether to randomly shuffle the data in big slices
         SHUFFLE_FACTOR=500,
-        EARLY_STOPPING=True,
+        EARLY_STOPPING=False,
         NAIVE_TEST=True,
         K_CROSS_VALIDATION=1,
         TRAIN_MODEL=True,
@@ -68,6 +66,6 @@ if __name__ == '__main__':
         avg_scores_valid=[],
         RAW_DATA_PATH=RAW_DATA_PATH,
     )
-    run_network(nd)
-
+    X,y,session = initiate_network(nd)
+    run_network(X, y, nd,session)
     # Create save file directories

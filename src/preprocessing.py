@@ -1,4 +1,4 @@
-from random import seed,shuffle
+from random import seed, shuffle
 import numpy as np
 
 
@@ -7,7 +7,7 @@ def position_as_map(pos_list, xstep, ystep, X_MAX, X_MIN, Y_MAX, Y_MIN):
     if np.isscalar(pos_list[0]):
         x_list = np.array(pos_list[0])
         y_list = np.array(pos_list[1])
-    else: # if more than one entry in pos_list (standard)
+    else:  # if more than one entry in pos_list (standard)
         x_list = pos_list[0, :]
         y_list = pos_list[1, :]
     asd_1 = x_list
@@ -24,46 +24,45 @@ def position_as_map(pos_list, xstep, ystep, X_MAX, X_MIN, Y_MAX, Y_MIN):
     return ret
 
 
-def filter_overrepresentation(x,y,max_occurrences,net_dict,axis=0):
+def filter_overrepresentation(x, y, max_occurrences, net_dict, axis=0):
     print("Filtering overrepresentation")
     x_return = []
     y_return = []
     y = np.array(y)
     # y = y[0, :, :, 0]
     if axis == 0:
-        pos_counter = np.zeros((net_dict["X_MAX"]-net_dict["X_MIN"]) // net_dict["X_STEP"])
+        pos_counter = np.zeros((net_dict["X_MAX"] - net_dict["X_MIN"]) // net_dict["X_STEP"])
     else:
-        pos_counter = np.zeros((net_dict["Y_MAX"]-net_dict["Y_MIN"]) // net_dict["Y_STEP"])
+        pos_counter = np.zeros((net_dict["Y_MAX"] - net_dict["Y_MIN"]) // net_dict["Y_STEP"])
 
-    for i,e in enumerate(y):
-        y_pos = np.unravel_index(e.argmax(), e.shape)[axis] # TODO should not work 100%
-        if pos_counter[y_pos]<max_occurrences:
+    for i, e in enumerate(y):
+        y_pos = np.unravel_index(e.argmax(), e.shape)[axis]  # TODO should not work 100%
+        if pos_counter[y_pos] < max_occurrences:
             x_return.append(x[i])
-            pos_counter[y_pos]+=1
+            pos_counter[y_pos] += 1
             y_return.append(e)
             # y_return.append(position_as_map([e[0],e[1]], net_dict["X_STEP"],net_dict["Y_STEP"],net_dict["X_MAX"], net_dict["X_MIN"], net_dict["Y_MAX"], net_dict["Y_MIN"]))
     count = np.count_nonzero(pos_counter == max_occurrences)
     avg = np.average(pos_counter)
     n_samples = np.sum(pos_counter)
-    return x_return,y_return
+    return x_return, y_return
 
 
-def count_occurrences(y,net_dict,axis=0):
+def count_occurrences(y, net_dict, axis=0):
     if axis == 0:
-        pos_counter = np.zeros((net_dict["X_MAX"]-net_dict["X_MIN"]) // net_dict["X_STEP"])
+        pos_counter = np.zeros((net_dict["X_MAX"] - net_dict["X_MIN"]) // net_dict["X_STEP"])
     else:
-        pos_counter = np.zeros((net_dict["Y_MAX"]-net_dict["Y_MIN"]) // net_dict["Y_STEP"])
-    for i,e in enumerate(y):
-        y_pos = np.unravel_index(e.argmax(), e.shape)[axis] # TODO should not work 100%
+        pos_counter = np.zeros((net_dict["Y_MAX"] - net_dict["Y_MIN"]) // net_dict["Y_STEP"])
+    for i, e in enumerate(y):
+        y_pos = np.unravel_index(e.argmax(), e.shape)[axis]  # TODO should not work 100%
         pos_counter[y_pos] += 1
     return pos_counter
 
 
-def shuffle_io(X,y,nd,seed_no):
-
+def shuffle_io(X, y, nd, seed_no):
     # Shuffle data
     if nd.SHUFFLE_DATA is False:
-        return X,y
+        return X, y
     SHUFFLE_FACTOR = nd.SHUFFLE_FACTOR
     seed(seed_no)
 
@@ -78,7 +77,7 @@ def shuffle_io(X,y,nd,seed_no):
 
     r = np.arange(len(X))
     r = r.reshape(-1, SHUFFLE_FACTOR)
-    s = np.arange(len(r)) # shuffling r directly doesnt work
+    s = np.arange(len(r))  # shuffling r directly doesnt work
     shuffle(s)
     r = r[s]
     r = r.reshape(-1)
@@ -88,7 +87,7 @@ def shuffle_io(X,y,nd,seed_no):
     X = [X[j] for j in r]
     y = [y[j] for j in r]
     # print("Finished shuffling data")
-    return X,y
+    return X, y
 
 
 def time_shift_positions(session, shift, nd):
@@ -104,7 +103,7 @@ def time_shift_positions(session, shift, nd):
     Y_SLICE_SIZE = nd.Y_SLICE_SIZE
     # Shift positions
 
-    shift_in_filtered_spikes = int(shift/WIN_SIZE)
+    shift_in_filtered_spikes = int(shift / WIN_SIZE)
     position_x = session.position_x
     position_y = session.position_y
     filtered_spikes = session.filtered_spikes
@@ -146,32 +145,45 @@ def time_shift_positions(session, shift, nd):
         x_list = (((norm_x[SURROUNDING_INDEX:right_index_border]) - X_MIN) // X_STEP).astype(int)
         y_list = (((norm_y[SURROUNDING_INDEX:right_index_border]) - Y_MIN) // Y_STEP).astype(int)
 
-        posxy_list =  [x_list,y_list] # remove surrounding positional data and form average
+        posxy_list = [x_list, y_list]  # remove surrounding positional data and form average
         y.append(position_as_map(posxy_list, X_STEP, Y_STEP, X_MAX, X_MIN, Y_MAX, Y_MIN))
-        pos_x = pos_x[BINS_IN_STRIDE*WIN_SIZE:]
-        pos_y = pos_y[BINS_IN_STRIDE*WIN_SIZE:]
+        pos_x = pos_x[BINS_IN_STRIDE * WIN_SIZE:]
+        pos_y = pos_y[BINS_IN_STRIDE * WIN_SIZE:]
         # print(len(pos_x))
 
     return X, y
 
 
-def lickwells_io(session,shift, net_dict, filter="None"):
-    SLICE_SIZE = net_dict["SLICE_SIZE"]
-    WIN_SIZE = net_dict["WIN_SIZE"]
-    STRIDE = net_dict["STRIDE"]
-    Y_SLICE_SIZE = net_dict["Y_SLICE_SIZE"]
-    # Shift positions
-
-    X = session.filtered_spikes
-
+def lickwells_io(session, X, nd, allowed_distance, filter=None):
+    slice_size = nd.SLICE_SIZE
     y = []
-    BINS_IN_SAMPLE = SLICE_SIZE // WIN_SIZE
-    BINS_IN_STRIDE = STRIDE // WIN_SIZE
-    SURROUNDING_INDEX = int(0.5 * (SLICE_SIZE - Y_SLICE_SIZE))
-    licklist = [session.licks["time"]]
-    bins = np.arange(session.start,)
-    digitized = np.digitize(session.licks, bins)
+    licks = session.licks
+    if filter is not None:  # conditional filter, currently only well 1 implemented
+        # if filter == 1:
+        filter_well_x = 30
+        filter_well_y = 145
 
-
-    return filtered_spikes, y
-
+    session_length = len(X) * slice_size
+    for i in range(0, session_length, slice_size):
+        if len(licks) == 0:  # last samples have no corresponding well
+            X.pop(-1)  # order does not matter
+        else:
+            if filter is not None:  # conditional filter, currently only well 1 implemented
+                pos_x = session.position_x[i]
+                pos_y = session.position_y[i]
+                distance = np.sqrt(np.square(filter_well_x - pos_x) + np.square(filter_well_y - pos_y))
+                if distance > allowed_distance:
+                    X.pop(i // slice_size)
+                else:
+                    if licks[0]["lickwell"] == filter:
+                        y.append(licks[1]["lickwell"])
+                    else:
+                        y.append(licks[0]["lickwell"])
+            else:
+                y.append(licks[0]["lickwell"])
+            if licks[0]["time"] <= i:
+                licks.pop(0)
+    print("Lickwell count:")
+    unique, counts = np.unique(y, return_counts=True)
+    print(unique, counts)
+    return X, y

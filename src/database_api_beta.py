@@ -99,11 +99,50 @@ def _convolve_thread_func(filter_func, n_bin_points, neuron_counter, n_neurons, 
 
 
 class Net_data:
-    def __init__(self, MAKE_HISTOGRAM, STRIDE, Y_SLICE_SIZE, network_type, EPOCHS, session_filter, TIME_SHIFT_STEPS,
-                 SHUFFLE_DATA, SHUFFLE_FACTOR, TIME_SHIFT_ITER, MODEL_PATH, r2_scores_train, r2_scores_valid,
-                 acc_scores_train, acc_scores_valid, avg_scores_train, avg_scores_valid, INITIAL_TIMESHIFT, METRIC_ITER,
-                 BATCH_SIZE, SLICE_SIZE, RAW_DATA_PATH, X_MAX, Y_MAX, X_MIN, Y_MIN, X_STEP, Y_STEP, WIN_SIZE,
-                 EARLY_STOPPING, SEARCH_RADIUS, NAIVE_TEST, VALID_RATIO, K_CROSS_VALIDATION, LOAD_MODEL,TRAIN_MODEL):
+
+    WIN_SIZE = 20
+    SEARCH_RADIUS = WIN_SIZE * 2
+
+    def __init__(self,
+                 MODEL_PATH,
+                 RAW_DATA_PATH,
+                 MAKE_HISTOGRAM=False,
+                 STRIDE = 100,
+                 Y_SLICE_SIZE = 200,
+                 network_type="MLP",
+                 EPOCHS=20,
+                 session_filter=Filter(func=hann, search_radius=SEARCH_RADIUS, step_size=WIN_SIZE),
+                 TIME_SHIFT_STEPS = 1,
+                 SHUFFLE_DATA = True,
+                 SHUFFLE_FACTOR = 500,
+                 TIME_SHIFT_ITER = 200,
+                 r2_scores_train = [],
+                 r2_scores_valid = [],
+                 acc_scores_train = [],
+                 acc_scores_valid = [],
+                 avg_scores_train = [],
+                 avg_scores_valid = [],
+                 INITIAL_TIMESHIFT = 0,
+                 METRIC_ITER = 1,
+                 BATCH_SIZE = 50,
+                 SLICE_SIZE=1000,
+                 X_MAX = 240,
+                 Y_MAX = 190,
+                 X_MIN = 0,
+                 Y_MIN = 100,
+                 X_STEP = 3,
+                 Y_STEP = 3,
+                 WIN_SIZE=WIN_SIZE,
+                 EARLY_STOPPING = False,
+                 SEARCH_RADIUS=SEARCH_RADIUS,
+                 NAIVE_TEST = False,
+                 VALID_RATIO = 0.1,
+                 K_CROSS_VALIDATION = 1,
+                 LOAD_MODEL = False,
+                 TRAIN_MODEL = True,
+                 keep_neuron = -1,
+                 NEURONS_KEPT_FACTOR = 1.0,
+                 metric="map"):
         self.MAKE_HISTOGRAM = MAKE_HISTOGRAM
         self.STRIDE = STRIDE
         self.TRAIN_MODEL = TRAIN_MODEL
@@ -148,7 +187,36 @@ class Net_data:
         self.X_eval = None
         self.y_eval = None
         self.LOAD_MODEL = LOAD_MODEL
+        self.keep_neuron = keep_neuron
+        self.metric = metric
+        self.NEURONS_KEPT_FACTOR = NEURONS_KEPT_FACTOR
 
+    def split_data(self, X, y,k):
+        if self.K_CROSS_VALIDATION == 1:
+            valid_length = int(len(X) * self.VALID_RATIO)
+            self.X_train = X[valid_length:]
+            self.y_train = y[valid_length:]
+            self.X_valid = X[:valid_length // 2]
+            self.y_valid = y[:valid_length // 2]
+            self.X_test = X[valid_length // 2:valid_length]
+            self.y_test = y[valid_length // 2:valid_length]
+        else:
+            k_len = int(len(X) // self.K_CROSS_VALIDATION)
+            k_slice_test = slice(k_len * k, int(k_len * (k + 0.5)))
+            k_slice_valid = slice(int(k_len * (k + 0.5)), k_len * (k + 1))
+            not_k_slice_1 = slice(0, k_len * k)
+            not_k_slice_2 = slice(k_len * (k + 1), len(X))
+            self.X_train = X[not_k_slice_1] + X[not_k_slice_2]
+            self.y_train = y[not_k_slice_1] + y[not_k_slice_2]
+            self.X_test = X[k_slice_test]
+            self.y_test = y[k_slice_test]
+            self.X_valid = X[k_slice_valid]
+            self.y_valid = y[k_slice_valid]
+        if self.keep_neuron != -1:
+            for i in range(len(self.X_valid)):
+                for j in range(len(self.X_valid[0])):
+                    if j != self.keep_neuron:
+                        self.X_valid[i][j] = np.zeros(self.X_valid[i][j].shape)
 
 class Slice:
     def __init__(self, spikes, licks, position_x, position_y, speed, trial_timestamp):
@@ -394,14 +462,14 @@ class Slice:
         rewarded = [item[0] for item in foster_data]
         lickwells = [item[2] for item in foster_data]
         # trial timestamp
-        trial_timestamp = [{"time": initial_detection_timestamp[ind],
-                            "trial_lickwell": well,
+        trial_timestamp = [{"time": float(initial_detection_timestamp[ind]),
+                            "trial_lickwell": int(well),
                             "trial_id": ind}
                            for ind, well in enumerate(lickwells) if rewarded[ind] == 1]
         # licks
-        licks = [{"time": initial_detection_timestamp[i],
-                  "lickwell": lickwells[i],
-                  "rewarded": rewarded[i]}
+        licks = [{"time": float(initial_detection_timestamp[i]),
+                  "lickwell": int(lickwells[i]),
+                  "rewarded": int(rewarded[i])}
                  for i in
                  range(1, len(initial_detection_timestamp))]  # Please note that first lick is deleted by default TODO
         print("finished loading session")

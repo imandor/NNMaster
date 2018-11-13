@@ -6,12 +6,12 @@ from src.database_api_beta import Slice, Filter, hann
 from src.metrics import print_Net_data
 import numpy as np
 from src.settings import save_as_pickle, load_pickle, save_net_dict
-from src.preprocessing import time_shift_positions, shuffle_io, position_as_map
+from src.preprocessing import time_shift_positions, shuffle_io, position_as_map,lickwells_io
 import multiprocessing
 import os
 import errno
 import datetime
-
+from scipy import stats
 
 def hann_generator(width):
     def hann(x):
@@ -40,8 +40,6 @@ def time_shift_data(X, y, n):
 def run_network_process(nd):
     # S = ConvolutionalNeuralNetwork1([None, 56, 10, 1], cnn1)
     S = MultiLayerPerceptron([None, nd.N_NEURONS, 50, 1], mlp)  # 56 147
-
-    # saver = tf.train.Saver()
     sess = tf.Session()
     r2_scores_train = []
     avg_scores_train = []
@@ -69,16 +67,16 @@ def run_network_process(nd):
     metric_step_counter = []
     stop_early = False
     for i in range(0, nd.EPOCHS + 1):
-        # Train model
         X_train, y_train = shuffle_io(X_train, y_train, nd, i + 1)
         if metric_counter == nd.METRIC_ITER and stop_early is False:
             metric_step_counter.append(i)
             if nd.NAIVE_TEST is True:
                 saver.save(sess, nd.MODEL_PATH)
+
             print("\n_-_-_-_-_-_-_-_-_-_-Epoch", i, "_-_-_-_-_-_-_-_-_-_-\n")
 
             print("Validation results:")
-            r2_valid, avg_valid, acc_valid = test_accuracy(sess, S, nd, nd.X_valid, nd.y_valid,
+            r2_valid, avg_valid, acc_valid = test_accuracy(sess=sess, S=S, nd=nd, X=nd.X_valid, y=nd.y_valid, epoch=i,
                                                            print_distance=True)
             r2_scores_valid.append(r2_valid)
             avg_scores_valid.append(avg_valid)
@@ -90,8 +88,8 @@ def run_network_process(nd):
             if nd.EARLY_STOPPING is True and i >= 5:  # most likely overfitting instead of training
                 if i % 1 == 0:
 
-                    _, _, acc_test = test_accuracy(sess, S, nd, nd.X_test, nd.y_test,
-                                                   print_distance=False)
+                    _, _, acc_test = test_accuracy(sess=sess, S=S, nd=nd, X=nd.X_test, y=nd.y_test, epoch=i,
+                                                           print_distance=False)
                     acc = acc_test[19]
                     if early_stop_max < acc:
                         early_stop_max = acc
@@ -139,7 +137,7 @@ def run_network_process(nd):
     return nd
 
 
-def run_network(nd):
+def initiate_network(nd):
     try:
         os.makedirs(os.path.dirname(nd.MODEL_PATH))
         os.makedirs(os.path.dirname(nd.MODEL_PATH + "output/"))
@@ -148,24 +146,29 @@ def run_network(nd):
         if exc.errno != errno.EEXIST:
             raise
     # TODO
-    # session = Slice.from_raw_data(RAW_DATA_PATH)
+    # session = Slice.from_raw_data(nd.RAW_DATA_PATH)
     # session.filter_neurons(100)
     # session.print_details()
     # print("Convolving data...")
-    # session.set_filter(net_dict["session_filter"])
+    # session.set_filter(nd.session_filter)
     # print("Finished convolving data")
     # session.filtered_spikes = stats.zscore(session.filtered_spikes, axis=1)  # Z Score neural activity
     # session.to_pickle("slice_OFC.pkl")
     # TODO
     session = Slice.from_pickle("slice_OFC.pkl")
-    # session.filter_neurons_randomly(ASD)
+    session.filter_neurons_randomly(nd.NEURONS_KEPT_FACTOR)
     session.print_details()
     nd.N_NEURONS = session.n_neurons
 
     # Start network with different time-shifts
 
     print_Net_data(nd)  # show network parameters in console
+    X, y = time_shift_positions(session, 0, nd)
+    return X, y, session
 
+
+def run_network(X, y, nd, session):
+    # Assign validation set.
     for z in range(nd.INITIAL_TIMESHIFT, nd.INITIAL_TIMESHIFT + nd.TIME_SHIFT_STEPS * nd.TIME_SHIFT_ITER,
                    nd.TIME_SHIFT_ITER):
         iter = int(z - nd.INITIAL_TIMESHIFT) // nd.TIME_SHIFT_ITER
@@ -177,7 +180,6 @@ def run_network(nd):
             raise ValueError("Error: Length of x and y are not identical")
         X, y = shuffle_io(X, y, nd, 3)
 
-        # Assign validation set.
         r2_score_k_valid = []
         avg_score_k_valid = []
         acc_score_k_valid = []
@@ -187,27 +189,7 @@ def run_network(nd):
 
         for k in range(0, nd.K_CROSS_VALIDATION):
             print("cross validation step", str(k + 1), "of", nd.K_CROSS_VALIDATION)
-            if nd.K_CROSS_VALIDATION == 1:
-                valid_length = int(len(X) * nd.VALID_RATIO)
-                nd.X_train = X[valid_length:]
-                nd.y_train = y[valid_length:]
-                nd.X_valid = X[:valid_length // 2]
-                nd.y_valid = y[:valid_length // 2]
-                nd.X_test = X[valid_length // 2:valid_length]
-                nd.y_test = y[valid_length // 2:valid_length]
-            else:
-                k_len = int(len(X) // nd.K_CROSS_VALIDATION)
-                k_slice_test = slice(k_len * k, int(k_len * (k + 0.5)))
-                k_slice_valid = slice(int(k_len * (k + 0.5)), k_len * (k + 1))
-                not_k_slice_1 = slice(0, k_len * k)
-                not_k_slice_2 = slice(k_len * (k + 1), len(X))
-                nd.X_train = X[not_k_slice_1] + X[not_k_slice_2]
-                nd.y_train = y[not_k_slice_1] + y[not_k_slice_2]
-                nd.X_test = X[k_slice_test]
-                nd.y_test = y[k_slice_test]
-                nd.X_valid = X[k_slice_valid]
-                nd.y_valid = y[k_slice_valid]
-
+            nd.split_data(X, y, k)
             if nd.TIME_SHIFT_STEPS == 1:
                 save_nd = run_network_process(nd)
             else:
@@ -224,44 +206,8 @@ def run_network(nd):
             r2_score_k_train.append(save_nd.r2_scores_train)
             acc_score_k_train.append(save_nd.acc_scores_train)
             avg_score_k_train.append(save_nd.avg_scores_train)
-        save_dict = dict()
-        save_dict["MAKE_HISTOGRAM"] = save_nd.MAKE_HISTOGRAM
-        save_dict["STRIDE"] = save_nd.STRIDE
-        save_dict["Y_SLICE_SIZE"] = save_nd.Y_SLICE_SIZE
-        save_dict["network_type"] = save_nd.network_type
-        save_dict["EPOCHS"] = save_nd.EPOCHS
-        save_dict["session_filter"] = save_nd.session_filter
-        save_dict["TIME_SHIFT_STEPS"] = save_nd.TIME_SHIFT_STEPS
-        save_dict["SHUFFLE_DATA"] = save_nd.SHUFFLE_DATA
-        save_dict["SHUFFLE_FACTOR"] = save_nd.SHUFFLE_FACTOR
-        save_dict["TIME_SHIFT_ITER"] = save_nd.TIME_SHIFT_ITER
-        save_dict["MODEL_PATH"] = save_nd.MODEL_PATH
-        save_dict["learning_rate"] = "placeholder"  # TODO
-        save_dict["r2_scores_train"] = save_nd.r2_scores_train
-        save_dict["r2_scores_valid"] = save_nd.r2_scores_valid
-        save_dict["acc_scores_train"] = save_nd.acc_scores_train
-        save_dict["acc_scores_valid"] = save_nd.acc_scores_valid
-        save_dict["avg_scores_train"] = save_nd.avg_scores_train
-        save_dict["avg_scores_valid"] = save_nd.avg_scores_valid
-        save_dict["LOAD_MODEL"] = save_nd.LOAD_MODEL
-        save_dict["INITIAL_TIMESHIFT"] = save_nd.INITIAL_TIMESHIFT
-        save_dict["TRAIN_MODEL"] = save_nd.TRAIN_MODEL
-        save_dict["METRIC_ITER"] = save_nd.METRIC_ITER
-        save_dict["BATCH_SIZE"] = save_nd.BATCH_SIZE
-        save_dict["SLICE_SIZE"] = save_nd.SLICE_SIZE
-        save_dict["RAW_DATA_PATH"] = save_nd.RAW_DATA_PATH
-        save_dict["X_MAX"] = save_nd.X_MAX
-        save_dict["Y_MAX"] = save_nd.Y_MAX
-        save_dict["X_MIN"] = save_nd.X_MIN
-        save_dict["Y_MIN"] = save_nd.Y_MIN
-        save_dict["X_STEP"] = save_nd.X_STEP
-        save_dict["Y_STEP"] = save_nd.Y_STEP
-        save_dict["WIN_SIZE"] = save_nd.WIN_SIZE
-        save_dict["SEARCH_RADIUS"] = save_nd.SEARCH_RADIUS
-        save_dict["EARLY_STOPPING"] = save_nd.EARLY_STOPPING
-        save_dict["NAIVE_TEST"] = save_nd.NAIVE_TEST
-        save_dict["TIME_SHIFT"] =  z
 
+        save_dict = create_save_dict(save_nd,z)
         if k == 1:
             save_dict["r2_scores_valid"] = np.average(np.array(r2_score_k_valid), axis=1)
             save_dict["acc_scores_valid"] = np.average(np.array(acc_score_k_valid), axis=1)
@@ -271,3 +217,94 @@ def run_network(nd):
             z) + ".pkl"
         save_as_pickle(path, save_dict)
     print("fin")
+
+
+def run_lickwell_network(X, y, nd, session):
+    # Assign validation set.
+    for z in range(nd.INITIAL_TIMESHIFT, nd.INITIAL_TIMESHIFT + nd.TIME_SHIFT_STEPS * nd.TIME_SHIFT_ITER,
+                   nd.TIME_SHIFT_ITER):
+        iter = int(z - nd.INITIAL_TIMESHIFT) // nd.TIME_SHIFT_ITER
+        nd.TIME_SHIFT = z  # set current time shift
+        print("Time shift is now", z)
+        # Time-Shift input and output
+        X, y = lickwells_io(session, z, nd)
+        if len(X) != len(y):
+            raise ValueError("Error: Length of x and y are not identical")
+        X, y = shuffle_io(X, y, nd, 3)
+
+        r2_score_k_valid = []
+        avg_score_k_valid = []
+        acc_score_k_valid = []
+        r2_score_k_train = []
+        avg_score_k_train = []
+        acc_score_k_train = []
+
+        for k in range(0, nd.K_CROSS_VALIDATION):
+            print("cross validation step", str(k + 1), "of", nd.K_CROSS_VALIDATION)
+            nd.split_data(X, y, k)
+            if nd.TIME_SHIFT_STEPS == 1:
+                save_nd = run_network_process(nd)
+            else:
+                with multiprocessing.Pool(
+                        1) as p:  # keeping network inside process prevents memory issues when restarting session
+                    save_nd = p.map(run_lickwell_network_process, [nd])[0]
+                    p.close()
+                if nd.NAIVE_TEST is True:
+                    nd.LOAD_MODEL = True
+                    nd.EPOCHS = 1
+            r2_score_k_valid.append(save_nd.r2_scores_valid)
+            acc_score_k_valid.append(save_nd.acc_scores_valid)
+            avg_score_k_valid.append(save_nd.avg_scores_valid)
+            r2_score_k_train.append(save_nd.r2_scores_train)
+            acc_score_k_train.append(save_nd.acc_scores_train)
+            avg_score_k_train.append(save_nd.avg_scores_train)
+
+        save_dict = create_save_dict(save_nd, z)
+        if k == 1:
+            save_dict["r2_scores_valid"] = np.average(np.array(r2_score_k_valid), axis=1)
+            save_dict["acc_scores_valid"] = np.average(np.array(acc_score_k_valid), axis=1)
+            save_dict["avg_scores_valid"] = np.average(np.array(avg_score_k_valid), axis=1)
+        now = datetime.datetime.now().isoformat()
+        path = nd.MODEL_PATH + "output/" + chr(65 + iter) + "_" + now[0:10] + "_network_output_timeshift=" + str(
+            z) + ".pkl"
+        save_as_pickle(path, save_dict)
+    print("fin")
+def create_save_dict(save_nd,z):
+    save_dict = dict()
+    save_dict["MAKE_HISTOGRAM"] = save_nd.MAKE_HISTOGRAM
+    save_dict["STRIDE"] = save_nd.STRIDE
+    save_dict["Y_SLICE_SIZE"] = save_nd.Y_SLICE_SIZE
+    save_dict["network_type"] = save_nd.network_type
+    save_dict["EPOCHS"] = save_nd.EPOCHS
+    save_dict["session_filter"] = save_nd.session_filter
+    save_dict["TIME_SHIFT_STEPS"] = save_nd.TIME_SHIFT_STEPS
+    save_dict["SHUFFLE_DATA"] = save_nd.SHUFFLE_DATA
+    save_dict["SHUFFLE_FACTOR"] = save_nd.SHUFFLE_FACTOR
+    save_dict["TIME_SHIFT_ITER"] = save_nd.TIME_SHIFT_ITER
+    save_dict["MODEL_PATH"] = save_nd.MODEL_PATH
+    save_dict["learning_rate"] = "placeholder"  # TODO
+    save_dict["r2_scores_train"] = save_nd.r2_scores_train
+    save_dict["r2_scores_valid"] = save_nd.r2_scores_valid
+    save_dict["acc_scores_train"] = save_nd.acc_scores_train
+    save_dict["acc_scores_valid"] = save_nd.acc_scores_valid
+    save_dict["avg_scores_train"] = save_nd.avg_scores_train
+    save_dict["avg_scores_valid"] = save_nd.avg_scores_valid
+    save_dict["LOAD_MODEL"] = save_nd.LOAD_MODEL
+    save_dict["INITIAL_TIMESHIFT"] = save_nd.INITIAL_TIMESHIFT
+    save_dict["TRAIN_MODEL"] = save_nd.TRAIN_MODEL
+    save_dict["METRIC_ITER"] = save_nd.METRIC_ITER
+    save_dict["BATCH_SIZE"] = save_nd.BATCH_SIZE
+    save_dict["SLICE_SIZE"] = save_nd.SLICE_SIZE
+    save_dict["RAW_DATA_PATH"] = save_nd.RAW_DATA_PATH
+    save_dict["X_MAX"] = save_nd.X_MAX
+    save_dict["Y_MAX"] = save_nd.Y_MAX
+    save_dict["X_MIN"] = save_nd.X_MIN
+    save_dict["Y_MIN"] = save_nd.Y_MIN
+    save_dict["X_STEP"] = save_nd.X_STEP
+    save_dict["Y_STEP"] = save_nd.Y_STEP
+    save_dict["WIN_SIZE"] = save_nd.WIN_SIZE
+    save_dict["SEARCH_RADIUS"] = save_nd.SEARCH_RADIUS
+    save_dict["EARLY_STOPPING"] = save_nd.EARLY_STOPPING
+    save_dict["NAIVE_TEST"] = save_nd.NAIVE_TEST
+    save_dict["TIME_SHIFT"] = z
+    return save_dict

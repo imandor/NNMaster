@@ -116,7 +116,7 @@ def average_position(mapping):
 
 
 def plot_histogram(sess, S, nd, X, y):
-    y_predicted, y_target = predict(S, sess, X, y)
+    y_predicted, y_target = predict_map(S, sess, X, y)
     distances = get_distances(y_predicted, y_target, [nd.X_STEP, nd.Y_STEP])
     fig, ax = plt.subplots()
     x_axis_labels = np.linspace(0, 150, 15)
@@ -144,7 +144,7 @@ def plot_histogram(sess, S, nd, X, y):
     # plt.savefig(PATH + "images/avg_dist" + "_epoch=" + str(training_step_list[-i]) + ".pdf")
 
 
-def predict(S, sess, X, Y):
+def predict_map(S, sess, X, Y):
     """ returns list of x/y tuples for predicted and actual positions"""
     xshape = [1] + list(X[0].shape) + [1]
     yshape = [1] + list(Y[0].shape) + [1]
@@ -167,9 +167,26 @@ def predict(S, sess, X, Y):
         y_target[j][1] = bin_2[1]
     return y_predicted, y_target
 
+def predict_discrete(S, sess, X, Y):
+    xshape = [1] + list(X[0].shape) + [1]
+    yshape = [1] + list(Y[0].shape) + [1]
+    y_predicted = np.zeros([len(Y), 2])
+    y_target = np.zeros([len(Y), 2])
+    for j in range(0, len(X), 1):
 
-def test_accuracy(sess, S, nd,X,y, print_distance=False):
-    y_predicted, y_target = predict(S, sess, X, y)
+
+def test_accuracy(sess, S, nd, X, y, epoch,print_distance=False):
+    if nd.metric == "map":
+        return test_map_accuracy(sess, S, nd, X, y, epoch,print_distance=False)
+    elif nd.metric == "discrete":
+        return test_discrete_accuracy(sess, S, nd, X, y, epoch,print_distance=False)
+
+
+def test_discrete_accuracy(sess, S, nd, X, y, epoch,print_distance=False):
+    y_predicted, y_target = predict_map(S, sess, X, y)
+    return r2, distance, accuracy
+def test_map_accuracy(sess, S, nd, X, y, epoch,print_distance=False):
+    y_predicted, y_target = predict_map(S, sess, X, y)
     r2 = get_r2(y_predicted, y_target, [nd.X_STEP, nd.Y_STEP])
     distance = get_avg_distance(y_predicted, y_target, [nd.X_STEP, nd.Y_STEP])
     accuracy = []
@@ -183,6 +200,8 @@ def test_accuracy(sess, S, nd,X,y, print_distance=False):
         save_as_pickle("C:/Users/NN/AppData/Local/Temp/animation/predicted/step=" + str(nd.epochs_trained),
                        y_predicted[0])
         save_as_pickle("C:/Users/NN/AppData/Local/Temp/animation/target/step=" + str(nd.epochs_trained), y_target[0])
+    if False:
+        plot_results_as_map(sess,S,X,epoch,nd)
     return r2, distance, accuracy
 
 
@@ -247,6 +266,24 @@ def plot_all_planes(X,y, is_training_data, y_predicted, y_target, nd):
     plot_plane(y_prediction_f, nd, "C:/Users/NN/Desktop/Master/" + is_training_data + "_worse" + "_prediction")
     plot_plane(y_target_f, nd, "C:/Users/NN/Desktop/Master/" + is_training_data + "_worse" + "_target")
 
+
+def plot_results_as_map(sess,S,x,epoch,nd):
+    x = nd.X_valid[1000]
+    x = np.reshape(x,[1] + list(x.shape) + [1])
+    y = nd.y_valid[1000]
+    # y = S.valid(sess, x)[0, :, :, 0]
+    # y = sigmoid(y)
+    print("plot")
+    # fig = plt.figure()
+    fig, ax = plt.subplots()
+    ax.axis('off')
+    # fig.subplots_adjust(left=0.01, right=0.99, bottom=0.01, top=0.99, hspace=0.01, wspace=0.01)
+    y -= np.min(y)
+    y /= np.max(y)
+    y *= 255
+    ax.imshow(y, cmap="gray")
+    plt.savefig("C:/Users/NN/Desktop/presentation_group/plane_original"+str(epoch))
+    plt.close()
 
 def plot_axis_representation_2d(y_values, path):
     # plots representation over one axis

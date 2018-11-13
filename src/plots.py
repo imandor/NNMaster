@@ -43,16 +43,18 @@ def load_trained_network(path):
 
     return r2_scores_valid_list, r2_scores_train_list, acc_scores_valid_list, acc_scores_train_list, avg_scores_valid_list, avg_scores_train_list, net_dict_i, time_shift_list
 
+# PATH_2 = "G:/master_datafiles/trained_networks/MLP_HC_2018-11-11_1000_200_100_dmf/"
+# PATH = "G:/master_datafiles/trained_networks/MLP_PFC_2018-11-06_1000_200_100_dmf/"
 
-PATH = "G:/master_datafiles/trained_networks/MLP_HC_2018-11-08_1000_200_100_naive/"
+PATH = "G:/master_datafiles/trained_networks/MLP_PFC_2018-11-06_1000_200_100_dmf_abridged/"
 PATH_2 = "G:/master_datafiles/trained_networks/MLP_HC_2018-11-08_1000_200_100_naive/"
-SINGLE_ACCURACY = False
-SINGLE_AVERAGE = False
-SINGLE_R2 = False
-COMPARE_ACCURACY = False
-COMPARE_DISTANCE = False
-COMPARE_R2 = False
-PAIRED_T_TEST = False
+SINGLE_ACCURACY = True
+SINGLE_AVERAGE = True
+SINGLE_R2 = True
+COMPARE_ACCURACY = True
+COMPARE_DISTANCE = True
+COMPARE_R2 = True
+PAIRED_T_TEST = True
 FILTER_NEURON_TEST = True
 
 r2_scores_valid_list, r2_scores_train_list, acc_scores_valid_list, acc_scores_train_list, avg_scores_valid_list, avg_scores_train_list, net_dict, time_shift_list = load_trained_network(
@@ -114,9 +116,8 @@ if SINGLE_AVERAGE is True:
     ax1.set_ylabel("absolute position error [cm]")
     # ax1.set_xticks(time_shift_list)
     fig.tight_layout()
-    plt.ion()
     plt.show()
-    plt.savefig(PATH + "images/acc_score" + "_epoch=" + str(training_step_list[-i]) + ".pdf")
+    # plt.savefig(PATH + "images/acc_score" + "_epoch=" + str(training_step_list[-i]) + ".pdf")
     plt.close()
 if SINGLE_ACCURACY is True:
     fig, ax = plt.subplots()
@@ -128,7 +129,8 @@ if SINGLE_ACCURACY is True:
     ax.set_xlabel("Time shift [ms]")
     ax.set_ylabel(r'$\varnothing$ absolute position error [cm]')
     fig.tight_layout()
-    plt.savefig(PATH + "images/avg_dist" + "_epoch=" + str(training_step_list[-i]) + ".pdf")
+    plt.show()
+    # plt.savefig(PATH + "images/avg_dist" + "_epoch=" + str(training_step_list[-i]) + ".pdf")
     plt.close()
 if SINGLE_R2 is True:
     # fig, (ax0, ax1) = plt.subplots(nrows=2,sharey=True)
@@ -145,7 +147,8 @@ if SINGLE_R2 is True:
     ax1.set_ylabel("R2 score")
     ax1.set_ylim([-1, 0.6])
     fig.tight_layout()
-    plt.savefig(PATH + "images/r2_score" + "_epoch=" + str(training_step_list[-i]) + ".pdf")
+    plt.show()
+    # plt.savefig(PATH + "images/r2_score" + "_epoch=" + str(training_step_list[-i]) + ".pdf")
     plt.close()
 # ---------------------------------------------------------------
 
@@ -187,7 +190,8 @@ if COMPARE_ACCURACY is True:
     # ax1.set_xticks(time_shift_list)
     fig.tight_layout()
     plt.ion()
-    plt.savefig(PATH + "images/acc_score_middle" + "_epoch=" + str(training_step_list[-i]) + ".pdf")
+    # plt.savefig(PATH + "images/acc_score_middle" + "_epoch=" + str(training_step_list[-i]) + ".pdf")
+    plt.show()
     plt.close()
 # Compare distances plot
 
@@ -213,7 +217,7 @@ if COMPARE_DISTANCE is True:
     ax.fill_between(x, 0, f(x), where=(np.array(f(x))) < 0, color='green')
     ax.fill_between(x, 0, f(x), where=(np.array(f(x))) > 0, color='red')
     fig.tight_layout()
-    plt.savefig(PATH + "images/avg_dist_middle" + "_epoch=" + str(training_step_list[-i]) + ".pdf")
+    # plt.savefig(PATH + "images/avg_dist_middle" + "_epoch=" + str(training_step_list[-i]) + ".pdf")
     plt.close()
 if COMPARE_R2 is True:
     # fig, (ax0, ax1) = plt.subplots(nrows=2,sharey=True)
@@ -308,26 +312,26 @@ if PAIRED_T_TEST is True:
 
 
 if FILTER_NEURON_TEST is True:
-    # PATH_100 = "G:/master_datafiles/trained_networks/MLP_HC_2018-11-08_1000_200_100_neuron_filter=100/"
-    # # # PATH_90 = "G:/master_datafiles/trained_networks/MLP_HC_2018-11-08_1000_200_100_neuron_filter=90/"
-    # PATH_80 = "G:/master_datafiles/trained_networks/MLP_HC_2018-11-08_1000_200_100_neuron_filter=80/"
-    # # # PATH_70 = "G:/master_datafiles/trained_networks/MLP_HC_2018-11-08_1000_200_100_neuron_filter=70/"
-    # PATH_60 = "G:/master_datafiles/trained_networks/MLP_HC_2018-11-08_1000_200_100_neuron_filter=60/"
-    # # # PATH_50 = "G:/master_datafiles/trained_networks/MLP_HC_2018-11-08_1000_200_100_neuron_filter=50/"
-    # PATH_40 = "G:/master_datafiles/trained_networks/MLP_HC_2018-11-08_1000_200_100_neuron_filter=40/"
-    # # # PATH_30 = "G:/master_datafiles/trained_networks/MLP_HC_2018-11-08_1000_200_100_neuron_filter=30/"
-    # PATH_20 = "G:/master_datafiles/trained_networks/MLP_HC_2018-11-08_1000_200_100_neuron_filter=20/"
+    PATH_100 = "G:/master_datafiles/trained_networks/MLP_HC_2018-11-08_1000_200_100_neuron_filter=100/"
+    # # PATH_90 = "G:/master_datafiles/trained_networks/MLP_HC_2018-11-08_1000_200_100_neuron_filter=90/"
+    PATH_80 = "G:/master_datafiles/trained_networks/MLP_HC_2018-11-08_1000_200_100_neuron_filter=80/"
+    # # PATH_70 = "G:/master_datafiles/trained_networks/MLP_HC_2018-11-08_1000_200_100_neuron_filter=70/"
+    PATH_60 = "G:/master_datafiles/trained_networks/MLP_HC_2018-11-08_1000_200_100_neuron_filter=60/"
+    # # PATH_50 = "G:/master_datafiles/trained_networks/MLP_HC_2018-11-08_1000_200_100_neuron_filter=50/"
+    PATH_40 = "G:/master_datafiles/trained_networks/MLP_HC_2018-11-08_1000_200_100_neuron_filter=40/"
+    # # PATH_30 = "G:/master_datafiles/trained_networks/MLP_HC_2018-11-08_1000_200_100_neuron_filter=30/"
+    PATH_20 = "G:/master_datafiles/trained_networks/MLP_HC_2018-11-08_1000_200_100_neuron_filter=20/"
     # PATH_10 = "G:/master_datafiles/trained_networks/MLP_HC_2018-11-08_1000_200_100_neuron_filter=10/"
-    PATH_100 = "G:/master_datafiles/trained_networks/MLP_PFC_2018-11-08_1000_200_100_neuron_filter=100/"
-    # PATH_90 = "G:/master_datafiles/trained_networks/MLP_PFC_2018-11-08_1000_200_100_neuron_filter=90/"
-    PATH_80 = "G:/master_datafiles/trained_networks/MLP_PFC_2018-11-08_1000_200_100_neuron_filter=80/"
-    # PATH_70 = "G:/master_datafiles/trained_networks/MLP_PFC_2018-11-08_1000_200_100_neuron_filter=70/"
-    PATH_60 = "G:/master_datafiles/trained_networks/MLP_PFC_2018-11-08_1000_200_100_neuron_filter=60/"
-    # PATH_50 = "G:/master_datafiles/trained_networks/MLP_PFC_2018-11-08_1000_200_100_neuron_filter=50/"
-    PATH_40 = "G:/master_datafiles/trained_networks/MLP_PFC_2018-11-08_1000_200_100_neuron_filter=40/"
-    # PATH_30 = "G:/master_datafiles/trained_networks/MLP_PFC_2018-11-08_1000_200_100_neuron_filter=30/"
-    PATH_20 = "G:/master_datafiles/trained_networks/MLP_PFC_2018-11-08_1000_200_100_neuron_filter=20/"
-    # PATH_10 = "G:/master_datafiles/trained_networks/MLP_PFC_2018-11-08_1000_200_100_neuron_filter=10/"
+    # PATH_100 = "G:/master_datafiles/trained_networks/MLP_PFC_2018-11-08_1000_200_100_neuron_filter=100/"
+    # # PATH_90 = "G:/master_datafiles/trained_networks/MLP_PFC_2018-11-08_1000_200_100_neuron_filter=90/"
+    # PATH_80 = "G:/master_datafiles/trained_networks/MLP_PFC_2018-11-08_1000_200_100_neuron_filter=80/"
+    # # PATH_70 = "G:/master_datafiles/trained_networks/MLP_PFC_2018-11-08_1000_200_100_neuron_filter=70/"
+    # PATH_60 = "G:/master_datafiles/trained_networks/MLP_PFC_2018-11-08_1000_200_100_neuron_filter=60/"
+    # # PATH_50 = "G:/master_datafiles/trained_networks/MLP_PFC_2018-11-08_1000_200_100_neuron_filter=50/"
+    # PATH_40 = "G:/master_datafiles/trained_networks/MLP_PFC_2018-11-08_1000_200_100_neuron_filter=40/"
+    # # PATH_30 = "G:/master_datafiles/trained_networks/MLP_PFC_2018-11-08_1000_200_100_neuron_filter=30/"
+    # PATH_20 = "G:/master_datafiles/trained_networks/MLP_PFC_2018-11-08_1000_200_100_neuron_filter=20/"
+    # # PATH_10 = "G:/master_datafiles/trained_networks/MLP_PFC_2018-11-08_1000_200_100_neuron_filter=10/"
     r2_scores_valid_list_100, r2_scores_train_list_100, acc_scores_valid_list_100, acc_scores_train_list_100, avg_scores_valid_list_100, avg_scores_train_list_100, net_dict_100, time_shift_list_100 = load_trained_network(
         PATH_100)
     # r2_scores_valid_list_90, r2_scores_train_list_90, acc_scores_valid_list_90, acc_scores_train_list_90, avg_scores_valid_list_90, avg_scores_train_list_90, net_dict_90, time_shift_list_90 = load_trained_network(
