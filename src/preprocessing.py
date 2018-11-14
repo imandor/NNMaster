@@ -1,6 +1,6 @@
-from random import seed, shuffle
+from random import seed, shuffle,randint
 import numpy as np
-
+from scipy import stats
 
 def position_as_map(pos_list, xstep, ystep, X_MAX, X_MIN, Y_MAX, Y_MIN):
     pos_list = np.asarray(pos_list)
@@ -24,11 +24,48 @@ def position_as_map(pos_list, xstep, ystep, X_MAX, X_MIN, Y_MAX, Y_MIN):
     return ret
 
 
-def filter_overrepresentation_discrete(x, y, max_occurrences):
+def group_list(l, group_size):
+
+    for i in xrange(0, len(l), group_size):
+        yield l[i:i+group_size]
+
+def normalize_discrete(x,y,nd,occurrences):
+    """ artificially increases the amount of underrepresented samples"""
+    lick_batch_size = 10000//nd.STRIDE - 11
+    x_return = []
+    y_return = []
+    x_new = []
+    y_new = [y[i] for i in range(0,len(y),lick_batch_size)]
+    for i in range(0,len(x),lick_batch_size):
+        x_new.append(x[i:i+lick_batch_size])
+    unique, counts = np.unique(y_new, return_counts=True)
+    unique = unique.tolist()
+    while len(y_new)>0:
+        i = randint(0,len(y_new)-1)
+        # print("---")
+        # print(i,len(y_new))
+        # print(y_new[i])
+
+        if counts[unique.index(y_new[i])]< occurrences:
+            y_return.append(y_new[i])
+            x_return.append(x_new[i])
+            counts[unique.index(y_new[i])] += 1
+        else:
+            y_new.pop(i)
+            x_new.pop(i)
+    x_return = [s for s in x_return]
+    y_return = [[y]*lick_batch_size for y in y_return]
+    y_return = [s for s in y_return]
+    return x_return, y_return
+
+
+
+def filter_overrepresentation_discrete(x, y, nd,max_occurrences):
     print("Filtering overrepresentation")
     x_return = []
     y_return = []
     y = np.array(y)
+    x,y = shuffle_io(x,y,nd,0)
     # y = y[0, :, :, 0]
     pos_counter = np.zeros(5)
     for i, e in enumerate(y):
@@ -169,60 +206,38 @@ def time_shift_positions(session, shift, nd):
     return X, y
 
 
-def lickwells_io(session, X, nd, allowed_distance, filter=None,normalize=False):
-    """
-    :param session:
-    :param X:
-    :param nd:
-    :param allowed_distance:
-    :param filter: starting well, is default None, set to 1 to exclude lick well 1
-    :param normalize:
-    :return:
-    """
-    slice_size = nd.SLICE_SIZE
+def lickwells_io(session, nd, lick_well=1,shift = 1,normalize=False):
+
+    # get all slices within n milliseconds around lick_well
     y_abs = []
-    licks = []
-    for i in range(len(session.licks)): # Remove all instances of well 1
-        if session.licks[i]["lickwell"] != filter:
-            licks.append(session.licks[i])
-    if filter is not None:  # conditional filter, currently only well 1 implemented
-        if filter == 1:
-            filter_well_x = 30
-            filter_well_y = 145
+    X = []
+    licks = session.licks
+    for i,lick in enumerate(licks):
+        if i > - shift and i < len(licks) - shift and lick["lickwell"] == lick_well and (normalize is False or licks[i+shift]["lickwell"]!=lick_well): # exclude trailing samples to stay inside shift range
+            lick_start = int(lick["time"] - 5000)
+            lick_end = int(lick["time"] + 5000)
+            slice = session[lick_start:lick_end]
 
-    session_length = len(X) * slice_size
-    for i in range(0, session_length, slice_size):
-        if len(licks) == 0:  # last samples have no corresponding well
-            X.pop(-1)  # order does not matter
-
-        else:
-            if filter is not None:  # conditional filter, only keep samples close to well 1
-                pos_x = session.position_x[i]
-                pos_y = session.position_y[i]
-                distance = np.sqrt(np.square(filter_well_x - pos_x) + np.square(filter_well_y - pos_y))
-                if distance > allowed_distance:
-                    X.pop(i // slice_size)
-                else:
-                    if licks[0]["lickwell"] == filter:
-                        print(i,licks[1])
-                        y_abs.append(licks[1]["lickwell"])
-                    else:
-                        y_abs.append(licks[0]["lickwell"])
-            else:
-                y_abs.append(licks[0]["lickwell"])
-            if licks[0]["time"] <= i:
-                licks.pop(0)
+            # slice vertically in to samples with length nd.STRIDE
+            slice_list = []
+            # for j in range(0, nd.SLICE_SIZE//nd.WIN_SIZE, nd.STRIDE//nd.WIN_SIZE): # TODO: not sufficiently tested
+            for j in range(0,10000//nd.WIN_SIZE-11):
+                # bins_to_x = [c[j:j+nd.STRIDE//nd.WIN_SIZE] for c in slice.filtered_spikes]
+                bins_to_x = [c[j:j+11] for c in slice.filtered_spikes]
+                bins_to_x = np.reshape(bins_to_x, [len(bins_to_x), len(bins_to_x[0])])
+                X.append(bins_to_x)
+                # X.append(spike_list)
+                y_abs.append(licks[i+shift]["lickwell"])
     print("Lickwell count:")
     unique, counts = np.unique(y_abs, return_counts=True)
     print(unique, counts)
     y = []
     if normalize is True:
-        X,y_abs = filter_overrepresentation_discrete(X, y_abs, min(counts))
+        X, y_abs = normalize_discrete(X, y_abs, nd,max(counts))
     for abs in y_abs:
         y_i = np.zeros(5)
-        y_i[abs-1] = 1
+        y_i[abs - 1] = 1
         y.append(y_i)
     unique, counts = np.unique(y_abs, return_counts=True)
     print(unique, counts)
-
     return X, y

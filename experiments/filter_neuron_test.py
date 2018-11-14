@@ -3,7 +3,7 @@ import os
 import errno
 import datetime
 
-from src.network_functions import run_network_process,initiate_network
+from src.network_functions import run_network_process,initiate_network,run_network
 
 # Begin
 if __name__ == '__main__':
@@ -74,4 +74,5 @@ if __name__ == '__main__':
         avg_scores_valid=[],
         RAW_DATA_PATH=RAW_DATA_PATH,
     )
-    initiate_network(nd)
+    session = initiate_network(nd)
+    run_network(nd, session)

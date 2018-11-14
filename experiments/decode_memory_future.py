@@ -24,6 +24,6 @@ if __name__ == '__main__':
         MODEL_PATH=MODEL_PATH,
         RAW_DATA_PATH=RAW_DATA_PATH,
     )
-    X, y, session = initiate_network(nd)
-    run_network(X, y, nd, session)
+    session = initiate_network(nd)
+    run_network(nd, session)
     # Create save file directories

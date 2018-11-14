@@ -39,7 +39,6 @@ def time_shift_data(X, y, n):
 
 
 def run_network_process(nd):
-
     # Initialize session, parameters and network
 
     sess = tf.Session()
@@ -59,8 +58,8 @@ def run_network_process(nd):
         S = MultiLayerPerceptron([None, nd.N_NEURONS, 50, 1], mlp)  # 56 147
         nd.y_shape = [nd.BATCH_SIZE] + list(y_train[0].shape) + [1]
     elif nd.metric == "discrete":
-        S = MultiLayerPerceptron([None, nd.N_NEURONS, 50, 1], mlp_discrete)
-        nd.y_shape = [nd.BATCH_SIZE] + [5]
+        S = MultiLayerPerceptron([None, nd.N_NEURONS, 11, 1], mlp_discrete)
+        nd.y_shape = [nd.BATCH_SIZE] + list(y_train[0].shape)
 
     if nd.LOAD_MODEL is True:
         saver = tf.train.import_meta_graph(nd.MODEL_PATH + ".meta")
@@ -173,11 +172,40 @@ def initiate_network(nd):
     # Start network with different time-shifts
 
     print_Net_data(nd)  # show network parameters in console
-    X, y = time_shift_positions(session, 0, nd)
-    return X, y, session
+    return session
 
 
-def run_network(X, y, nd, session):
+def initiate_lickwell_network(nd):
+    try:
+        os.makedirs(os.path.dirname(nd.MODEL_PATH))
+        os.makedirs(os.path.dirname(nd.MODEL_PATH + "output/"))
+        os.makedirs(os.path.dirname(nd.MODEL_PATH + "images/"))
+    except OSError as exc:  # Guard against race condition
+        if exc.errno != errno.EEXIST:
+            raise
+    # TODO
+    # session = Slice.from_raw_data(nd.RAW_DATA_PATH)
+    # session.filter_neurons(100)
+    # session.print_details()
+    # print("Convolving data...")
+    # session.set_filter(nd.session_filter)
+    # print("Finished convolving data")
+    # session.filtered_spikes = stats.zscore(session.filtered_spikes, axis=1)  # Z Score neural activity
+    # session.to_pickle("slice_PFC_200.pkl")
+    # TODO
+    # session = Slice.from_pickle("slice_HC_200.pkl")
+    session = Slice.from_pickle("slice_PFC_200.pkl")
+
+    session.filter_neurons_randomly(nd.NEURONS_KEPT_FACTOR)
+    session.print_details()
+    nd.N_NEURONS = session.n_neurons
+
+    # Start network with different time-shifts
+    print_Net_data(nd)  # show network parameters in console
+    return session
+
+
+def run_network(nd, session):
     # Assign validation set.
     for z in range(nd.INITIAL_TIMESHIFT, nd.INITIAL_TIMESHIFT + nd.TIME_SHIFT_STEPS * nd.TIME_SHIFT_ITER,
                    nd.TIME_SHIFT_ITER):
@@ -270,7 +298,7 @@ def create_save_dict(save_nd, z):
     return save_dict
 
 
-def run_lickwell_network(X, y, nd, session):
+def run_lickwell_network(nd, session):
     # Assign validation set.
     for z in range(nd.INITIAL_TIMESHIFT, nd.INITIAL_TIMESHIFT + nd.TIME_SHIFT_STEPS * nd.TIME_SHIFT_ITER,
                    nd.TIME_SHIFT_ITER):
@@ -278,7 +306,7 @@ def run_lickwell_network(X, y, nd, session):
         nd.TIME_SHIFT = z  # set current time shift
         print("Time shift is now", z)
         # Time-Shift input and output
-        # X, y = lickwells_io(session, X, nd, allowed_distance=30, filter=None)
+        X, y = lickwells_io(session, nd, lick_well=1, shift=1, normalize=True)
         if len(X) != len(y):
             raise ValueError("Error: Length of x and y are not identical")
         X, y = shuffle_io(X, y, nd, 3)
@@ -312,9 +340,9 @@ def run_lickwell_network(X, y, nd, session):
 
         save_dict = create_save_dict(save_nd, z)
         if k == 1:
-            save_dict["r2_scores_valid"] = np.average(np.array(r2_score_k_valid), axis=1)
-            save_dict["acc_scores_valid"] = np.average(np.array(acc_score_k_valid), axis=1)
-            save_dict["avg_scores_valid"] = np.average(np.array(avg_score_k_valid), axis=1)
+            # save_dict["r2_scores_valid"] = np.average(np.array(r2_score_k_valid), axis=1)
+            save_dict["acc_scores_valid"] = np.average(np.array(acc_score_k_valid), axis=0)
+            # save_dict["avg_scores_valid"] = np.average(np.array(avg_score_k_valid), axis=1)
         now = datetime.datetime.now().isoformat()
         path = nd.MODEL_PATH + "output/" + chr(65 + iter) + "_" + now[0:10] + "_network_output_timeshift=" + str(
             z) + ".pkl"

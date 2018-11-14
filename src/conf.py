@@ -35,14 +35,14 @@ mlp.optimizer = tf.train.AdamOptimizer(0.0005, epsilon=1e-14)
 
 mlp_discrete = Map()
 mlp_discrete.fc1 = Map()
-mlp_discrete.fc1.weights = tf.truncated_normal(shape=(50*147,400), stddev=0.01) # 166 * 17
+mlp_discrete.fc1.weights = tf.truncated_normal(shape=(11*147,50), stddev=0.01) # 166 * 17
 # [147, 133, 118, 103, 89, 74, 59, 45, 30, 15]
 mlp_discrete.fc1.activation = tf.nn.relu
 mlp_discrete.fc2 = Map()
-mlp_discrete.fc2.weights = tf.truncated_normal(shape=(400, 400), stddev=0.01)
+mlp_discrete.fc2.weights = tf.truncated_normal(shape=(50, 50), stddev=0.01)
 mlp_discrete.fc2.activation = tf.nn.relu
 mlp_discrete.fc3 = Map()
-mlp_discrete.fc3.weights = tf.truncated_normal(shape=(400, 5), stddev=0.01)
+mlp_discrete.fc3.weights = tf.truncated_normal(shape=(50, 5), stddev=0.01)
 mlp_discrete.fc3.activation = tf.identity
 mlp_discrete.reshape = Map()
 mlp_discrete.reshape.shape = [None, 5]
