@@ -190,6 +190,8 @@ class Net_data:
         self.keep_neuron = keep_neuron
         self.metric = metric
         self.NEURONS_KEPT_FACTOR = NEURONS_KEPT_FACTOR
+        self.x_shape = None
+        self.y_shape = None
 
     def split_data(self, X, y,k):
         if self.K_CROSS_VALIDATION == 1:

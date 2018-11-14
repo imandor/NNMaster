@@ -46,16 +46,17 @@ def load_trained_network(path):
 # PATH_2 = "G:/master_datafiles/trained_networks/MLP_HC_2018-11-11_1000_200_100_dmf/"
 # PATH = "G:/master_datafiles/trained_networks/MLP_PFC_2018-11-06_1000_200_100_dmf/"
 
-PATH = "G:/master_datafiles/trained_networks/MLP_PFC_2018-11-06_1000_200_100_dmf_abridged/"
-PATH_2 = "G:/master_datafiles/trained_networks/MLP_HC_2018-11-08_1000_200_100_naive/"
-SINGLE_ACCURACY = True
-SINGLE_AVERAGE = True
-SINGLE_R2 = True
-COMPARE_ACCURACY = True
-COMPARE_DISTANCE = True
-COMPARE_R2 = True
-PAIRED_T_TEST = True
-FILTER_NEURON_TEST = True
+PATH = "G:/master_datafiles/trained_networks/MLP_HC_2018-11-13_1000_200_100_lickwell/"
+PATH_2 = "G:/master_datafiles/trained_networks/MLP_HC_2018-11-13_1000_200_100_lickwell_normalized/"
+SINGLE_ACCURACY = False
+SINGLE_AVERAGE = False
+SINGLE_R2 = False
+COMPARE_ACCURACY = False
+COMPARE_DISTANCE = False
+COMPARE_R2 = False
+PAIRED_T_TEST = False
+FILTER_NEURON_TEST = False
+COMPARE_DISCRETE = True
 
 r2_scores_valid_list, r2_scores_train_list, acc_scores_valid_list, acc_scores_train_list, avg_scores_valid_list, avg_scores_train_list, net_dict, time_shift_list = load_trained_network(
     PATH)
@@ -67,9 +68,9 @@ for i in range(0, len(r2_scores_valid_list[0]) - 1):
 # ----------------------------------------------------
 
 
-r2_scores_valid = [x[-1] for x in r2_scores_valid_list]
+# r2_scores_valid = [x[-1] for x in r2_scores_valid_list] # TODO uncomment
 # r2_scores_train = [x[-1] for x in r2_scores_train_list]
-acc_scores_valid = list(map(list, zip(*[e[-1] for e in acc_scores_valid_list])))
+# acc_scores_valid = list(map(list, zip(*[e[-1] for e in acc_scores_valid_list]))) # TODO uncomment
 # acc_scores_train = list(map(list, zip(*[e[-1] for e in acc_scores_train_list])))
 distance_scores_valid = [x[-1] for x in avg_scores_valid_list]  # takes the latest trained value for each time shift
 # distance_scores_train = [x[-1] for x in avg_scores_train_list]
@@ -157,16 +158,16 @@ if SINGLE_R2 is True:
 
 r2_scores_valid_list_2, r2_scores_train_list_2, acc_scores_valid_list_2, acc_scores_train_list_2, avg_scores_valid_list_2, avg_scores_train_list_2, net_dict_2, time_shift_list_2 = load_trained_network(
     PATH_2)
-acc_scores_valid = list(map(list, zip(*[e[-1] for e in acc_scores_valid_list])))
-acc_scores_valid_2 = list(map(list, zip(*[e[-1] for e in acc_scores_valid_list_2])))
-r2_scores_valid = [x[-1][0] for x in r2_scores_valid_list]
-r2_scores_valid_2 = [x[-1][0] for x in r2_scores_valid_list_2]
-distance_scores_valid = [x[-1] for x in avg_scores_valid_list]  # takes the latest trained value for each time shift
-distance_scores_valid_2 = [x[-1] for x in avg_scores_valid_list_2]  # takes the latest trained value for each time shift
-
-acc_scores_middle = np.ndarray.tolist(np.array(acc_scores_valid) - np.array(acc_scores_valid_2))
-r2_scores_middle = np.ndarray.tolist(np.array(r2_scores_valid) - np.array(r2_scores_valid_2))
-distance_scores_middle = np.ndarray.tolist(np.array(distance_scores_valid) - np.array(distance_scores_valid_2))
+# acc_scores_valid = list(map(list, zip(*[e[-1] for e in acc_scores_valid_list]))) # TODO uncomment
+# acc_scores_valid_2 = list(map(list, zip(*[e[-1] for e in acc_scores_valid_list_2])))
+# r2_scores_valid = [x[-1][0] for x in r2_scores_valid_list]
+# r2_scores_valid_2 = [x[-1][0] for x in r2_scores_valid_list_2]
+# distance_scores_valid = [x[-1] for x in avg_scores_valid_list]  # takes the latest trained value for each time shift
+# distance_scores_valid_2 = [x[-1] for x in avg_scores_valid_list_2]  # takes the latest trained value for each time shift
+#
+# acc_scores_middle = np.ndarray.tolist(np.array(acc_scores_valid) - np.array(acc_scores_valid_2))
+# r2_scores_middle = np.ndarray.tolist(np.array(r2_scores_valid) - np.array(r2_scores_valid_2))
+# distance_scores_middle = np.ndarray.tolist(np.array(distance_scores_valid) - np.array(distance_scores_valid_2))
 
 # Compare accuracy plot
 if COMPARE_ACCURACY is True:
@@ -467,3 +468,34 @@ if FILTER_NEURON_TEST is True:
     # ax.fill_between(x, 0, f(x), where=(np.array(f(x))) > 0, color='red')
     fig.tight_layout()
     plt.savefig(PATH + "images/avg_dist_middle" + "_epoch=" + str(training_step_list[-i]) + ".pdf")
+
+
+if COMPARE_DISCRETE is True:
+    # Get data for current amount of training steps
+
+
+    acc_scores_valid_list_ts =np.array(acc_scores_valid_list).T.tolist()
+    acc_scores_valid_list_ts_2 =np.array(acc_scores_valid_list_2).T.tolist()
+    acc_scores_ts_middle = np.ndarray.tolist(np.array(acc_scores_valid_list_ts) - np.array(acc_scores_valid_list_ts_2))
+    fig, ax = plt.subplots()
+    # ax.plot(time_shift_list,distance_scores_train,label='Training set',color='r')
+    ax.plot(time_shift_list, acc_scores_ts_middle, color='k')
+    ax.plot(time_shift_list, acc_scores_valid_list_ts, color='darkgreen')
+    ax.plot(time_shift_list, acc_scores_valid_list_ts_2, color='maroon')
+    # ax.legend()
+    custom_lines = [Patch(facecolor='green', edgecolor='b',
+                          label='d_1'),
+                    Patch(facecolor='red', edgecolor='b',
+                          label='d_2')
+                    ]
+    ax.legend(custom_lines, [r'$\varnothing$ absolute position error PFC', r'$\varnothing$ absolute position error HC'])
+    ax.grid(c='k', ls='-', alpha=0.3)
+    # ax.set_title(r'$\varnothing$ distance of validation wrt time-shift')
+    ax.set_xlabel("time shift [ms]")
+    ax.set_ylabel('absolute position error [cm]')
+    f = interp1d(time_shift_list, distance_scores_middle)
+    x = np.linspace(time_shift_list[0], time_shift_list[-1], 1000)
+    ax.fill_between(x, 0, f(x), where=(np.array(f(x))) < 0, color='green')
+    ax.fill_between(x, 0, f(x), where=(np.array(f(x))) > 0, color='red')
+    fig.tight_layout()
+    # plt.savefig(PATH + "images/avg_dist_middle" + "_epoch=" + str(training_step_list[-i]) + ".pdf")

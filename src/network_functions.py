@@ -1,17 +1,18 @@
 import tensorflow as tf
 from src.nets import MultiLayerPerceptron
 from src.metrics import test_accuracy, plot_histogram
-from src.conf import mlp
+from src.conf import mlp, mlp_discrete
 from src.database_api_beta import Slice, Filter, hann
 from src.metrics import print_Net_data
 import numpy as np
 from src.settings import save_as_pickle, load_pickle, save_net_dict
-from src.preprocessing import time_shift_positions, shuffle_io, position_as_map,lickwells_io
+from src.preprocessing import time_shift_positions, shuffle_io, position_as_map, lickwells_io
 import multiprocessing
 import os
 import errno
 import datetime
 from scipy import stats
+
 
 def hann_generator(width):
     def hann(x):
@@ -38,8 +39,9 @@ def time_shift_data(X, y, n):
 
 
 def run_network_process(nd):
-    # S = ConvolutionalNeuralNetwork1([None, 56, 10, 1], cnn1)
-    S = MultiLayerPerceptron([None, nd.N_NEURONS, 50, 1], mlp)  # 56 147
+
+    # Initialize session, parameters and network
+
     sess = tf.Session()
     r2_scores_train = []
     avg_scores_train = []
@@ -50,7 +52,16 @@ def run_network_process(nd):
     early_stop_max = -np.inf
     X_train = nd.X_train
     y_train = nd.y_train
-    saver = tf.train.Saver()
+
+    # S = ConvolutionalNeuralNetwork1([None, 56, 10, 1], cnn1)
+    nd.x_shape = [nd.BATCH_SIZE] + list(X_train[0].shape) + [1]
+    if nd.metric == "map":
+        S = MultiLayerPerceptron([None, nd.N_NEURONS, 50, 1], mlp)  # 56 147
+        nd.y_shape = [nd.BATCH_SIZE] + list(y_train[0].shape) + [1]
+    elif nd.metric == "discrete":
+        S = MultiLayerPerceptron([None, nd.N_NEURONS, 50, 1], mlp_discrete)
+        nd.y_shape = [nd.BATCH_SIZE] + [5]
+
     if nd.LOAD_MODEL is True:
         saver = tf.train.import_meta_graph(nd.MODEL_PATH + ".meta")
         saver.restore(sess, nd.MODEL_PATH)
@@ -58,11 +69,9 @@ def run_network_process(nd):
         S.initialize(sess)
 
     # Train model
-
+    saver = tf.train.Saver()
     sess.run(tf.local_variables_initializer())
     print("Training model...")
-    xshape = [nd.BATCH_SIZE] + list(X_train[0].shape) + [1]
-    yshape = [nd.BATCH_SIZE] + list(y_train[0].shape) + [1]
     metric_counter = 0  # net_dict["METRIC_ITER"]
     metric_step_counter = []
     stop_early = False
@@ -83,20 +92,21 @@ def run_network_process(nd):
             acc_scores_valid.append(acc_valid)
             print("R2-score:", r2_valid)
             print("Avg-distance:", avg_valid)
-            # saver.save(sess, nd.MODEL_PATH, global_step=i, write_meta_graph=False)
+            print("Accuracy:", acc_valid)
             metric_counter = 0
             if nd.EARLY_STOPPING is True and i >= 5:  # most likely overfitting instead of training
                 if i % 1 == 0:
 
                     _, _, acc_test = test_accuracy(sess=sess, S=S, nd=nd, X=nd.X_test, y=nd.y_test, epoch=i,
-                                                           print_distance=False)
+                                                   print_distance=False)
                     acc = acc_test[19]
                     if early_stop_max < acc:
                         early_stop_max = acc
                     else:
                         if acc < early_stop_max - 0.01:
                             stop_early = True
-                            r2_scores_train = r2_scores_train[0:-1]  # Remove latest result which was worse
+                            r2_scores_train = r2_scores_train[
+                                              0:-1]  # Remove latest result which was worse than the one before
                             avg_scores_train = avg_scores_train[0:-1]
                             acc_scores_train = acc_scores_train[0:-1]
                             r2_scores_valid = r2_scores_valid[0:-1]
@@ -109,8 +119,8 @@ def run_network_process(nd):
         for j in range(0, len(X_train) - nd.BATCH_SIZE, nd.BATCH_SIZE):
             x = np.array([data_slice for data_slice in X_train[j:j + nd.BATCH_SIZE]])
             y = np.array(y_train[j:j + nd.BATCH_SIZE])
-            x = np.reshape(x, xshape)
-            y = np.reshape(y, yshape)
+            x = np.reshape(x, nd.x_shape)
+            y = np.reshape(y, nd.y_shape)
             if nd.NAIVE_TEST is False or nd.TIME_SHIFT == 0:
                 t = np.max(S.train(sess, x, y, dropout=0.65))
 
@@ -153,9 +163,9 @@ def initiate_network(nd):
     # session.set_filter(nd.session_filter)
     # print("Finished convolving data")
     # session.filtered_spikes = stats.zscore(session.filtered_spikes, axis=1)  # Z Score neural activity
-    # session.to_pickle("slice_OFC.pkl")
+    # session.to_pickle("slice_OFC_200.pkl")
     # TODO
-    session = Slice.from_pickle("slice_OFC.pkl")
+    session = Slice.from_pickle("slice_OFC_200.pkl")
     session.filter_neurons_randomly(nd.NEURONS_KEPT_FACTOR)
     session.print_details()
     nd.N_NEURONS = session.n_neurons
@@ -207,58 +217,6 @@ def run_network(X, y, nd, session):
             acc_score_k_train.append(save_nd.acc_scores_train)
             avg_score_k_train.append(save_nd.avg_scores_train)
 
-        save_dict = create_save_dict(save_nd,z)
-        if k == 1:
-            save_dict["r2_scores_valid"] = np.average(np.array(r2_score_k_valid), axis=1)
-            save_dict["acc_scores_valid"] = np.average(np.array(acc_score_k_valid), axis=1)
-            save_dict["avg_scores_valid"] = np.average(np.array(avg_score_k_valid), axis=1)
-        now = datetime.datetime.now().isoformat()
-        path = nd.MODEL_PATH + "output/" + chr(65 + iter) + "_" + now[0:10] + "_network_output_timeshift=" + str(
-            z) + ".pkl"
-        save_as_pickle(path, save_dict)
-    print("fin")
-
-
-def run_lickwell_network(X, y, nd, session):
-    # Assign validation set.
-    for z in range(nd.INITIAL_TIMESHIFT, nd.INITIAL_TIMESHIFT + nd.TIME_SHIFT_STEPS * nd.TIME_SHIFT_ITER,
-                   nd.TIME_SHIFT_ITER):
-        iter = int(z - nd.INITIAL_TIMESHIFT) // nd.TIME_SHIFT_ITER
-        nd.TIME_SHIFT = z  # set current time shift
-        print("Time shift is now", z)
-        # Time-Shift input and output
-        X, y = lickwells_io(session, z, nd)
-        if len(X) != len(y):
-            raise ValueError("Error: Length of x and y are not identical")
-        X, y = shuffle_io(X, y, nd, 3)
-
-        r2_score_k_valid = []
-        avg_score_k_valid = []
-        acc_score_k_valid = []
-        r2_score_k_train = []
-        avg_score_k_train = []
-        acc_score_k_train = []
-
-        for k in range(0, nd.K_CROSS_VALIDATION):
-            print("cross validation step", str(k + 1), "of", nd.K_CROSS_VALIDATION)
-            nd.split_data(X, y, k)
-            if nd.TIME_SHIFT_STEPS == 1:
-                save_nd = run_network_process(nd)
-            else:
-                with multiprocessing.Pool(
-                        1) as p:  # keeping network inside process prevents memory issues when restarting session
-                    save_nd = p.map(run_lickwell_network_process, [nd])[0]
-                    p.close()
-                if nd.NAIVE_TEST is True:
-                    nd.LOAD_MODEL = True
-                    nd.EPOCHS = 1
-            r2_score_k_valid.append(save_nd.r2_scores_valid)
-            acc_score_k_valid.append(save_nd.acc_scores_valid)
-            avg_score_k_valid.append(save_nd.avg_scores_valid)
-            r2_score_k_train.append(save_nd.r2_scores_train)
-            acc_score_k_train.append(save_nd.acc_scores_train)
-            avg_score_k_train.append(save_nd.avg_scores_train)
-
         save_dict = create_save_dict(save_nd, z)
         if k == 1:
             save_dict["r2_scores_valid"] = np.average(np.array(r2_score_k_valid), axis=1)
@@ -269,7 +227,9 @@ def run_lickwell_network(X, y, nd, session):
             z) + ".pkl"
         save_as_pickle(path, save_dict)
     print("fin")
-def create_save_dict(save_nd,z):
+
+
+def create_save_dict(save_nd, z):
     save_dict = dict()
     save_dict["MAKE_HISTOGRAM"] = save_nd.MAKE_HISTOGRAM
     save_dict["STRIDE"] = save_nd.STRIDE
@@ -308,3 +268,55 @@ def create_save_dict(save_nd,z):
     save_dict["NAIVE_TEST"] = save_nd.NAIVE_TEST
     save_dict["TIME_SHIFT"] = z
     return save_dict
+
+
+def run_lickwell_network(X, y, nd, session):
+    # Assign validation set.
+    for z in range(nd.INITIAL_TIMESHIFT, nd.INITIAL_TIMESHIFT + nd.TIME_SHIFT_STEPS * nd.TIME_SHIFT_ITER,
+                   nd.TIME_SHIFT_ITER):
+        iter = int(z - nd.INITIAL_TIMESHIFT) // nd.TIME_SHIFT_ITER
+        nd.TIME_SHIFT = z  # set current time shift
+        print("Time shift is now", z)
+        # Time-Shift input and output
+        # X, y = lickwells_io(session, X, nd, allowed_distance=30, filter=None)
+        if len(X) != len(y):
+            raise ValueError("Error: Length of x and y are not identical")
+        X, y = shuffle_io(X, y, nd, 3)
+
+        r2_score_k_valid = []
+        avg_score_k_valid = []
+        acc_score_k_valid = []
+        r2_score_k_train = []
+        avg_score_k_train = []
+        acc_score_k_train = []
+
+        for k in range(0, nd.K_CROSS_VALIDATION):
+            print("cross validation step", str(k + 1), "of", nd.K_CROSS_VALIDATION)
+            nd.split_data(X, y, k)
+            if nd.TIME_SHIFT_STEPS == 1:
+                save_nd = run_network_process(nd)
+            else:
+                with multiprocessing.Pool(
+                        1) as p:  # keeping network inside process prevents memory issues when restarting session
+                    save_nd = p.map(run_network_process, [nd])[0]
+                    p.close()
+                if nd.NAIVE_TEST is True:
+                    nd.LOAD_MODEL = True
+                    nd.EPOCHS = 1
+            r2_score_k_valid.append(save_nd.r2_scores_valid)
+            acc_score_k_valid.append(save_nd.acc_scores_valid)
+            avg_score_k_valid.append(save_nd.avg_scores_valid)
+            r2_score_k_train.append(save_nd.r2_scores_train)
+            acc_score_k_train.append(save_nd.acc_scores_train)
+            avg_score_k_train.append(save_nd.avg_scores_train)
+
+        save_dict = create_save_dict(save_nd, z)
+        if k == 1:
+            save_dict["r2_scores_valid"] = np.average(np.array(r2_score_k_valid), axis=1)
+            save_dict["acc_scores_valid"] = np.average(np.array(acc_score_k_valid), axis=1)
+            save_dict["avg_scores_valid"] = np.average(np.array(avg_score_k_valid), axis=1)
+        now = datetime.datetime.now().isoformat()
+        path = nd.MODEL_PATH + "output/" + chr(65 + iter) + "_" + now[0:10] + "_network_output_timeshift=" + str(
+            z) + ".pkl"
+        save_as_pickle(path, save_dict)
+    print("fin")

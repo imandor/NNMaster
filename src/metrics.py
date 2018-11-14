@@ -167,25 +167,47 @@ def predict_map(S, sess, X, Y):
         y_target[j][1] = bin_2[1]
     return y_predicted, y_target
 
-def predict_discrete(S, sess, X, Y):
-    xshape = [1] + list(X[0].shape) + [1]
-    yshape = [1] + list(Y[0].shape) + [1]
-    y_predicted = np.zeros([len(Y), 2])
-    y_target = np.zeros([len(Y), 2])
+
+def predict_discrete(S, sess, X, Y, nd):
+    y_predicted = np.zeros((len(Y), 5))
+    y_target = np.zeros((len(Y), 5))
     for j in range(0, len(X), 1):
+        x = np.array([data_slice for data_slice in X[j:j + 1]])
+        y = np.array(Y[j:j + 1])
+        x = np.reshape(x, [1] + [nd.x_shape[1]] + [nd.x_shape[2]] + [nd.x_shape[3]])
+        y_predicted[j] = S.valid(sess, x)[0]
+        y_target[j] = y
+
+    return y_predicted, y_target
 
 
-def test_accuracy(sess, S, nd, X, y, epoch,print_distance=False):
+def test_accuracy(sess, S, nd, X, y, epoch, print_distance=False):
     if nd.metric == "map":
-        return test_map_accuracy(sess, S, nd, X, y, epoch,print_distance=False)
+        return test_map_accuracy(sess, S, nd, X, y, epoch, print_distance=False)
     elif nd.metric == "discrete":
-        return test_discrete_accuracy(sess, S, nd, X, y, epoch,print_distance=False)
+        return test_discrete_accuracy(sess, S, nd, X, y, epoch, print_distance=False)
 
 
-def test_discrete_accuracy(sess, S, nd, X, y, epoch,print_distance=False):
-    y_predicted, y_target = predict_map(S, sess, X, y)
+def get_discrete_accuracy(y_predicted, y_target):
+    correct_count = 0
+    for i in range(len(y_predicted)):
+        y_1 = int(np.argmax(y_predicted[i]))
+        y_2 = np.argmax(y_target[i])
+        if y_1 == y_2:
+            correct_count += 1
+    return correct_count/ len(y_predicted)
+
+
+def test_discrete_accuracy(sess, S, nd, X, y, epoch, print_distance=False):
+    y_predicted, y_target = predict_discrete(S, sess, X, y, nd)
+    r2 = None
+    distance = None
+    accuracy = get_discrete_accuracy(y_predicted,y_target)
+    print(y_predicted[0])
     return r2, distance, accuracy
-def test_map_accuracy(sess, S, nd, X, y, epoch,print_distance=False):
+
+
+def test_map_accuracy(sess, S, nd, X, y, epoch, print_distance=False):
     y_predicted, y_target = predict_map(S, sess, X, y)
     r2 = get_r2(y_predicted, y_target, [nd.X_STEP, nd.Y_STEP])
     distance = get_avg_distance(y_predicted, y_target, [nd.X_STEP, nd.Y_STEP])
@@ -195,17 +217,17 @@ def test_map_accuracy(sess, S, nd, X, y, epoch,print_distance=False):
         accuracy.append(acc)
         if i == 19 and print_distance is True: print("Fraction pos error less than", i, ":", acc)
     if False:  # plot planes
-        plot_all_planes(X,y, y_predicted, y_target, nd)
+        plot_all_planes(X, y, y_predicted, y_target, nd)
     if False:
         save_as_pickle("C:/Users/NN/AppData/Local/Temp/animation/predicted/step=" + str(nd.epochs_trained),
                        y_predicted[0])
         save_as_pickle("C:/Users/NN/AppData/Local/Temp/animation/target/step=" + str(nd.epochs_trained), y_target[0])
     if False:
-        plot_results_as_map(sess,S,X,epoch,nd)
+        plot_results_as_map(sess, S, X, epoch, nd)
     return r2, distance, accuracy
 
 
-def plot_all_planes(X,y, is_training_data, y_predicted, y_target, nd):
+def plot_all_planes(X, y, is_training_data, y_predicted, y_target, nd):
     map_list = y
     distance_list = get_radius_distance_list(y_predicted, y_target, [nd.X_STEP, nd.Y_STEP],
                                              absolute_margin=50)
@@ -267,9 +289,9 @@ def plot_all_planes(X,y, is_training_data, y_predicted, y_target, nd):
     plot_plane(y_target_f, nd, "C:/Users/NN/Desktop/Master/" + is_training_data + "_worse" + "_target")
 
 
-def plot_results_as_map(sess,S,x,epoch,nd):
+def plot_results_as_map(sess, S, x, epoch, nd):
     x = nd.X_valid[1000]
-    x = np.reshape(x,[1] + list(x.shape) + [1])
+    x = np.reshape(x, [1] + list(x.shape) + [1])
     y = nd.y_valid[1000]
     # y = S.valid(sess, x)[0, :, :, 0]
     # y = sigmoid(y)
@@ -282,8 +304,9 @@ def plot_results_as_map(sess,S,x,epoch,nd):
     y /= np.max(y)
     y *= 255
     ax.imshow(y, cmap="gray")
-    plt.savefig("C:/Users/NN/Desktop/presentation_group/plane_original"+str(epoch))
+    plt.savefig("C:/Users/NN/Desktop/presentation_group/plane_original" + str(epoch))
     plt.close()
+
 
 def plot_axis_representation_2d(y_values, path):
     # plots representation over one axis

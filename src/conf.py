@@ -31,6 +31,26 @@ mlp.loss_type = "sigmoid_cross_entropy"
 mlp.optimizer = tf.train.AdamOptimizer(0.0005, epsilon=1e-14)
 # mlp.optimizer = tf.train.GradientDescentOptimizer(0.00005)
 # mlp.optimizer = tf.train.AdagradOptimizer(learning_rate=0.1)
+
+
+mlp_discrete = Map()
+mlp_discrete.fc1 = Map()
+mlp_discrete.fc1.weights = tf.truncated_normal(shape=(50*147,400), stddev=0.01) # 166 * 17
+# [147, 133, 118, 103, 89, 74, 59, 45, 30, 15]
+mlp_discrete.fc1.activation = tf.nn.relu
+mlp_discrete.fc2 = Map()
+mlp_discrete.fc2.weights = tf.truncated_normal(shape=(400, 400), stddev=0.01)
+mlp_discrete.fc2.activation = tf.nn.relu
+mlp_discrete.fc3 = Map()
+mlp_discrete.fc3.weights = tf.truncated_normal(shape=(400, 5), stddev=0.01)
+mlp_discrete.fc3.activation = tf.identity
+mlp_discrete.reshape = Map()
+mlp_discrete.reshape.shape = [None, 5]
+mlp_discrete.loss_type = "softmax_cross_entropy"
+mlp_discrete.optimizer = tf.train.AdamOptimizer(0.0005, epsilon=1e-14)
+
+
+
 cnn1 = Map()
 cnn1.conv1 = Map()
 cnn1.conv1.weights = tf.truncated_normal(shape=(56, 1, 1, 70), stddev=0.01)
