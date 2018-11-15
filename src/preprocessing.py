@@ -53,7 +53,7 @@ def filter_overrepresentation_discrete(x, y, max_occurrences):
     x_return = []
     y_return = []
     y = np.array(y)
-    pos_counter = np.zeros(5)
+    pos_counter = np.zeros(max(y))
     for i, e in enumerate(y):
         y_pos = np.max(e) - 1
         if pos_counter[y_pos] < max_occurrences:
@@ -93,25 +93,25 @@ def count_occurrences(y, net_dict, axis=0):
     return pos_counter
 
 
-def shuffle_io(X, y, nd, seed_no, shuffle_factor=None):
+def shuffle_io(X, y, nd, seed_no, shuffle_batch_size=None):
     # Shuffle data
     if nd.SHUFFLE_DATA is False:
         return X, y
-    if shuffle_factor is None:
-        shuffle_factor = nd.SHUFFLE_FACTOR
+    if shuffle_batch_size is None:
+        shuffle_batch_size = nd.SHUFFLE_FACTOR
     seed(seed_no)
 
     # crop length to fit shuffle factor
 
     # print("Shuffling data...")
-    x_length = len(X) - (len(X) % shuffle_factor)
+    x_length = len(X) - (len(X) % shuffle_batch_size)
     X = X[:x_length]
     y = y[:x_length]
 
     # Shuffle index of data
 
     r = np.arange(len(X))
-    r = r.reshape(-1, shuffle_factor)
+    r = r.reshape(-1, shuffle_batch_size)
     s = np.arange(len(r))  # shuffling r directly doesnt work
     shuffle(s)
     r = r[s]
@@ -187,17 +187,15 @@ def time_shift_positions(session, shift, nd):
     return X, y
 
 
-def lickwells_io(session, nd, lick_well=1, shift=1, normalize=False):
+def lickwells_io(session, nd, lick_well=1, shift=1, normalize=False,differentiate_false_licks = False):
     # get all slices within n milliseconds around lick_well
     y_abs = []
     X = []
     licks = session.licks
-    z = 0
     for i, lick in enumerate(licks):
         if i > - shift and i < len(licks) - shift and lick["lickwell"] == lick_well and (
                 normalize is False or licks[i + shift][
             "lickwell"] != lick_well):  # exclude trailing samples to stay inside shift range
-            z += 1
             lick_start = int(lick["time"] - 5000)
             lick_end = int(lick["time"] + 5000)
             slice = session[lick_start:lick_end]
@@ -206,15 +204,19 @@ def lickwells_io(session, nd, lick_well=1, shift=1, normalize=False):
                 bins_to_x = [c[j:j + 11] for c in slice.filtered_spikes]
                 bins_to_x = np.reshape(bins_to_x, [len(bins_to_x), len(bins_to_x[0])])
                 X.append(bins_to_x)
-                y_abs.append(licks[i + shift]["lickwell"])
+                if differentiate_false_licks is False:
+                    y_abs.append(licks[i + shift]["lickwell"])
+                else:
+                    y_abs.append(licks[i + shift]["lickwell"]+(licks[i + shift]["rewarded"]*nd.lw_classifications))
+
     print("Lickwell count:")
     unique, counts = np.unique(y_abs, return_counts=True)
     print(unique, counts)
     y = []
     if normalize is True:
-        X, y_abs = normalize_discrete(X, y_abs, nd) # filter_overrepresentation_discrete(X, y_abs, min(counts))
+        X, y_abs =  filter_overrepresentation_discrete(X, y_abs, min(counts)) # normalize_discrete(X, y_abs, nd)
     for abs in y_abs:
-        y_i = np.zeros(5)
+        y_i = np.zeros(max(y_abs))
         y_i[abs - 1] = 1
         y.append(y_i)
     unique, counts = np.unique(y_abs, return_counts=True)

@@ -169,8 +169,8 @@ def predict_map(S, sess, X, Y):
 
 
 def predict_discrete(S, sess, X, Y, nd):
-    y_predicted = np.zeros((len(Y), 5))
-    y_target = np.zeros((len(Y), 5))
+    y_predicted = np.zeros((len(Y), nd.lw_classifications))
+    y_target = np.zeros((len(Y), nd.lw_classifications))
     for j in range(0, len(X), 1):
         x = np.array([data_slice for data_slice in X[j:j + 1]])
         y = np.array(Y[j:j + 1])

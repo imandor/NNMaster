@@ -142,6 +142,9 @@ class Net_data:
                  TRAIN_MODEL = True,
                  keep_neuron = -1,
                  NEURONS_KEPT_FACTOR = 1.0,
+                 lw_classifications = None,
+                 lw_normalize = False,
+                 lw_differentiate_false_licks = True,
                  metric="map"):
         self.MAKE_HISTOGRAM = MAKE_HISTOGRAM
         self.STRIDE = STRIDE
@@ -192,6 +195,10 @@ class Net_data:
         self.NEURONS_KEPT_FACTOR = NEURONS_KEPT_FACTOR
         self.x_shape = None
         self.y_shape = None
+        self.lw_classifications = lw_classifications
+        self.lw_normalize = lw_normalize
+        self.lw_differentiate_false_licks = lw_differentiate_false_licks
+
 
     def split_data(self, X, y,k):
         if self.K_CROSS_VALIDATION == 1:
