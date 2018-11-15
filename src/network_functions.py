@@ -193,8 +193,8 @@ def initiate_lickwell_network(nd):
     # session.filtered_spikes = stats.zscore(session.filtered_spikes, axis=1)  # Z Score neural activity
     # session.to_pickle("slice_PFC_200.pkl")
     # TODO
-    # session = Slice.from_pickle("slice_HC_200.pkl")
-    session = Slice.from_pickle("slice_PFC_200.pkl")
+    session = Slice.from_pickle("slice_HC_200.pkl")
+    # session = Slice.from_pickle("slice_PFC_200.pkl")
 
     session.filter_neurons_randomly(nd.NEURONS_KEPT_FACTOR)
     session.print_details()
@@ -309,7 +309,7 @@ def run_lickwell_network(nd, session):
         X, y = lickwells_io(session, nd, lick_well=1, shift=1, normalize=True)
         if len(X) != len(y):
             raise ValueError("Error: Length of x and y are not identical")
-        X, y = shuffle_io(X, y, nd, 3)
+        X, y = shuffle_io(X, y, nd, 3,shuffle_factor=39)
 
         r2_score_k_valid = []
         avg_score_k_valid = []
@@ -346,5 +346,11 @@ def run_lickwell_network(nd, session):
         now = datetime.datetime.now().isoformat()
         path = nd.MODEL_PATH + "output/" + chr(65 + iter) + "_" + now[0:10] + "_network_output_timeshift=" + str(
             z) + ".pkl"
+        print("Maximum:",max(save_dict["acc_scores_valid"]))
+        print("Last Value: ",save_dict["acc_scores_valid"][-1])
+        asd = []
+        for v in acc_score_k_valid:
+            asd.append(v[-1])
+        print("Min Value",min(asd))
         save_as_pickle(path, save_dict)
     print("fin")

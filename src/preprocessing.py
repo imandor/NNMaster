@@ -1,6 +1,6 @@
-from random import seed, shuffle,randint
+from random import seed, shuffle, randint
 import numpy as np
-from scipy import stats
+
 
 def position_as_map(pos_list, xstep, ystep, X_MAX, X_MIN, Y_MAX, Y_MIN):
     pos_list = np.asarray(pos_list)
@@ -10,8 +10,6 @@ def position_as_map(pos_list, xstep, ystep, X_MAX, X_MIN, Y_MAX, Y_MIN):
     else:  # if more than one entry in pos_list (standard)
         x_list = pos_list[0, :]
         y_list = pos_list[1, :]
-    asd_1 = x_list
-    asd_2 = y_list
     pos_list = np.dstack((x_list, y_list))[0]
     pos_list = np.unique(pos_list, axis=0)
     ret = np.zeros(((X_MAX - X_MIN) // xstep, (Y_MAX - Y_MIN) // ystep))
@@ -24,57 +22,44 @@ def position_as_map(pos_list, xstep, ystep, X_MAX, X_MIN, Y_MAX, Y_MIN):
     return ret
 
 
-def group_list(l, group_size):
-
-    for i in xrange(0, len(l), group_size):
-        yield l[i:i+group_size]
-
-def normalize_discrete(x,y,nd,occurrences):
+def normalize_discrete(x, y, nd):
+    seed(1)
     """ artificially increases the amount of underrepresented samples"""
-    lick_batch_size = 10000//nd.STRIDE - 11
-    x_return = []
-    y_return = []
+    lick_batch_size = 10000 // nd.STRIDE - 11  # TODO remove explicit
+    x_return = x
+    y_return = y
     x_new = []
-    y_new = [y[i] for i in range(0,len(y),lick_batch_size)]
-    for i in range(0,len(x),lick_batch_size):
-        x_new.append(x[i:i+lick_batch_size])
-    unique, counts = np.unique(y_new, return_counts=True)
+    y_new = [y[i] for i in range(0, len(y), lick_batch_size)]
+    for i in range(0, len(x), lick_batch_size):
+        x_new.append(x[i:i + lick_batch_size])
+    unique, counts = np.unique(y_return, return_counts=True)
     unique = unique.tolist()
-    while len(y_new)>0:
-        i = randint(0,len(y_new)-1)
-        # print("---")
-        # print(i,len(y_new))
-        # print(y_new[i])
-
-        if counts[unique.index(y_new[i])]< occurrences:
-            y_return.append(y_new[i])
-            x_return.append(x_new[i])
-            counts[unique.index(y_new[i])] += 1
+    max_counts = max(counts)
+    while len(y_new) > 0:
+        i = randint(0, len(y_new) - 1)
+        if counts[unique.index(y_new[i])] < max_counts:
+            for t in x_new[i]:
+                x_return.append(np.reshape(t, [len(t), len(t[0])]))
+                y_return.append(y_new[i])
+            counts[unique.index(y_new[i])] += 39  # TODO remove explicit
         else:
             y_new.pop(i)
             x_new.pop(i)
-    x_return = [s for s in x_return]
-    y_return = [[y]*lick_batch_size for y in y_return]
-    y_return = [s for s in y_return]
-    return x_return, y_return
+    unique, counts = np.unique(y_return, return_counts=True)
+    return filter_overrepresentation_discrete(x_return, y_return, min(counts))
 
 
-
-def filter_overrepresentation_discrete(x, y, nd,max_occurrences):
-    print("Filtering overrepresentation")
+def filter_overrepresentation_discrete(x, y, max_occurrences):
     x_return = []
     y_return = []
     y = np.array(y)
-    x,y = shuffle_io(x,y,nd,0)
-    # y = y[0, :, :, 0]
     pos_counter = np.zeros(5)
     for i, e in enumerate(y):
-        y_pos = np.max(e)-1
+        y_pos = np.max(e) - 1
         if pos_counter[y_pos] < max_occurrences:
             x_return.append(x[i])
             pos_counter[y_pos] += 1
             y_return.append(e)
-            # y_return.append(position_as_map([e[0],e[1]], net_dict["X_STEP"],net_dict["Y_STEP"],net_dict["X_MAX"], net_dict["X_MIN"], net_dict["Y_MAX"], net_dict["Y_MIN"]))
     return x_return, y_return
 
 
@@ -83,7 +68,6 @@ def filter_overrepresentation_map(x, y, max_occurrences, nd, axis=0):
     x_return = []
     y_return = []
     y = np.array(y)
-    # y = y[0, :, :, 0]
     if axis == 0:
         pos_counter = np.zeros((nd.X_MAX - nd.X_MIN) // nd.X_STEP)
     else:
@@ -95,7 +79,6 @@ def filter_overrepresentation_map(x, y, max_occurrences, nd, axis=0):
             x_return.append(x[i])
             pos_counter[y_pos] += 1
             y_return.append(e)
-            # y_return.append(position_as_map([e[0],e[1]], net_dict["X_STEP"],net_dict["Y_STEP"],net_dict["X_MAX"], net_dict["X_MIN"], net_dict["Y_MAX"], net_dict["Y_MIN"]))
     return x_return, y_return
 
 
@@ -110,24 +93,25 @@ def count_occurrences(y, net_dict, axis=0):
     return pos_counter
 
 
-def shuffle_io(X, y, nd, seed_no):
+def shuffle_io(X, y, nd, seed_no, shuffle_factor=None):
     # Shuffle data
     if nd.SHUFFLE_DATA is False:
         return X, y
-    SHUFFLE_FACTOR = nd.SHUFFLE_FACTOR
+    if shuffle_factor is None:
+        shuffle_factor = nd.SHUFFLE_FACTOR
     seed(seed_no)
 
     # crop length to fit shuffle factor
 
     # print("Shuffling data...")
-    x_length = len(X) - (len(X) % SHUFFLE_FACTOR)
+    x_length = len(X) - (len(X) % shuffle_factor)
     X = X[:x_length]
     y = y[:x_length]
 
     # Shuffle index of data
 
     r = np.arange(len(X))
-    r = r.reshape(-1, SHUFFLE_FACTOR)
+    r = r.reshape(-1, shuffle_factor)
     s = np.arange(len(r))  # shuffling r directly doesnt work
     shuffle(s)
     r = r[s]
@@ -178,6 +162,7 @@ def time_shift_positions(session, shift, nd):
     while len(filtered_spikes[0]) >= SLICE_SIZE:
 
         # Input
+
         bins_to_X = []
         remaining_bins = []
         for spike in filtered_spikes:
@@ -189,8 +174,6 @@ def time_shift_positions(session, shift, nd):
 
         # output
 
-        # norm_x = (pos_x[:SLICE_SIZE] - X_MIN)/X_MAX
-        # norm_y = (pos_y[:SLICE_SIZE] - X_MIN)/X_MAX
         norm_x = pos_x[:SLICE_SIZE]
         norm_y = pos_y[:SLICE_SIZE]
         right_index_border = len(norm_x) - SURROUNDING_INDEX
@@ -201,39 +184,35 @@ def time_shift_positions(session, shift, nd):
         y.append(position_as_map(posxy_list, X_STEP, Y_STEP, X_MAX, X_MIN, Y_MAX, Y_MIN))
         pos_x = pos_x[BINS_IN_STRIDE * WIN_SIZE:]
         pos_y = pos_y[BINS_IN_STRIDE * WIN_SIZE:]
-        # print(len(pos_x))
-
     return X, y
 
 
-def lickwells_io(session, nd, lick_well=1,shift = 1,normalize=False):
-
+def lickwells_io(session, nd, lick_well=1, shift=1, normalize=False):
     # get all slices within n milliseconds around lick_well
     y_abs = []
     X = []
     licks = session.licks
-    for i,lick in enumerate(licks):
-        if i > - shift and i < len(licks) - shift and lick["lickwell"] == lick_well and (normalize is False or licks[i+shift]["lickwell"]!=lick_well): # exclude trailing samples to stay inside shift range
+    z = 0
+    for i, lick in enumerate(licks):
+        if i > - shift and i < len(licks) - shift and lick["lickwell"] == lick_well and (
+                normalize is False or licks[i + shift][
+            "lickwell"] != lick_well):  # exclude trailing samples to stay inside shift range
+            z += 1
             lick_start = int(lick["time"] - 5000)
             lick_end = int(lick["time"] + 5000)
             slice = session[lick_start:lick_end]
 
-            # slice vertically in to samples with length nd.STRIDE
-            slice_list = []
-            # for j in range(0, nd.SLICE_SIZE//nd.WIN_SIZE, nd.STRIDE//nd.WIN_SIZE): # TODO: not sufficiently tested
-            for j in range(0,10000//nd.WIN_SIZE-11):
-                # bins_to_x = [c[j:j+nd.STRIDE//nd.WIN_SIZE] for c in slice.filtered_spikes]
-                bins_to_x = [c[j:j+11] for c in slice.filtered_spikes]
+            for j in range(0, 10000 // nd.WIN_SIZE - 11):
+                bins_to_x = [c[j:j + 11] for c in slice.filtered_spikes]
                 bins_to_x = np.reshape(bins_to_x, [len(bins_to_x), len(bins_to_x[0])])
                 X.append(bins_to_x)
-                # X.append(spike_list)
-                y_abs.append(licks[i+shift]["lickwell"])
+                y_abs.append(licks[i + shift]["lickwell"])
     print("Lickwell count:")
     unique, counts = np.unique(y_abs, return_counts=True)
     print(unique, counts)
     y = []
     if normalize is True:
-        X, y_abs = normalize_discrete(X, y_abs, nd,max(counts))
+        X, y_abs = normalize_discrete(X, y_abs, nd) # filter_overrepresentation_discrete(X, y_abs, min(counts))
     for abs in y_abs:
         y_i = np.zeros(5)
         y_i[abs - 1] = 1

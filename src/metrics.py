@@ -190,9 +190,13 @@ def test_accuracy(sess, S, nd, X, y, epoch, print_distance=False):
 
 def get_discrete_accuracy(y_predicted, y_target):
     correct_count = 0
+    list_1 = []
+    list_2 = []
     for i in range(len(y_predicted)):
         y_1 = int(np.argmax(y_predicted[i]))
         y_2 = np.argmax(y_target[i])
+        list_1.append(y_1)
+        list_2.append(y_2)
         if y_1 == y_2:
             correct_count += 1
     return correct_count/ len(y_predicted)
