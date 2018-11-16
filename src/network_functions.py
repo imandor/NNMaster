@@ -44,6 +44,7 @@ def run_lickwell_network_process(nd):
 
     sess = tf.Session()
     acc_scores_valid = []
+    avg_acc_valid = []
     early_stop_max = -np.inf
     X_train = nd.X_train
     y_train = nd.y_train
@@ -70,9 +71,10 @@ def run_lickwell_network_process(nd):
             print("\n_-_-_-_-_-_-_-_-_-_-Epoch", i, "_-_-_-_-_-_-_-_-_-_-\n")
 
             print("Validation results:")
-            _, _, acc_valid = test_accuracy(sess=sess, S=S, nd=nd, X=nd.X_valid, y=nd.y_valid, epoch=i,
+            _, avg_acc, acc_valid = test_accuracy(sess=sess, S=S, nd=nd, X=nd.X_valid, y=nd.y_valid, epoch=i,
                                                            print_distance=True)
             acc_scores_valid.append(acc_valid)
+            avg_acc_valid.append(avg_acc)
             print("Accuracy:", acc_valid)
             metric_counter = 0
             if nd.EARLY_STOPPING is True and i >= 5:  # most likely overfitting instead of training
@@ -101,7 +103,7 @@ def run_lickwell_network_process(nd):
         nd.epochs_trained = i
 
     # Add performance to return dict
-
+    nd.avg_scores_valid = avg_acc_valid
     nd.acc_scores_valid = acc_scores_valid
     nd.metric_step_counter = metric_step_counter
 
@@ -109,6 +111,7 @@ def run_lickwell_network_process(nd):
 
     sess.close()
     return nd
+
 
 def run_network_process(nd):
     # Initialize session, parameters and network
@@ -393,10 +396,11 @@ def run_lickwell_network(nd, session):
         X, y = shuffle_io(X, y, nd, 3, shuffle_batch_size=39)
 
         acc_score_k_valid = []
+        avg_score_k_valid = []
         acc_score_k_train = []
         for k in range(0, nd.K_CROSS_VALIDATION):
             print("cross validation step", str(k + 1), "of", nd.K_CROSS_VALIDATION)
-            nd.split_data(X, y, k)
+            nd.split_data(X, y, k,normalize=True,nd=nd)
             if nd.TIME_SHIFT_STEPS == 1:
                 save_nd = run_lickwell_network_process(nd)
             else:
@@ -409,11 +413,13 @@ def run_lickwell_network(nd, session):
                     nd.EPOCHS = 1
 
             acc_score_k_valid.append(save_nd.acc_scores_valid)
-            acc_score_k_train.append(save_nd.acc_scores_train)
+            avg_score_k_valid.append(save_nd.avg_scores_valid)
 
         save_dict = create_save_dict(save_nd, z)
-        if k == 1:
+        if k != 1:
             save_dict["acc_scores_valid"] = np.average(np.array(acc_score_k_valid), axis=0)
+            save_dict["avg_scores_valid"] = np.average(np.array(avg_score_k_valid), axis=0)
+
         now = datetime.datetime.now().isoformat()
         path = nd.MODEL_PATH + "output/" + chr(65 + iter) + "_" + now[0:10] + "_network_output_timeshift=" + str(
             z) + ".pkl"

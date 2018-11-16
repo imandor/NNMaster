@@ -8,7 +8,7 @@ import glob
 import pickle
 import time
 import random
-
+from src.preprocessing import normalize_discrete
 well_to_color = {0: "#ff0000", 1: "#669900", 2: "#0066cc", 3: "#cc33ff", 4: "#003300", 5: "#996633"}
 
 
@@ -200,7 +200,10 @@ class Net_data:
         self.lw_differentiate_false_licks = lw_differentiate_false_licks
 
 
-    def split_data(self, X, y,k):
+    def split_data(self, X, y,k,normalize = False, nd=None):
+        """"
+        Splits data in to training and testing, supports cross validation
+        """
         if self.K_CROSS_VALIDATION == 1:
             valid_length = int(len(X) * self.VALID_RATIO)
             self.X_train = X[valid_length:]
@@ -221,6 +224,8 @@ class Net_data:
             self.y_test = y[k_slice_test]
             self.X_valid = X[k_slice_valid]
             self.y_valid = y[k_slice_valid]
+            if normalize is True:
+                self.X_train, self.y_train = normalize_discrete(self.X_train, self.y_train, nd)
         if self.keep_neuron != -1:
             for i in range(len(self.X_valid)):
                 for j in range(len(self.X_valid[0])):

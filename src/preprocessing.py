@@ -32,20 +32,17 @@ def normalize_discrete(x, y, nd):
     y_new = [y[i] for i in range(0, len(y), lick_batch_size)]
     for i in range(0, len(x), lick_batch_size):
         x_new.append(x[i:i + lick_batch_size])
-    unique, counts = np.unique(y_return, return_counts=True)
-    unique = unique.tolist()
-    max_counts = max(counts)
+    counts = np.sum(y_return,axis=0) # total number of licks by well
     while len(y_new) > 0:
         i = randint(0, len(y_new) - 1)
-        if counts[unique.index(y_new[i])] < max_counts:
+        if max(counts*y_new[i]) < max(counts): # if count at well position smaller than max
             for t in x_new[i]:
                 x_return.append(np.reshape(t, [len(t), len(t[0])]))
                 y_return.append(y_new[i])
-            counts[unique.index(y_new[i])] += 39  # TODO remove explicit
+            counts[np.argmax(y_new[i])] += 39  # TODO remove explicit
         else:
             y_new.pop(i)
             x_new.pop(i)
-    unique, counts = np.unique(y_return, return_counts=True)
     return filter_overrepresentation_discrete(x_return, y_return, min(counts))
 
 
@@ -53,9 +50,9 @@ def filter_overrepresentation_discrete(x, y, max_occurrences):
     x_return = []
     y_return = []
     y = np.array(y)
-    pos_counter = np.zeros(max(y))
+    pos_counter = np.zeros(y[0].size)
     for i, e in enumerate(y):
-        y_pos = np.max(e) - 1
+        y_pos = np.argmax(e)
         if pos_counter[y_pos] < max_occurrences:
             x_return.append(x[i])
             pos_counter[y_pos] += 1
@@ -212,13 +209,16 @@ def lickwells_io(session, nd, lick_well=1, shift=1, normalize=False,differentiat
     print("Lickwell count:")
     unique, counts = np.unique(y_abs, return_counts=True)
     print(unique, counts)
+
+    # remove instances of double licks at lick_well
+    for i,y in enumerate(y_abs):
+        if y == lick_well:
+            y_abs.pop(i)
+            X.pop(i)
+
     y = []
-    if normalize is True:
-        X, y_abs =  filter_overrepresentation_discrete(X, y_abs, min(counts)) # normalize_discrete(X, y_abs, nd)
     for abs in y_abs:
         y_i = np.zeros(max(y_abs))
         y_i[abs - 1] = 1
         y.append(y_i)
-    unique, counts = np.unique(y_abs, return_counts=True)
-    print(unique, counts)
     return X, y

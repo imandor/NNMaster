@@ -21,13 +21,13 @@ if __name__ == '__main__':
     nd = Net_data(
 
         # Program execution settings
-        EPOCHS = 100,
+        EPOCHS = 20,
         SLICE_SIZE= 200,
         STRIDE = 200,
         Y_STEP= 200,
         WIN_SIZE=200,
         SEARCH_RADIUS=200,
-        K_CROSS_VALIDATION=10,
+        K_CROSS_VALIDATION=3,
         session_filter=Filter(func=hann, search_radius=200, step_size=200),
 
         TIME_SHIFT_STEPS = 1,

@@ -8,63 +8,6 @@ def get_r2(y_predicted, y_target, step_size):
     R2_list = []
     y_predicted = y_predicted * step_size
     y_target = y_target * step_size
-
-    # begin test
-    # y_mean = 90 # np.mean(y_target[:, 0])
-    # y_pred = y_predicted[:,0]
-    # y_tar = y_target[:,0]
-    # y_p = []
-    # y_t = []
-    # R2_count_pos = 0
-    # R2_count_neg = 0
-    # R2_list = []
-    # R2_min = 1
-    # index = 0
-    # target_90_counter = 0
-    # terrible_counter = 0
-    # for i in range(y_tar.shape[0]):
-    #     y_p.append(y_pred[i])
-    #     y_t.append(y_tar[i])
-    #     if y_tar[i] == 90:
-    #         target_90_counter += 1
-    #     y_P = np.array(y_p)
-    #     y_T = np.array(y_t)
-    #     R2_tot = 1-np.sum((y_P-y_T)**2)/np.sum((y_T-y_mean)**2)
-    #     R2_current = 1 - (y_pred[i]-y_tar[i])**2 / (y_tar[i]-y_mean)**2
-    #     if R2_current < -1000:
-    #         terrible_counter += 1
-    #     if R2_current < R2_min:
-    #         R2_min = R2_current
-    #         index = i
-    #     if i == 2961:
-    #         print("asd")
-    #     R2_list.append(R2_current)
-    #     if R2_current >= 0:
-    #         R2_count_pos +=1
-    #     else:
-    #         R2_count_neg+=1
-    #
-    #     dist_curr = np.abs(y_pred[i]-y_tar[i])
-    #     random_curr = np.abs(y_T[i]-y_mean)
-    #     dist_total = np.average(np.abs(y_P-y_T))
-    #     random_total = np.average(np.abs(y_T-y_mean))
-    #     print("Y_pred",y_pred[i])
-    #     print("Y_tar",y_tar[i])
-    #     print("R2 total:",R2_tot)
-    #     print("R2 current:",R2_current)
-    #     print("dist curr:",dist_curr)
-    #     print("dist total:",dist_total)
-    #     print("dist r current:",random_curr)
-    #     print("dist r total:",random_total)
-    #
-    #     print("fin")
-    # R2_list = np.array(R2_list)
-    # R2_min = np.min(R2_list)
-    # R2_max = np.max(R2_list)
-    # R2_list_avg = np.average(R2_list)
-
-    # end test
-
     for i in range(y_target.shape[1]):
         y_mean = np.mean(y_target[:, i])
 
@@ -175,7 +118,8 @@ def predict_discrete(S, sess, X, Y, nd):
         x = np.array([data_slice for data_slice in X[j:j + 1]])
         y = np.array(Y[j:j + 1])
         x = np.reshape(x, [1] + [nd.x_shape[1]] + [nd.x_shape[2]] + [nd.x_shape[3]])
-        y_predicted[j] = S.valid(sess, x)[0]
+        prediction = S.valid(sess, x)[0]
+        y_predicted[j] = np.where(prediction==np.max(prediction),1,0)# int(np.argmax(S.valid(sess, x)[0]))
         y_target[j] = y
 
     return y_predicted, y_target
@@ -185,30 +129,27 @@ def test_accuracy(sess, S, nd, X, y, epoch, print_distance=False):
     if nd.metric == "map":
         return test_map_accuracy(sess, S, nd, X, y, epoch, print_distance=False)
     elif nd.metric == "discrete":
-        return test_discrete_accuracy(sess, S, nd, X, y, epoch, print_distance=False)
+        return test_discrete_accuracy(sess, S, nd, X, y)
 
 
-def get_discrete_accuracy(y_predicted, y_target):
+def get_total_discrete_accuracy(y_predicted, y_target):
     correct_count = 0
-    list_1 = []
-    list_2 = []
     for i in range(len(y_predicted)):
-        y_1 = int(np.argmax(y_predicted[i]))
-        y_2 = np.argmax(y_target[i])
-        list_1.append(y_1)
-        list_2.append(y_2)
-        if y_1 == y_2:
+        if np.argmax(y_predicted[i]) == np.argmax(y_target[i]):
             correct_count += 1
     return correct_count/ len(y_predicted)
 
+def get_label_discrete_accuracy(y_predicted, y_target):
+    counter = np.multiply(y_predicted,y_target)
+    return np.sum(counter,axis=0)/np.sum(y_target,axis=0)
 
-def test_discrete_accuracy(sess, S, nd, X, y, epoch, print_distance=False):
+
+def test_discrete_accuracy(sess, S, nd, X, y):
     y_predicted, y_target = predict_discrete(S, sess, X, y, nd)
     r2 = None
-    distance = None
-    accuracy = get_discrete_accuracy(y_predicted,y_target)
-    print(y_predicted[0])
-    return r2, distance, accuracy
+    label_discrete_accuracy = get_label_discrete_accuracy(y_predicted, y_target)
+    total_accuracy = get_total_discrete_accuracy(y_predicted, y_target)
+    return r2, label_discrete_accuracy, total_accuracy
 
 
 def test_map_accuracy(sess, S, nd, X, y, epoch, print_distance=False):
