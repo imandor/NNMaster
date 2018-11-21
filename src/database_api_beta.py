@@ -6,9 +6,9 @@ import scipy
 import bisect
 import glob
 import pickle
+from random import seed,randint
 import time
 import random
-from src.preprocessing import normalize_discrete
 well_to_color = {0: "#ff0000", 1: "#669900", 2: "#0066cc", 3: "#cc33ff", 4: "#003300", 5: "#996633"}
 
 
@@ -145,6 +145,7 @@ class Net_data:
                  lw_classifications = None,
                  lw_normalize = False,
                  lw_differentiate_false_licks = True,
+                 num_wells = 5,
                  metric="map"):
         self.MAKE_HISTOGRAM = MAKE_HISTOGRAM
         self.STRIDE = STRIDE
@@ -198,14 +199,15 @@ class Net_data:
         self.lw_classifications = lw_classifications
         self.lw_normalize = lw_normalize
         self.lw_differentiate_false_licks = lw_differentiate_false_licks
+        self.num_wells = num_wells
 
-
-    def split_data(self, X, y,k,normalize = False, nd=None):
+    def split_data(self, X, y,k,normalize = False):
         """"
         Splits data in to training and testing, supports cross validation
         """
+        valid_ratio = self.VALID_RATIO
         if self.K_CROSS_VALIDATION == 1:
-            valid_length = int(len(X) * self.VALID_RATIO)
+            valid_length = int(len(X) * valid_ratio)
             self.X_train = X[valid_length:]
             self.y_train = y[valid_length:]
             self.X_valid = X[:valid_length // 2]
@@ -213,7 +215,11 @@ class Net_data:
             self.X_test = X[valid_length // 2:valid_length]
             self.y_test = y[valid_length // 2:valid_length]
         else:
-            k_len = int(len(X) // self.K_CROSS_VALIDATION)
+            k_len = int(len(X) // valid_ratio)
+            if normalize is True:
+                counts = np.sum(y, axis=0)
+                counts = counts[1:] # TODO remove counts of well 1
+                k_len = int(self.VALID_RATIO * self.num_wells * min(counts)) # excludes area of samples which is not evenly spread over well types
             k_slice_test = slice(k_len * k, int(k_len * (k + 0.5)))
             k_slice_valid = slice(int(k_len * (k + 0.5)), k_len * (k + 1))
             not_k_slice_1 = slice(0, k_len * k)
@@ -224,13 +230,60 @@ class Net_data:
             self.y_test = y[k_slice_test]
             self.X_valid = X[k_slice_valid]
             self.y_valid = y[k_slice_valid]
+            asd = np.sum(self.y_train, axis=0)
             if normalize is True:
-                self.X_train, self.y_train = normalize_discrete(self.X_train, self.y_train, nd)
+
+                self.X_train, self.y_train = self.normalize_discrete(self.X_train, self.y_train,exclude_wells=[1])
         if self.keep_neuron != -1:
             for i in range(len(self.X_valid)):
                 for j in range(len(self.X_valid[0])):
                     if j != self.keep_neuron:
                         self.X_valid[i][j] = np.zeros(self.X_valid[i][j].shape)
+        dsa = np.sum(self.y_train,axis=0)
+        print(asd,dsa)
+
+    def normalize_discrete(self,x,y,exclude_wells=[]):
+        """
+
+        :param x:
+        :param y:
+        :param nd:
+        :param exclude_wells: list of wells which aren't included in the normalization. Useful ie if well 1 licks are over/underrepresented
+        :return:
+        """
+        seed(1)
+        """ artificially increases the amount of underrepresented samples. Note that the samples are shuffled, so overlaps will also be mixed in randomly"""
+        x_return = x
+        y_return = y
+        x_new = x
+        y_new = y # [y[i] for i in range(0, len(y), lick_batch_size)]
+        counts = np.sum(y_return,axis=0) # total number of licks by well
+        while len(y_new) > 0:
+            i = randint(0, len(y_new) - 1)
+            if max(counts*y_new[i]) < max(counts): # if count at well position smaller than max
+                x_return.append(x_new[i])
+                y_return.append(y_new[i])
+                counts[np.argmax(y_new[i])] += 1
+            else:
+                y_new.pop(i)
+                x_new.pop(i)
+        for i in exclude_wells:
+            counts = np.delete(counts,i-1)
+        return self.filter_overrepresentation_discrete(x_return, y_return, min(counts))
+
+
+    def filter_overrepresentation_discrete(self, x, y, max_occurrences):
+        x_return = []
+        y_return = []
+        y = np.array(y)
+        pos_counter = np.zeros(y[0].size)
+        for i, e in enumerate(y):
+            y_pos = np.argmax(e)
+            if pos_counter[y_pos] < max_occurrences:
+                x_return.append(x[i])
+                pos_counter[y_pos] += 1
+                y_return.append(e)
+        return x_return, y_return
 
 class Slice:
     def __init__(self, spikes, licks, position_x, position_y, speed, trial_timestamp):

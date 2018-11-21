@@ -22,42 +22,7 @@ def position_as_map(pos_list, xstep, ystep, X_MAX, X_MIN, Y_MAX, Y_MIN):
     return ret
 
 
-def normalize_discrete(x, y, nd):
-    seed(1)
-    """ artificially increases the amount of underrepresented samples"""
-    lick_batch_size = 10000 // nd.STRIDE - 11  # TODO remove explicit
-    x_return = x
-    y_return = y
-    x_new = []
-    y_new = [y[i] for i in range(0, len(y), lick_batch_size)]
-    for i in range(0, len(x), lick_batch_size):
-        x_new.append(x[i:i + lick_batch_size])
-    counts = np.sum(y_return,axis=0) # total number of licks by well
-    while len(y_new) > 0:
-        i = randint(0, len(y_new) - 1)
-        if max(counts*y_new[i]) < max(counts): # if count at well position smaller than max
-            for t in x_new[i]:
-                x_return.append(np.reshape(t, [len(t), len(t[0])]))
-                y_return.append(y_new[i])
-            counts[np.argmax(y_new[i])] += 39  # TODO remove explicit
-        else:
-            y_new.pop(i)
-            x_new.pop(i)
-    return filter_overrepresentation_discrete(x_return, y_return, min(counts))
 
-
-def filter_overrepresentation_discrete(x, y, max_occurrences):
-    x_return = []
-    y_return = []
-    y = np.array(y)
-    pos_counter = np.zeros(y[0].size)
-    for i, e in enumerate(y):
-        y_pos = np.argmax(e)
-        if pos_counter[y_pos] < max_occurrences:
-            x_return.append(x[i])
-            pos_counter[y_pos] += 1
-            y_return.append(e)
-    return x_return, y_return
 
 
 def filter_overrepresentation_map(x, y, max_occurrences, nd, axis=0):
@@ -216,9 +181,31 @@ def lickwells_io(session, nd, lick_well=1, shift=1, normalize=False,differentiat
             y_abs.pop(i)
             X.pop(i)
 
+    # spread wells evenly
+
+
+
+    x_ar = np.zeros((len(X),X[0].shape[0],X[0].shape[1]))
+    y_ar = np.zeros(len(X))
+
+    index_counter = unique - 2 # TODO explicit. - 1 for index and another - 1 for removing first well from counting
+    num_wells = nd.num_wells
+    finalcounter = num_wells*min(counts)
+
+    for i, y in enumerate(y_abs):
+        index = index_counter[y-2] # sets next well of type n at position of last well of type n + 5
+        if index >= num_wells*min(counts): # after index is minimum + five, the remaining values should be appended regularly
+            index = finalcounter
+            finalcounter += 1
+        x_ar[index] = X[i]
+        y_ar[index] = y_abs[i]
+        index_counter[y-2] += num_wells
+
+    for i in y_ar:
+        print(i)
     y = []
-    for abs in y_abs:
-        y_i = np.zeros(max(y_abs))
-        y_i[abs - 1] = 1
+    for val in y_ar:
+        y_i = np.zeros(int(max(y_ar)))
+        y_i[int(val) - 1] = 1
         y.append(y_i)
     return X, y

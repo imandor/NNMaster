@@ -39,7 +39,6 @@ def time_shift_data(X, y, n):
 
 
 def run_lickwell_network_process(nd):
-
     # Initialize session, parameters and network
 
     sess = tf.Session()
@@ -71,12 +70,14 @@ def run_lickwell_network_process(nd):
             print("\n_-_-_-_-_-_-_-_-_-_-Epoch", i, "_-_-_-_-_-_-_-_-_-_-\n")
 
             print("Validation results:")
-            _, avg_acc, acc_valid = test_accuracy(sess=sess, S=S, nd=nd, X=nd.X_valid, y=nd.y_valid, epoch=i,
-                                                           print_distance=True)
+            total, avg_acc, acc_valid = test_accuracy(sess=sess, S=S, nd=nd, X=nd.X_valid, y=nd.y_valid, epoch=i,
+                                                  print_distance=True)
             acc_scores_valid.append(acc_valid)
             avg_acc_valid.append(avg_acc)
-            print("Accuracy:", acc_valid)
             metric_counter = 0
+            print("Accuracy:", acc_valid)
+            print("Average:", avg_acc)
+            print("Total",total)
             if nd.EARLY_STOPPING is True and i >= 5:  # most likely overfitting instead of training
                 if i % 1 == 0:
 
@@ -114,8 +115,8 @@ def run_lickwell_network_process(nd):
 
 
 def run_network_process(nd):
-    # Initialize session, parameters and network
-
+    # S = ConvolutionalNeuralNetwork1([None, 56, 10, 1], cnn1)
+    S = MultiLayerPerceptron([None, nd.N_NEURONS, 50, 1], mlp)  # 56 147
     sess = tf.Session()
     r2_scores_train = []
     avg_scores_train = []
@@ -126,16 +127,7 @@ def run_network_process(nd):
     early_stop_max = -np.inf
     X_train = nd.X_train
     y_train = nd.y_train
-
-    # S = ConvolutionalNeuralNetwork1([None, 56, 10, 1], cnn1)
-    nd.x_shape = [nd.BATCH_SIZE] + list(X_train[0].shape) + [1]
-    if nd.metric == "map":
-        S = MultiLayerPerceptron([None, nd.N_NEURONS, 50, 1], mlp)  # 56 147
-        nd.y_shape = [nd.BATCH_SIZE] + list(y_train[0].shape) + [1]
-    elif nd.metric == "discrete":
-        S = MultiLayerPerceptron([None, nd.N_NEURONS, 11, 1], mlp_discrete)
-        nd.y_shape = [nd.BATCH_SIZE] + list(y_train[0].shape)
-
+    saver = tf.train.Saver()
     if nd.LOAD_MODEL is True:
         saver = tf.train.import_meta_graph(nd.MODEL_PATH + ".meta")
         saver.restore(sess, nd.MODEL_PATH)
@@ -143,15 +135,16 @@ def run_network_process(nd):
         S.initialize(sess)
 
     # Train model
-    saver = tf.train.Saver()
+
     sess.run(tf.local_variables_initializer())
     print("Training model...")
+    xshape = [nd.BATCH_SIZE] + list(X_train[0].shape) + [1]
+    yshape = [nd.BATCH_SIZE] + list(y_train[0].shape) + [1]
     metric_counter = 0  # net_dict["METRIC_ITER"]
     metric_step_counter = []
     stop_early = False
     for i in range(0, nd.EPOCHS + 1):
         X_train, y_train = shuffle_io(X_train, y_train, nd, i + 1)
-
         if metric_counter == nd.METRIC_ITER and stop_early is False:
             metric_step_counter.append(i)
             if nd.NAIVE_TEST is True:
@@ -167,12 +160,12 @@ def run_network_process(nd):
             acc_scores_valid.append(acc_valid)
             print("R2-score:", r2_valid)
             print("Avg-distance:", avg_valid)
-            print("Accuracy:", acc_valid)
+            # saver.save(sess, nd.MODEL_PATH, global_step=i, write_meta_graph=False)
             metric_counter = 0
             if nd.EARLY_STOPPING is True and i >= 5:  # most likely overfitting instead of training
                 if i % 1 == 0:
 
-                    _, _, acc_test = test_accuracy(sess=sess, S=S, nd=nd, X=nd.X_train, y=nd.y_train, epoch=i,
+                    _, _, acc_test = test_accuracy(sess=sess, S=S, nd=nd, X=nd.X_test, y=nd.y_test, epoch=i,
                                                    print_distance=False)
                     acc = acc_test[19]
                     if early_stop_max < acc:
@@ -180,8 +173,7 @@ def run_network_process(nd):
                     else:
                         if acc < early_stop_max - 0.01:
                             stop_early = True
-                            r2_scores_train = r2_scores_train[
-                                              0:-1]  # Remove latest result which was worse than the one before
+                            r2_scores_train = r2_scores_train[0:-1]  # Remove latest result which was worse
                             avg_scores_train = avg_scores_train[0:-1]
                             acc_scores_train = acc_scores_train[0:-1]
                             r2_scores_valid = r2_scores_valid[0:-1]
@@ -194,8 +186,8 @@ def run_network_process(nd):
         for j in range(0, len(X_train) - nd.BATCH_SIZE, nd.BATCH_SIZE):
             x = np.array([data_slice for data_slice in X_train[j:j + nd.BATCH_SIZE]])
             y = np.array(y_train[j:j + nd.BATCH_SIZE])
-            x = np.reshape(x, nd.x_shape)
-            y = np.reshape(y, nd.y_shape)
+            x = np.reshape(x, xshape)
+            y = np.reshape(y, yshape)
             if nd.NAIVE_TEST is False or nd.TIME_SHIFT == 0:
                 t = np.max(S.train(sess, x, y, dropout=0.65))
 
@@ -238,9 +230,9 @@ def initiate_network(nd):
     # session.set_filter(nd.session_filter)
     # print("Finished convolving data")
     # session.filtered_spikes = stats.zscore(session.filtered_spikes, axis=1)  # Z Score neural activity
-    # session.to_pickle("slice_OFC_200.pkl")
+    # session.to_pickle("slice_HC.pkl")
     # TODO
-    session = Slice.from_pickle("slice_OFC_200.pkl")
+    session = Slice.from_pickle("slice_HC.pkl")
     session.filter_neurons_randomly(nd.NEURONS_KEPT_FACTOR)
     session.print_details()
     nd.N_NEURONS = session.n_neurons
@@ -281,8 +273,6 @@ def initiate_lickwell_network(nd):
     return session
 
 
-
-
 def run_network(nd, session):
     # Assign validation set.
     for z in range(nd.INITIAL_TIMESHIFT, nd.INITIAL_TIMESHIFT + nd.TIME_SHIFT_STEPS * nd.TIME_SHIFT_ITER,
@@ -294,7 +284,7 @@ def run_network(nd, session):
         X, y = time_shift_positions(session, z, nd)
         if len(X) != len(y):
             raise ValueError("Error: Length of x and y are not identical")
-        # X, y = shuffle_io(X, y, nd, 3)
+        X, y = shuffle_io(X, y, nd, 3)
 
         r2_score_k_valid = []
         avg_score_k_valid = []
@@ -332,7 +322,9 @@ def run_network(nd, session):
         path = nd.MODEL_PATH + "output/" + chr(65 + iter) + "_" + now[0:10] + "_network_output_timeshift=" + str(
             z) + ".pkl"
         save_as_pickle(path, save_dict)
-    print("fin")
+
+
+print("fin")
 
 
 def create_save_dict(save_nd, z):
@@ -377,7 +369,6 @@ def create_save_dict(save_nd, z):
 
 
 def run_lickwell_network(nd, session):
-
     # Assign validation set.
 
     for z in range(nd.INITIAL_TIMESHIFT, nd.INITIAL_TIMESHIFT + nd.TIME_SHIFT_STEPS * nd.TIME_SHIFT_ITER,
@@ -389,7 +380,8 @@ def run_lickwell_network(nd, session):
 
         # Time-Shift input and output
 
-        X, y = lickwells_io(session, nd, lick_well=1, shift=1, normalize=nd.lw_normalize,differentiate_false_licks=nd.lw_differentiate_false_licks)
+        X, y = lickwells_io(session, nd, lick_well=1, shift=1, normalize=nd.lw_normalize,
+                            differentiate_false_licks=nd.lw_differentiate_false_licks)
 
         if len(X) != len(y):
             raise ValueError("Error: Length of x and y are not identical")
@@ -400,7 +392,7 @@ def run_lickwell_network(nd, session):
         acc_score_k_train = []
         for k in range(0, nd.K_CROSS_VALIDATION):
             print("cross validation step", str(k + 1), "of", nd.K_CROSS_VALIDATION)
-            nd.split_data(X, y, k,normalize=True,nd=nd)
+            nd.split_data(X, y, k, normalize=nd.lw_normalize)
             if nd.TIME_SHIFT_STEPS == 1:
                 save_nd = run_lickwell_network_process(nd)
             else:
@@ -424,12 +416,11 @@ def run_lickwell_network(nd, session):
         path = nd.MODEL_PATH + "output/" + chr(65 + iter) + "_" + now[0:10] + "_network_output_timeshift=" + str(
             z) + ".pkl"
 
-
-        print("Maximum average:",max(save_dict["acc_scores_valid"]))
-        print("average epoch 100: ",save_dict["acc_scores_valid"][-1])
+        print("Maximum average:", max(save_dict["acc_scores_valid"]))
+        print("average epoch 100: ", save_dict["acc_scores_valid"][-1])
         asd = []
         for v in acc_score_k_valid:
             asd.append(v[-1])
-        print("Minimum epoch 100:",min(asd))
+        print("Minimum epoch 100:", min(asd))
         save_as_pickle(path, save_dict)
     print("fin")

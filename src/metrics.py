@@ -132,24 +132,27 @@ def test_accuracy(sess, S, nd, X, y, epoch, print_distance=False):
         return test_discrete_accuracy(sess, S, nd, X, y)
 
 
-def get_total_discrete_accuracy(y_predicted, y_target):
+def get_label_accuracy(y_predicted, y_target):
     correct_count = 0
     for i in range(len(y_predicted)):
         if np.argmax(y_predicted[i]) == np.argmax(y_target[i]):
             correct_count += 1
-    return correct_count/ len(y_predicted)
+    return correct_count / len(y_predicted)
 
-def get_label_discrete_accuracy(y_predicted, y_target):
+def get_label_correct_count(y_predicted, y_target):
     counter = np.multiply(y_predicted,y_target)
-    return np.sum(counter,axis=0)/np.sum(y_target,axis=0)
+    return np.sum(counter,axis=0)# / np.sum(y_target,axis=0)
 
+def get_label_total_count(y_target):
+    return np.sum(y_target, axis=0)
 
 def test_discrete_accuracy(sess, S, nd, X, y):
     y_predicted, y_target = predict_discrete(S, sess, X, y, nd)
     r2 = None
-    label_discrete_accuracy = get_label_discrete_accuracy(y_predicted, y_target)
-    total_accuracy = get_total_discrete_accuracy(y_predicted, y_target)
-    return r2, label_discrete_accuracy, total_accuracy
+    correct_count = get_label_correct_count(y_predicted, y_target)
+    accuracy = get_label_accuracy(y_predicted, y_target)
+    total_count = get_label_total_count(y_target)
+    return total_count, correct_count, accuracy
 
 
 def test_map_accuracy(sess, S, nd, X, y, epoch, print_distance=False):
