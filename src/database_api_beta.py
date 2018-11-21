@@ -230,7 +230,6 @@ class Net_data:
             self.y_test = y[k_slice_test]
             self.X_valid = X[k_slice_valid]
             self.y_valid = y[k_slice_valid]
-            asd = np.sum(self.y_train, axis=0)
             if normalize is True:
 
                 self.X_train, self.y_train = self.normalize_discrete(self.X_train, self.y_train,exclude_wells=[1])
@@ -239,8 +238,6 @@ class Net_data:
                 for j in range(len(self.X_valid[0])):
                     if j != self.keep_neuron:
                         self.X_valid[i][j] = np.zeros(self.X_valid[i][j].shape)
-        dsa = np.sum(self.y_train,axis=0)
-        print(asd,dsa)
 
     def normalize_discrete(self,x,y,exclude_wells=[]):
         """
@@ -253,10 +250,10 @@ class Net_data:
         """
         seed(1)
         """ artificially increases the amount of underrepresented samples. Note that the samples are shuffled, so overlaps will also be mixed in randomly"""
-        x_return = x
-        y_return = y
-        x_new = x
-        y_new = y # [y[i] for i in range(0, len(y), lick_batch_size)]
+        x_return = x.copy()
+        y_return = y.copy()
+        x_new = x.copy()
+        y_new = y.copy() # [y[i] for i in range(0, len(y), lick_batch_size)]
         counts = np.sum(y_return,axis=0) # total number of licks by well
         while len(y_new) > 0:
             i = randint(0, len(y_new) - 1)

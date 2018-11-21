@@ -6,20 +6,20 @@ from src.network_functions import run_network_process, initiate_lickwell_network
 if __name__ == '__main__':
     # prefrontal cortex
 
-    MODEL_PATH = "G:/master_datafiles/trained_networks/MLP_PFC_2018-11-13_1000_200_100_lickwell_normalized/"
-    RAW_DATA_PATH = "G:/master_datafiles/raw_data/2018-04-09_14-39-52/"
-    FILTERED_DATA_PATH = "G:/master_datafiles/filtered_data/neocortex_hann_win_size_20.pkl"
+    # MODEL_PATH = "G:/master_datafiles/trained_networks/MLP_PFC_2018-11-13_1000_200_100_lickwell_normalized/"
+    # RAW_DATA_PATH = "G:/master_datafiles/raw_data/2018-04-09_14-39-52/"
+    # FILTERED_DATA_PATH = "slice_PFC_200.pkl"
 
     # hippocampus
 
-    # MODEL_PATH = "G:/master_datafiles/trained_networks/MLP_HC_2018-11-15_1000_200_100_lickwell/"
-    # RAW_DATA_PATH = "G:/master_datafiles/raw_data/2018-05-16_17-13-37/"
-    # FILTERED_DATA_PATH = "G:/master_datafiles/filtered_data/hippocampus_hann_win_size_25_09-5_7.pkl"
+    MODEL_PATH = "G:/master_datafiles/trained_networks/MLP_HC_2018-11-15_1000_200_100_lickwell/"
+    RAW_DATA_PATH = "G:/master_datafiles/raw_data/2018-05-16_17-13-37/"
+    FILTERED_DATA_PATH = "slice_HC_200.pkl"
 
     nd = Net_data(
 
         # Program execution settings
-        EPOCHS=1,
+        EPOCHS=20,
         SLICE_SIZE=200,
         STRIDE=200,
         Y_STEP=200,
@@ -36,7 +36,7 @@ if __name__ == '__main__':
         SHUFFLE_DATA=True,
         SHUFFLE_FACTOR=1,
         lw_classifications=5,
-        lw_normalize=True,
+        lw_normalize=False,
         lw_differentiate_false_licks=False,
         num_wells = 4
     )

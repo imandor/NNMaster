@@ -68,6 +68,14 @@ def run_lickwell_network_process(nd):
 
             # Evaluate
             print("\n_-_-_-_-_-_-_-_-_-_-Epoch", i, "_-_-_-_-_-_-_-_-_-_-\n")
+            # print("Training results:")
+            # total, avg_acc, acc_valid = test_accuracy(sess=sess, S=S, nd=nd, X=nd.X_train, y=nd.y_train, epoch=i,
+            #                                       print_distance=True)
+
+
+
+
+
 
             print("Validation results:")
             total, avg_acc, acc_valid = test_accuracy(sess=sess, S=S, nd=nd, X=nd.X_valid, y=nd.y_valid, epoch=i,
@@ -75,9 +83,6 @@ def run_lickwell_network_process(nd):
             acc_scores_valid.append(acc_valid)
             avg_acc_valid.append(avg_acc)
             metric_counter = 0
-            print("Accuracy:", acc_valid)
-            print("Average:", avg_acc)
-            print("Total",total)
             if nd.EARLY_STOPPING is True and i >= 5:  # most likely overfitting instead of training
                 if i % 1 == 0:
 
@@ -261,8 +266,8 @@ def initiate_lickwell_network(nd):
     # session.filtered_spikes = stats.zscore(session.filtered_spikes, axis=1)  # Z Score neural activity
     # session.to_pickle("slice_PFC_200.pkl")
     # TODO
-    # session = Slice.from_pickle("slice_HC_200.pkl")
-    session = Slice.from_pickle("slice_PFC_200.pkl")
+    session = Slice.from_pickle("slice_HC_200.pkl")
+    # session = Slice.from_pickle("slice_PFC_200.pkl")
 
     session.filter_neurons_randomly(nd.NEURONS_KEPT_FACTOR)
     session.print_details()
@@ -385,7 +390,7 @@ def run_lickwell_network(nd, session):
 
         if len(X) != len(y):
             raise ValueError("Error: Length of x and y are not identical")
-        X, y = shuffle_io(X, y, nd, 3, shuffle_batch_size=39)
+        # X, y = shuffle_io(X, y, nd, 3, shuffle_batch_size=39)
 
         acc_score_k_valid = []
         avg_score_k_valid = []

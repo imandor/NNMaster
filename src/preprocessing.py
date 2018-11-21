@@ -197,12 +197,13 @@ def lickwells_io(session, nd, lick_well=1, shift=1, normalize=False,differentiat
         if index >= num_wells*min(counts): # after index is minimum + five, the remaining values should be appended regularly
             index = finalcounter
             finalcounter += 1
+
         x_ar[index] = X[i]
         y_ar[index] = y_abs[i]
         index_counter[y-2] += num_wells
 
-    for i in y_ar:
-        print(i)
+    # for i,e in enumerate(y_ar):
+    #     print(i,e)
     y = []
     for val in y_ar:
         y_i = np.zeros(int(max(y_ar)))
