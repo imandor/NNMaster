@@ -149,27 +149,76 @@ def time_shift_positions(session, shift, nd):
     return X, y
 
 
-def lickwells_io(session, nd, lick_well=1, shift=1, normalize=False,differentiate_false_licks = False):
+def generate_counter(num_wells,excluded_wells):
+    """
+    :param num_wells:
+    :param excluded_wells:
+    :return: empty counter for licks per well with correct size
+    """
+    return np.zeros(num_wells-len(excluded_wells))
+
+def normalize_well(well,num_wells,excluded_wells):
+    return int((well - 1 - len(excluded_wells)) % (num_wells - len(excluded_wells)))
+
+def lickwells_io(session, nd, excluded_wells=[1], shift=1, normalize=False,differentiate_false_licks = False):
     # get all slices within n milliseconds around lick_well
+
+
+
+    # Filter licks and spread them as evenly as possible
+
+    licks = session.licks # np.zeros(len(session.licks))
+    filtered_licks = []
+    filtered_next_wells = []
+    # create list of valid licks
+    for i, lick in enumerate(licks):
+        if i > - shift and i < len(licks) - shift and lick["lickwell"] == np.any(excluded_wells) and (
+                normalize is False or licks[i + shift][
+            "lickwell"] != np.any(excluded_wells)):  # exclude trailing samples to stay inside shift range
+            filtered_licks.append(lick)
+            next_well = int(licks[i+shift]["lickwell"])
+            filtered_next_wells.append(next_well)
+            # counter[next_well-len(excluded_wells)-1] += 1
+
+
+
+    # distribute list of licks as evenly over well type as possible
+
+    counter = generate_counter(nd.num_wells,excluded_wells)
+    distributed_licks = [None]*(nd.num_wells*len(filtered_licks))
+    distributed_next_well = np.zeros(nd.num_wells*len(filtered_licks))
+    for i,well in enumerate(filtered_next_wells):
+        lickwell_norm = normalize_well(well,nd.num_wells,excluded_wells)
+        distributed_index = lickwell_norm + int((nd.num_wells-len(excluded_wells))*counter[lickwell_norm])
+        distributed_licks[distributed_index] = filtered_licks[i]
+        distributed_next_well[distributed_index] = well
+        counter[lickwell_norm] += 1
+
+    # remove zeros and convert back to list
+
+    licks = []
+    next_well = []
+    for i,e in enumerate(distributed_licks):
+        if e != None:
+            licks.append(e)
+            next_well.append(int(distributed_next_well[i]))
     y_abs = []
     X = []
-    licks = session.licks
-    for i, lick in enumerate(licks):
-        if i > - shift and i < len(licks) - shift and lick["lickwell"] == lick_well and (
-                normalize is False or licks[i + shift][
-            "lickwell"] != lick_well):  # exclude trailing samples to stay inside shift range
-            lick_start = int(lick["time"] - 5000)
-            lick_end = int(lick["time"] + 5000)
-            slice = session[lick_start:lick_end]
 
-            for j in range(0, 10000 // nd.WIN_SIZE - 11):
-                bins_to_x = [c[j:j + 11] for c in slice.filtered_spikes]
-                bins_to_x = np.reshape(bins_to_x, [len(bins_to_x), len(bins_to_x[0])])
-                X.append(bins_to_x)
-                if differentiate_false_licks is False:
-                    y_abs.append(licks[i + shift]["lickwell"])
-                else:
-                    y_abs.append(licks[i + shift]["lickwell"]+(licks[i + shift]["rewarded"]*nd.lw_classifications))
+    # Generate input and output
+    for i, lick in enumerate(licks):
+        lick_start = int(lick["time"] - 5000)
+        lick_end = int(lick["time"] + 5000)
+        slice = session[lick_start:lick_end]
+        for j in range(0, 10000 // nd.WIN_SIZE - 11):
+            bins_to_x = [c[j:j + 11] for c in slice.filtered_spikes]
+            bins_to_x = np.reshape(bins_to_x, [len(bins_to_x), len(bins_to_x[0])])
+            X.append(bins_to_x)
+            if differentiate_false_licks is False:
+                y_abs.append(next_well[i])
+            # else:
+                # TODO
+                # y_abs.append(next_well +(licks[i + shift]["rewarded"]*nd.lw_classifications))
 
     print("Lickwell count:")
     unique, counts = np.unique(y_abs, return_counts=True)
@@ -177,36 +226,15 @@ def lickwells_io(session, nd, lick_well=1, shift=1, normalize=False,differentiat
 
     # remove instances of double licks at lick_well
     for i,y in enumerate(y_abs):
-        if y == lick_well:
+        if y == np.any(excluded_wells):
             y_abs.pop(i)
             X.pop(i)
 
-    # spread wells evenly
+    # Convert y to logits format
 
-
-
-    x_ar = np.zeros((len(X),X[0].shape[0],X[0].shape[1]))
-    y_ar = np.zeros(len(X))
-
-    index_counter = unique - 2 # TODO explicit. - 1 for index and another - 1 for removing first well from counting
-    num_wells = nd.num_wells
-    finalcounter = num_wells*min(counts)
-
-    for i, y in enumerate(y_abs):
-        index = index_counter[y-2] # sets next well of type n at position of last well of type n + 5
-        if index >= num_wells*min(counts): # after index is minimum + five, the remaining values should be appended regularly
-            index = finalcounter
-            finalcounter += 1
-
-        x_ar[index] = X[i]
-        y_ar[index] = y_abs[i]
-        index_counter[y-2] += num_wells
-
-    # for i,e in enumerate(y_ar):
-    #     print(i,e)
     y = []
-    for val in y_ar:
-        y_i = np.zeros(int(max(y_ar)))
+    for val in y_abs:
+        y_i = np.zeros(nd.num_wells)
         y_i[int(val) - 1] = 1
         y.append(y_i)
     return X, y

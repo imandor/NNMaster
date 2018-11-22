@@ -72,10 +72,9 @@ def run_lickwell_network_process(nd):
             # total, avg_acc, acc_valid = test_accuracy(sess=sess, S=S, nd=nd, X=nd.X_train, y=nd.y_train, epoch=i,
             #                                       print_distance=True)
 
-
-
-
-
+            if nd.evaluate_training is True:
+                total, avg_acc, acc_valid = test_accuracy(sess=sess, S=S, nd=nd, X=nd.X_train, y=nd.y_train, epoch=i,
+                                                      print_distance=True)
 
             print("Validation results:")
             total, avg_acc, acc_valid = test_accuracy(sess=sess, S=S, nd=nd, X=nd.X_valid, y=nd.y_valid, epoch=i,
@@ -266,8 +265,8 @@ def initiate_lickwell_network(nd):
     # session.filtered_spikes = stats.zscore(session.filtered_spikes, axis=1)  # Z Score neural activity
     # session.to_pickle("slice_PFC_200.pkl")
     # TODO
-    session = Slice.from_pickle("slice_HC_200.pkl")
-    # session = Slice.from_pickle("slice_PFC_200.pkl")
+    # session = Slice.from_pickle("slice_HC_200.pkl")
+    session = Slice.from_pickle("slice_PFC_200.pkl")
 
     session.filter_neurons_randomly(nd.NEURONS_KEPT_FACTOR)
     session.print_details()
@@ -385,7 +384,7 @@ def run_lickwell_network(nd, session):
 
         # Time-Shift input and output
 
-        X, y = lickwells_io(session, nd, lick_well=1, shift=1, normalize=nd.lw_normalize,
+        X, y = lickwells_io(session, nd, excluded_wells=[1], shift=1, normalize=nd.lw_normalize,
                             differentiate_false_licks=nd.lw_differentiate_false_licks)
 
         if len(X) != len(y):
@@ -396,6 +395,8 @@ def run_lickwell_network(nd, session):
         avg_score_k_valid = []
         acc_score_k_train = []
         for k in range(0, nd.K_CROSS_VALIDATION):
+            if k==6:
+                print("asd")
             print("cross validation step", str(k + 1), "of", nd.K_CROSS_VALIDATION)
             nd.split_data(X, y, k, normalize=nd.lw_normalize)
             if nd.TIME_SHIFT_STEPS == 1:

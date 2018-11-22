@@ -111,6 +111,7 @@ class Net_data:
                  Y_SLICE_SIZE = 200,
                  network_type="MLP",
                  EPOCHS=20,
+                 evaluate_training = False,
                  session_filter=Filter(func=hann, search_radius=SEARCH_RADIUS, step_size=WIN_SIZE),
                  TIME_SHIFT_STEPS = 1,
                  SHUFFLE_DATA = True,
@@ -148,6 +149,7 @@ class Net_data:
                  num_wells = 5,
                  metric="map"):
         self.MAKE_HISTOGRAM = MAKE_HISTOGRAM
+        self.evaluate_training = evaluate_training
         self.STRIDE = STRIDE
         self.TRAIN_MODEL = TRAIN_MODEL
         self.Y_SLICE_SIZE = Y_SLICE_SIZE
@@ -201,7 +203,7 @@ class Net_data:
         self.lw_differentiate_false_licks = lw_differentiate_false_licks
         self.num_wells = num_wells
 
-    def split_data(self, X, y,k,normalize = False):
+    def split_data(self, X, y,k,excluded_wells = [1],normalize = False):
         """"
         Splits data in to training and testing, supports cross validation
         """
@@ -219,7 +221,7 @@ class Net_data:
             if normalize is True:
                 counts = np.sum(y, axis=0)
                 counts = counts[1:] # TODO remove counts of well 1
-                k_len = int(self.VALID_RATIO * self.num_wells * min(counts)) # excludes area of samples which is not evenly spread over well types
+                k_len = int(self.VALID_RATIO * (self.num_wells-len(excluded_wells)) * min(counts)) # excludes area of samples which is not evenly spread over well types
             k_slice_test = slice(k_len * k, int(k_len * (k + 0.5)))
             k_slice_valid = slice(int(k_len * (k + 0.5)), k_len * (k + 1))
             not_k_slice_1 = slice(0, k_len * k)
@@ -230,14 +232,20 @@ class Net_data:
             self.y_test = y[k_slice_test]
             self.X_valid = X[k_slice_valid]
             self.y_valid = y[k_slice_valid]
+            # print(np.sum(self.y_train, axis=0))
+            # print(np.sum(self.y_valid, axis=0))
+
             if normalize is True:
 
-                self.X_train, self.y_train = self.normalize_discrete(self.X_train, self.y_train,exclude_wells=[1])
+                self.X_train, self.y_train = self.normalize_discrete(self.X_train, self.y_train,exclude_wells=excluded_wells)
         if self.keep_neuron != -1:
             for i in range(len(self.X_valid)):
                 for j in range(len(self.X_valid[0])):
                     if j != self.keep_neuron:
                         self.X_valid[i][j] = np.zeros(self.X_valid[i][j].shape)
+        # print(np.sum(self.y_train, axis=0))
+        # print(np.sum(self.y_valid, axis=0))
+        # print("fin")
 
     def normalize_discrete(self,x,y,exclude_wells=[]):
         """
