@@ -265,8 +265,8 @@ def initiate_lickwell_network(nd):
     # session.filtered_spikes = stats.zscore(session.filtered_spikes, axis=1)  # Z Score neural activity
     # session.to_pickle("slice_PFC_200.pkl")
     # TODO
-    # session = Slice.from_pickle("slice_HC_200.pkl")
-    session = Slice.from_pickle("slice_PFC_200.pkl")
+    session = Slice.from_pickle(nd.FILTERED_DATA_PATH)
+    # session = Slice.from_pickle("slice_PFC_200.pkl")
 
     session.filter_neurons_randomly(nd.NEURONS_KEPT_FACTOR)
     session.print_details()
@@ -372,7 +372,7 @@ def create_save_dict(save_nd, z):
     return save_dict
 
 
-def run_lickwell_network(nd, session):
+def run_lickwell_network(nd, session,X,y):
     # Assign validation set.
 
     for z in range(nd.INITIAL_TIMESHIFT, nd.INITIAL_TIMESHIFT + nd.TIME_SHIFT_STEPS * nd.TIME_SHIFT_ITER,
@@ -384,8 +384,6 @@ def run_lickwell_network(nd, session):
 
         # Time-Shift input and output
 
-        X, y = lickwells_io(session, nd, excluded_wells=[1], shift=1, normalize=nd.lw_normalize,
-                            differentiate_false_licks=nd.lw_differentiate_false_licks)
 
         if len(X) != len(y):
             raise ValueError("Error: Length of x and y are not identical")
@@ -395,8 +393,6 @@ def run_lickwell_network(nd, session):
         avg_score_k_valid = []
         acc_score_k_train = []
         for k in range(0, nd.K_CROSS_VALIDATION):
-            if k==6:
-                print("asd")
             print("cross validation step", str(k + 1), "of", nd.K_CROSS_VALIDATION)
             nd.split_data(X, y, k, normalize=nd.lw_normalize)
             if nd.TIME_SHIFT_STEPS == 1:
@@ -422,11 +418,11 @@ def run_lickwell_network(nd, session):
         path = nd.MODEL_PATH + "output/" + chr(65 + iter) + "_" + now[0:10] + "_network_output_timeshift=" + str(
             z) + ".pkl"
 
-        print("Maximum average:", max(save_dict["acc_scores_valid"]))
-        print("average epoch 100: ", save_dict["acc_scores_valid"][-1])
+        print("Maximum average:", max(save_dict["acc_scores_valid"]),"(epoch",str(1+np.argmax(save_dict["acc_scores_valid"])),")")
+        print("average epoch 10: ", save_dict["acc_scores_valid"][-1])
         asd = []
         for v in acc_score_k_valid:
             asd.append(v[-1])
-        print("Minimum epoch 100:", min(asd))
+        print("Minimum epoch 10:", min(asd))
         save_as_pickle(path, save_dict)
     print("fin")

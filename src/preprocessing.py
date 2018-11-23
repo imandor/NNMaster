@@ -160,7 +160,35 @@ def generate_counter(num_wells,excluded_wells):
 def normalize_well(well,num_wells,excluded_wells):
     return int((well - 1 - len(excluded_wells)) % (num_wells - len(excluded_wells)))
 
-def lickwells_io(session, nd, excluded_wells=[1], shift=1, normalize=False,differentiate_false_licks = False):
+
+def get_all_valid_licks(session,start_well = 1,change_is_valid=False):
+    """
+
+    :param session: session object
+    :param start_well: dominant well in training phase (usually well 1)
+    :param change_is_valid: if True exclude licks without change in training phase, if False licks with change
+    :return: a list of indizes of licks corresponding to filter
+    """
+
+    licks = session.licks
+    current_phase_well = None
+    filtered_licks = []
+    for i,lick in enumerate(licks[0:-2]):
+        well = lick["lickwell"]
+        next_well = licks[i+1]["lickwell"]
+        if current_phase_well is None and well != start_well: # set well that is currently being trained for
+            current_phase_well = well
+        if current_phase_well is not None and well == 1: # append lick if it fits valid_filter
+            if (change_is_valid is True and next_well!= current_phase_well) or (change_is_valid is not True and next_well==current_phase_well):
+                filtered_licks.append(lick)
+            if next_well != current_phase_well: # change phase if applicable
+                current_phase_well = next_well
+    return filtered_licks
+
+
+
+
+def lickwells_io(session, nd, excluded_wells=[1], shift=1, normalize=False,differentiate_false_licks = False,valid_licks=[]):
     # get all slices within n milliseconds around lick_well
 
 
@@ -172,9 +200,12 @@ def lickwells_io(session, nd, excluded_wells=[1], shift=1, normalize=False,diffe
     filtered_next_wells = []
     # create list of valid licks
     for i, lick in enumerate(licks):
+        if lick["rewarded"] == 1:
+            print(i,lick["lickwell"])
         if i > - shift and i < len(licks) - shift and lick["lickwell"] == np.any(excluded_wells) and (
                 normalize is False or licks[i + shift][
-            "lickwell"] != np.any(excluded_wells)):  # exclude trailing samples to stay inside shift range
+            "lickwell"] != np.any(excluded_wells)) and (valid_licks == [] or i == np.any(valid_licks)):
+            # exclude trailing samples to stay inside shift range
             filtered_licks.append(lick)
             next_well = int(licks[i+shift]["lickwell"])
             filtered_next_wells.append(next_well)

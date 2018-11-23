@@ -138,6 +138,7 @@ class Net_data:
                  SEARCH_RADIUS=SEARCH_RADIUS,
                  NAIVE_TEST = False,
                  VALID_RATIO = 0.1,
+                 testing_ratio = 0.1,
                  K_CROSS_VALIDATION = 1,
                  LOAD_MODEL = False,
                  TRAIN_MODEL = True,
@@ -147,7 +148,9 @@ class Net_data:
                  lw_normalize = False,
                  lw_differentiate_false_licks = True,
                  num_wells = 5,
-                 metric="map"):
+                 FILTERED_DATA_PATH = "slice.pkl",
+                 metric="map",
+                 licks=None):
         self.MAKE_HISTOGRAM = MAKE_HISTOGRAM
         self.evaluate_training = evaluate_training
         self.STRIDE = STRIDE
@@ -202,6 +205,11 @@ class Net_data:
         self.lw_normalize = lw_normalize
         self.lw_differentiate_false_licks = lw_differentiate_false_licks
         self.num_wells = num_wells
+        self.testing_ratio = testing_ratio
+        self.FILTERED_DATA_PATH = FILTERED_DATA_PATH
+        self.licks = licks
+
+
 
     def split_data(self, X, y,k,excluded_wells = [1],normalize = False):
         """"
@@ -232,6 +240,10 @@ class Net_data:
             self.y_test = y[k_slice_test]
             self.X_valid = X[k_slice_valid]
             self.y_valid = y[k_slice_valid]
+            if self.EARLY_STOPPING is False:
+                self.X_valid = self.X_valid + self.X_test
+                self.y_valid = self.y_valid + self.y_test
+
             # print(np.sum(self.y_train, axis=0))
             # print(np.sum(self.y_valid, axis=0))
 
@@ -541,7 +553,8 @@ class Slice:
         # licks
         licks = [{"time": float(initial_detection_timestamp[i]),
                   "lickwell": int(lickwells[i]),
-                  "rewarded": int(rewarded[i])}
+                  "rewarded": int(rewarded[i]),
+                  "lick_id":i}
                  for i in
                  range(1, len(initial_detection_timestamp))]  # Please note that first lick is deleted by default TODO
         print("finished loading session")
