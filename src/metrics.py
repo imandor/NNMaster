@@ -119,19 +119,15 @@ def predict_discrete(S, sess, X, Y, nd):
         y = np.array(Y[j:j + 1])
         x = np.reshape(x, [1] + [nd.x_shape[1]] + [nd.x_shape[2]] + [nd.x_shape[3]])
         prediction = S.valid(sess, x)[0]
-        y_predicted[j] = np.where(prediction==np.max(prediction),1,0)# int(np.argmax(S.valid(sess, x)[0]))
-        if np.max(prediction) == 0: # TODO
-            y_predicted[j] = np.array([1,0,0,0,0])
+        y_predicted[j] = np.where(prediction == np.max(prediction), 1, 0)  # int(np.argmax(S.valid(sess, x)[0]))
+        if np.max(prediction) == 0:  # TODO
+            y_predicted[j] = np.array([1, 0, 0, 0, 0])
         y_target[j] = y
-
     return y_predicted, y_target
 
 
 def test_accuracy(sess, S, nd, X, y, epoch, print_distance=False):
-    if nd.metric == "map":
-        return test_map_accuracy(sess, S, nd, X, y, epoch, print_distance=False)
-    elif nd.metric == "discrete":
-        return test_discrete_accuracy(sess, S, nd, X, y)
+    return test_map_accuracy(sess, S, nd, X, y, epoch, print_distance=print_distance)
 
 
 def get_label_accuracy(y_predicted, y_target):
@@ -141,27 +137,31 @@ def get_label_accuracy(y_predicted, y_target):
             correct_count += 1
     return correct_count / len(y_predicted)
 
+
 def get_label_correct_count(y_predicted, y_target):
-    counter = np.multiply(y_predicted,y_target)
-    return np.sum(counter,axis=0)# / np.sum(y_target,axis=0)
+    counter = np.multiply(y_predicted, y_target)
+    return np.sum(counter, axis=0)  # / np.sum(y_target,axis=0)
+
 
 def get_label_total_count(y):
     return np.sum(y, axis=0)
 
-def test_discrete_accuracy(sess, S, nd, X, y):
+
+
+def test_discrete_accuracy(sess, S, nd, X, y, metadata):
     y_predicted, y_target = predict_discrete(S, sess, X, y, nd)
-    r2 = None
     correct_count = get_label_correct_count(y_predicted, y_target)
     accuracy = get_label_accuracy(y_predicted, y_target)
     total_count = get_label_total_count(y_predicted)
     total_samples = get_label_total_count(y_target)
-    print("correct guesses",correct_count)
-    print("guesses by well",total_count)
-    print("total samples",total_samples)
-    print("accuracy",accuracy)
+    print("correct guesses", correct_count)
+    print("guesses by well", total_count)
+    print("total samples", total_samples)
+    print("accuracy", accuracy)
     # y_predicted, y_target = predict_discrete(S, sess, X, y, nd)
     return total_count, correct_count, accuracy
 
+def test_discriminate_discrete_accuracy():
 
 def test_map_accuracy(sess, S, nd, X, y, epoch, print_distance=False):
     y_predicted, y_target = predict_map(S, sess, X, y)

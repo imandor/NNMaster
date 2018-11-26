@@ -1,6 +1,6 @@
 from src.database_api_beta import Slice, Filter, hann, Net_data
 
-from src.preprocessing import lickwells_io,get_all_valid_licks
+from src.preprocessing import lickwells_io
 from src.network_functions import run_network_process, initiate_lickwell_network, run_lickwell_network
 
 if __name__ == '__main__':
@@ -29,26 +29,26 @@ if __name__ == '__main__':
         K_CROSS_VALIDATION=10,
         session_filter=Filter(func=hann, search_radius=200, step_size=200),
         VALID_RATIO=0.1,
-        testing_ratio = 0,
+        testing_ratio=0,
         TIME_SHIFT_STEPS=1,
         EARLY_STOPPING=False,
         MODEL_PATH=MODEL_PATH,
         RAW_DATA_PATH=RAW_DATA_PATH,
-        FILTERED_DATA_PATH = FILTERED_DATA_PATH,
+        FILTERED_DATA_PATH=FILTERED_DATA_PATH,
         metric="discrete",
         SHUFFLE_DATA=True,
         SHUFFLE_FACTOR=1,
         lw_classifications=5,
         lw_normalize=True,
         lw_differentiate_false_licks=False,
-        num_wells = 5,
+        num_wells=5,
         INITIAL_TIMESHIFT=1,
     )
 
-    session = initiate_lickwell_network(nd) # Initialize session
-    valid_licks = get_all_valid_licks(session,start_well = 1,change_is_valid=True)
-    X, y = lickwells_io(session, nd, excluded_wells=[1], shift=nd.INITIAL_TIMESHIFT, normalize=nd.lw_normalize,
-                        differentiate_false_licks=nd.lw_differentiate_false_licks)
-    run_lickwell_network(nd, session,X,y)
+    session = initiate_lickwell_network(nd)  # Initialize session
+    X, y, metadata = lickwells_io(session, nd, excluded_wells=[1], shift=nd.INITIAL_TIMESHIFT,
+                                  normalize=nd.lw_normalize,
+                                  differentiate_false_licks=nd.lw_differentiate_false_licks)
+    run_lickwell_network(nd, session, X, y, metadata)
 
     print("fin")

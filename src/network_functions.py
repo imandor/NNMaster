@@ -1,12 +1,13 @@
 import tensorflow as tf
 from src.nets import MultiLayerPerceptron
-from src.metrics import test_accuracy, plot_histogram
+from src.metrics import test_accuracy, test_discrete_accuracy, plot_histogram
 from src.conf import mlp, mlp_discrete
 from src.database_api_beta import Slice, Filter, hann
 from src.metrics import print_Net_data
 import numpy as np
 from src.settings import save_as_pickle, load_pickle, save_net_dict
-from src.preprocessing import time_shift_positions, shuffle_io, position_as_map, lickwells_io
+from src.preprocessing import time_shift_positions, shuffle_io, position_as_map, lickwells_io, generate_counter, \
+    abs_to_logits
 import multiprocessing
 import os
 import errno
@@ -38,6 +39,13 @@ def time_shift_data(X, y, n):
     return X, y
 
 
+def licks_to_logits(licks, num_wells):
+    return_list = []
+    for lick in licks:
+        return_list.append(abs_to_logits(lick.prediction, num_wells))
+    return return_list
+
+
 def run_lickwell_network_process(nd):
     # Initialize session, parameters and network
 
@@ -46,10 +54,15 @@ def run_lickwell_network_process(nd):
     avg_acc_valid = []
     early_stop_max = -np.inf
     X_train = nd.X_train
-    y_train = nd.y_train
+    logits_train = licks_to_logits(nd.y_train, nd.num_wells)
+    X_valid = nd.X_valid
+    logits_valid = licks_to_logits(nd.y_valid, nd.num_wells)
+    X_test = nd.X_test
+    logits_test = licks_to_logits(nd.y_test, nd.num_wells)
+
     S = MultiLayerPerceptron([None, nd.N_NEURONS, 11, 1], mlp_discrete)
     nd.x_shape = [nd.BATCH_SIZE] + list(X_train[0].shape) + [1]
-    nd.y_shape = [nd.BATCH_SIZE] + list(y_train[0].shape)
+    nd.y_shape = [nd.BATCH_SIZE] + [nd.num_wells]
     if nd.LOAD_MODEL is True:
         saver = tf.train.import_meta_graph(nd.MODEL_PATH + ".meta")
         saver.restore(sess, nd.MODEL_PATH)
@@ -61,7 +74,7 @@ def run_lickwell_network_process(nd):
     metric_counter = 0  # net_dict["METRIC_ITER"]
     metric_step_counter = []
     for i in range(0, nd.EPOCHS + 1):
-        X_train, y_train = shuffle_io(X_train, y_train, nd, i + 1)
+        X_train, logits_train = shuffle_io(X_train, logits_train, nd, i + 1)
 
         if metric_counter == nd.METRIC_ITER:
             metric_step_counter.append(i)
@@ -73,20 +86,20 @@ def run_lickwell_network_process(nd):
             #                                       print_distance=True)
 
             if nd.evaluate_training is True:
-                total, avg_acc, acc_valid = test_accuracy(sess=sess, S=S, nd=nd, X=nd.X_train, y=nd.y_train, epoch=i,
-                                                      print_distance=True)
+                total, avg_acc, acc_valid = test_discrete_accuracy(sess=sess, S=S, nd=nd, X=X_train, y=logits_train,
+                                                                   metadata=nd.y_train)
 
             print("Validation results:")
-            total, avg_acc, acc_valid = test_accuracy(sess=sess, S=S, nd=nd, X=nd.X_valid, y=nd.y_valid, epoch=i,
-                                                  print_distance=True)
+            total, avg_acc, acc_valid = test_discrete_accuracy(sess=sess, S=S, nd=nd, X=X_valid, y=logits_valid,
+                                                               metadata=nd.y_valid)
             acc_scores_valid.append(acc_valid)
             avg_acc_valid.append(avg_acc)
             metric_counter = 0
             if nd.EARLY_STOPPING is True and i >= 5:  # most likely overfitting instead of training
                 if i % 1 == 0:
 
-                    _, _, acc_test = test_accuracy(sess=sess, S=S, nd=nd, X=nd.X_test, y=nd.y_test, epoch=i,
-                                                   print_distance=False)
+                    _, _, acc_test = test_discrete_accuracy(sess=sess, S=S, nd=nd, X=X_test, y=logits_test,
+                                                            metadata=nd.y_test)
                     acc = acc_test[19]
                     if early_stop_max < acc:
                         early_stop_max = acc
@@ -98,7 +111,7 @@ def run_lickwell_network_process(nd):
 
         for j in range(0, len(X_train) - nd.BATCH_SIZE, nd.BATCH_SIZE):
             x = np.array([data_slice for data_slice in X_train[j:j + nd.BATCH_SIZE]])
-            y = np.array(y_train[j:j + nd.BATCH_SIZE])
+            y = np.array(logits_train[j:j + nd.BATCH_SIZE])
             x = np.reshape(x, nd.x_shape)
             y = np.reshape(y, nd.y_shape)
             if nd.NAIVE_TEST is False or nd.TIME_SHIFT == 0:
@@ -157,7 +170,8 @@ def run_network_process(nd):
             print("\n_-_-_-_-_-_-_-_-_-_-Epoch", i, "_-_-_-_-_-_-_-_-_-_-\n")
 
             print("Validation results:")
-            r2_valid, avg_valid, acc_valid = test_accuracy(sess=sess, S=S, nd=nd, X=nd.X_valid, y=nd.y_valid, epoch=i,
+            r2_valid, avg_valid, acc_valid = test_accuracy(sess=sess, S=S, nd=nd, X=nd.X_valid, y=nd.y_valid,
+                                                           epoch=i,
                                                            print_distance=True)
             r2_scores_valid.append(r2_valid)
             avg_scores_valid.append(avg_valid)
@@ -263,7 +277,7 @@ def initiate_lickwell_network(nd):
     # session.set_filter(nd.session_filter)
     # print("Finished convolving data")
     # session.filtered_spikes = stats.zscore(session.filtered_spikes, axis=1)  # Z Score neural activity
-    # session.to_pickle("slice_PFC_200.pkl")
+    # session.to_pickle(nd.FILTERED_DATA_PATH)
     # TODO
     session = Slice.from_pickle(nd.FILTERED_DATA_PATH)
     # session = Slice.from_pickle("slice_PFC_200.pkl")
@@ -299,7 +313,7 @@ def run_network(nd, session):
 
         for k in range(0, nd.K_CROSS_VALIDATION):
             print("cross validation step", str(k + 1), "of", nd.K_CROSS_VALIDATION)
-            nd.split_data(X, y, k)
+            nd.assign_training_testing_lickwell(X, y, k)
             if nd.TIME_SHIFT_STEPS == 1:
                 save_nd = run_network_process(nd)
             else:
@@ -372,57 +386,40 @@ def create_save_dict(save_nd, z):
     return save_dict
 
 
-def run_lickwell_network(nd, session,X,y):
-    # Assign validation set.
+def run_lickwell_network(nd, session, X, y, metadata):
+    nd.TIME_SHIFT = nd.INITIAL_TIMESHIFT  # set current shift
+    print("Shift is now", nd.TIME_SHIFT)
 
-    for z in range(nd.INITIAL_TIMESHIFT, nd.INITIAL_TIMESHIFT + nd.TIME_SHIFT_STEPS * nd.TIME_SHIFT_ITER,
-                   nd.TIME_SHIFT_ITER):
+    # Shift input and output
 
-        iter = int(z - nd.INITIAL_TIMESHIFT) // nd.TIME_SHIFT_ITER
-        nd.TIME_SHIFT = z  # set current time shift
-        print("Shift is now", z)
+    if len(X) != len(y):
+        raise ValueError("Error: Length of x and y are not identical")
 
-        # Time-Shift input and output
+    acc_score_k_valid = []
+    avg_score_k_valid = []
+    acc_score_k_train = []
+    for k in range(0, nd.K_CROSS_VALIDATION):
+        print("cross validation step", str(k + 1), "of", nd.K_CROSS_VALIDATION)
+        nd.assign_training_testing_lickwell(X, metadata, k, excluded_wells=[1], normalize=nd.lw_normalize)
+        save_nd = run_lickwell_network_process(nd)
+        acc_score_k_valid.append(save_nd.acc_scores_valid)
+        avg_score_k_valid.append(save_nd.avg_scores_valid)
 
+    save_dict = create_save_dict(save_nd, nd.TIME_SHIFT)
+    if k != 1:
+        save_dict["acc_scores_valid"] = np.average(np.array(acc_score_k_valid), axis=0)
+        save_dict["avg_scores_valid"] = np.average(np.array(avg_score_k_valid), axis=0)
 
-        if len(X) != len(y):
-            raise ValueError("Error: Length of x and y are not identical")
-        # X, y = shuffle_io(X, y, nd, 3, shuffle_batch_size=39)
+    now = datetime.datetime.now().isoformat()
+    path = nd.MODEL_PATH + "output/" + now[0:10] + "_network_output_timeshift=" + str(
+        nd.TIME_SHIFT) + ".pkl"
 
-        acc_score_k_valid = []
-        avg_score_k_valid = []
-        acc_score_k_train = []
-        for k in range(0, nd.K_CROSS_VALIDATION):
-            print("cross validation step", str(k + 1), "of", nd.K_CROSS_VALIDATION)
-            nd.split_data(X, y, k, normalize=nd.lw_normalize)
-            if nd.TIME_SHIFT_STEPS == 1:
-                save_nd = run_lickwell_network_process(nd)
-            else:
-                with multiprocessing.Pool(
-                        1) as p:  # keeping network inside process prevents memory issues when restarting session
-                    save_nd = p.map(run_lickwell_network_process, [nd])[0]
-                    p.close()
-                if nd.NAIVE_TEST is True:
-                    nd.LOAD_MODEL = True
-                    nd.EPOCHS = 1
-
-            acc_score_k_valid.append(save_nd.acc_scores_valid)
-            avg_score_k_valid.append(save_nd.avg_scores_valid)
-
-        save_dict = create_save_dict(save_nd, z)
-        if k != 1:
-            save_dict["acc_scores_valid"] = np.average(np.array(acc_score_k_valid), axis=0)
-            save_dict["avg_scores_valid"] = np.average(np.array(avg_score_k_valid), axis=0)
-
-        now = datetime.datetime.now().isoformat()
-        path = nd.MODEL_PATH + "output/" + chr(65 + iter) + "_" + now[0:10] + "_network_output_timeshift=" + str(
-            z) + ".pkl"
-
-        print("Maximum average:", max(save_dict["acc_scores_valid"]),"(epoch",str(1+np.argmax(save_dict["acc_scores_valid"])),")")
-        print("average epoch 10: ", save_dict["acc_scores_valid"][-1])
-        asd = []
-        for v in acc_score_k_valid:
-            asd.append(v[-1])
-        print("Minimum epoch 10:", min(asd))
-        save_as_pickle(path, save_dict)
+    print("Maximum average:", max(save_dict["acc_scores_valid"]), "(epoch",
+          str(1 + np.argmax(save_dict["acc_scores_valid"])), ")")
+    print("average epoch 10: ", save_dict["acc_scores_valid"][-1])
+    asd = []
+    for v in acc_score_k_valid:
+        asd.append(v[-1])
+    print("Minimum epoch 10:", min(asd))
+    save_as_pickle(path, save_dict)
     print("fin")

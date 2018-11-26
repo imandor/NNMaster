@@ -6,9 +6,11 @@ import scipy
 import bisect
 import glob
 import pickle
-from random import seed,randint
+from random import seed, randint
+from src.preprocessing import generate_counter, fill_counter, normalize_well
 import time
 import random
+
 well_to_color = {0: "#ff0000", 1: "#669900", 2: "#0066cc", 3: "#cc33ff", 4: "#003300", 5: "#996633"}
 
 
@@ -98,8 +100,16 @@ def _convolve_thread_func(filter_func, n_bin_points, neuron_counter, n_neurons, 
     return filtered_spikes
 
 
-class Net_data:
+class Lick():
+    def __init__(self, lickwell, time, rewarded, lick_id, prediction=None):
+        self.time = time
+        self.lickwell = lickwell
+        self.rewarded = rewarded
+        self.lick_id = lick_id
+        self.prediction = prediction
 
+
+class Net_data:
     WIN_SIZE = 20
     SEARCH_RADIUS = WIN_SIZE * 2
 
@@ -107,50 +117,51 @@ class Net_data:
                  MODEL_PATH,
                  RAW_DATA_PATH,
                  MAKE_HISTOGRAM=False,
-                 STRIDE = 100,
-                 Y_SLICE_SIZE = 200,
+                 STRIDE=100,
+                 Y_SLICE_SIZE=200,
                  network_type="MLP",
                  EPOCHS=20,
-                 evaluate_training = False,
+                 evaluate_training=False,
                  session_filter=Filter(func=hann, search_radius=SEARCH_RADIUS, step_size=WIN_SIZE),
-                 TIME_SHIFT_STEPS = 1,
-                 SHUFFLE_DATA = True,
-                 SHUFFLE_FACTOR = 500,
-                 TIME_SHIFT_ITER = 200,
-                 r2_scores_train = [],
-                 r2_scores_valid = [],
-                 acc_scores_train = [],
-                 acc_scores_valid = [],
-                 avg_scores_train = [],
-                 avg_scores_valid = [],
-                 INITIAL_TIMESHIFT = 0,
-                 METRIC_ITER = 1,
-                 BATCH_SIZE = 50,
+                 TIME_SHIFT_STEPS=1,
+                 SHUFFLE_DATA=True,
+                 SHUFFLE_FACTOR=500,
+                 TIME_SHIFT_ITER=200,
+                 r2_scores_train=[],
+                 r2_scores_valid=[],
+                 acc_scores_train=[],
+                 acc_scores_valid=[],
+                 avg_scores_train=[],
+                 avg_scores_valid=[],
+                 INITIAL_TIMESHIFT=0,
+                 METRIC_ITER=1,
+                 BATCH_SIZE=50,
                  SLICE_SIZE=1000,
-                 X_MAX = 240,
-                 Y_MAX = 190,
-                 X_MIN = 0,
-                 Y_MIN = 100,
-                 X_STEP = 3,
-                 Y_STEP = 3,
+                 X_MAX=240,
+                 Y_MAX=190,
+                 X_MIN=0,
+                 Y_MIN=100,
+                 X_STEP=3,
+                 Y_STEP=3,
                  WIN_SIZE=WIN_SIZE,
-                 EARLY_STOPPING = False,
+                 EARLY_STOPPING=False,
                  SEARCH_RADIUS=SEARCH_RADIUS,
-                 NAIVE_TEST = False,
-                 VALID_RATIO = 0.1,
-                 testing_ratio = 0.1,
-                 K_CROSS_VALIDATION = 1,
-                 LOAD_MODEL = False,
-                 TRAIN_MODEL = True,
-                 keep_neuron = -1,
-                 NEURONS_KEPT_FACTOR = 1.0,
-                 lw_classifications = None,
-                 lw_normalize = False,
-                 lw_differentiate_false_licks = True,
-                 num_wells = 5,
-                 FILTERED_DATA_PATH = "slice.pkl",
+                 NAIVE_TEST=False,
+                 VALID_RATIO=0.1,
+                 testing_ratio=0.1,
+                 K_CROSS_VALIDATION=1,
+                 LOAD_MODEL=False,
+                 TRAIN_MODEL=True,
+                 keep_neuron=-1,
+                 NEURONS_KEPT_FACTOR=1.0,
+                 lw_classifications=None,
+                 lw_normalize=False,
+                 lw_differentiate_false_licks=True,
+                 num_wells=5,
+                 FILTERED_DATA_PATH="slice.pkl",
                  metric="map",
-                 licks=None):
+                 licks=None,
+                 valid_licks=None):
         self.MAKE_HISTOGRAM = MAKE_HISTOGRAM
         self.evaluate_training = evaluate_training
         self.STRIDE = STRIDE
@@ -191,10 +202,13 @@ class Net_data:
         self.N_NEURONS = None
         self.X_train = None
         self.y_train = None
+        self.metadata_train = None,
         self.X_valid = None
         self.y_valid = None
+        self.metadata_valid = None
         self.X_eval = None
         self.y_eval = None
+        self.metadata_eval = None
         self.LOAD_MODEL = LOAD_MODEL
         self.keep_neuron = keep_neuron
         self.metric = metric
@@ -208,10 +222,35 @@ class Net_data:
         self.testing_ratio = testing_ratio
         self.FILTERED_DATA_PATH = FILTERED_DATA_PATH
         self.licks = licks
+        self.valid_licks = valid_licks
+
+    def get_all_valid_licks(self, session, start_well=1, change_is_valid=False):
+        """
+
+        :param session: session object
+        :param start_well: dominant well in training phase (usually well 1)
+        :param change_is_valid: if True exclude licks without change in training phase, if False licks with change
+        :return: a list of lick_ids of licks corresponding to filter
+        """
+
+        licks = session.licks
+        current_phase_well = None
+        filtered_licks = []
+        for i, lick in enumerate(licks[0:-2]):
+            well = lick.lickwell
+            next_well = licks[i + 1].lickwell
+            if current_phase_well is None and well != start_well:  # set well that is currently being trained for
+                current_phase_well = well
+            if current_phase_well is not None and well == 1:  # append lick if it fits valid_filter
+                if (change_is_valid is True and next_well != current_phase_well) or (
+                        change_is_valid is not True and next_well == current_phase_well):
+                    filtered_licks.append(lick.lick_id)
+                if next_well != current_phase_well:  # change phase if applicable
+                    current_phase_well = next_well
+        self.valid_licks = filtered_licks
 
 
-
-    def split_data(self, X, y,k,excluded_wells = [1],normalize = False):
+    def assign_training_testing_lickwell(self, X, y, k, excluded_wells=[1], normalize=False):
         """"
         Splits data in to training and testing, supports cross validation
         """
@@ -227,9 +266,9 @@ class Net_data:
         else:
             k_len = int(len(X) // valid_ratio)
             if normalize is True:
-                counts = np.sum(y, axis=0)
-                counts = counts[1:] # TODO remove counts of well 1
-                k_len = int(self.VALID_RATIO * (self.num_wells-len(excluded_wells)) * min(counts)) # excludes area of samples which is not evenly spread over well types
+                counts = fill_counter(self.num_wells, excluded_wells, y)
+                k_len = int(self.VALID_RATIO * (self.num_wells - len(excluded_wells)) * min(
+                    counts))  # excludes area of samples which is not evenly spread over well types
             k_slice_test = slice(k_len * k, int(k_len * (k + 0.5)))
             k_slice_valid = slice(int(k_len * (k + 0.5)), k_len * (k + 1))
             not_k_slice_1 = slice(0, k_len * k)
@@ -248,8 +287,8 @@ class Net_data:
             # print(np.sum(self.y_valid, axis=0))
 
             if normalize is True:
-
-                self.X_train, self.y_train = self.normalize_discrete(self.X_train, self.y_train,exclude_wells=excluded_wells)
+                self.X_train, self.y_train = self.normalize_discrete(self.X_train, self.y_train,
+                                                                     excluded_wells=excluded_wells)
         if self.keep_neuron != -1:
             for i in range(len(self.X_valid)):
                 for j in range(len(self.X_valid[0])):
@@ -259,13 +298,12 @@ class Net_data:
         # print(np.sum(self.y_valid, axis=0))
         # print("fin")
 
-    def normalize_discrete(self,x,y,exclude_wells=[]):
+    def normalize_discrete(self, x, y, excluded_wells=[]):
         """
-
         :param x:
         :param y:
         :param nd:
-        :param exclude_wells: list of wells which aren't included in the normalization. Useful ie if well 1 licks are over/underrepresented
+        :param excluded_wells: list of wells which aren't included in the normalization. Useful ie if well 1 licks are over/underrepresented
         :return:
         """
         seed(1)
@@ -273,34 +311,32 @@ class Net_data:
         x_return = x.copy()
         y_return = y.copy()
         x_new = x.copy()
-        y_new = y.copy() # [y[i] for i in range(0, len(y), lick_batch_size)]
-        counts = np.sum(y_return,axis=0) # total number of licks by well
+        y_new = y.copy()  # [y[i] for i in range(0, len(y), lick_batch_size)]
+        counts = fill_counter(self.num_wells, excluded_wells, y)  # total number of licks by well
         while len(y_new) > 0:
             i = randint(0, len(y_new) - 1)
-            if max(counts*y_new[i]) < max(counts): # if count at well position smaller than max
+            if max(counts * y_new[i].prediction) < max(counts):  # if count at well position smaller than max
                 x_return.append(x_new[i])
-                y_return.append(y_new[i])
-                counts[np.argmax(y_new[i])] += 1
+                y_return.append(y_new[i].prediction)
+                counts[np.argmax(y_new[i]).prediction] += 1
             else:
                 y_new.pop(i)
                 x_new.pop(i)
-        for i in exclude_wells:
-            counts = np.delete(counts,i-1)
-        return self.filter_overrepresentation_discrete(x_return, y_return, min(counts))
+        return self.filter_overrepresentation_discrete(x_return, y_return, min(counts), excluded_wells)
 
-
-    def filter_overrepresentation_discrete(self, x, y, max_occurrences):
+    def filter_overrepresentation_discrete(self, x, y, max_occurrences, excluded_wells):
         x_return = []
         y_return = []
         y = np.array(y)
-        pos_counter = np.zeros(y[0].size)
+        counts = generate_counter(self.num_wells, excluded_wells)
         for i, e in enumerate(y):
-            y_pos = np.argmax(e)
-            if pos_counter[y_pos] < max_occurrences:
+            y_pos = normalize_well(e.prediction, self.num_wells, excluded_wells)
+            if counts[y_pos] < max_occurrences:
                 x_return.append(x[i])
-                pos_counter[y_pos] += 1
+                counts[y_pos] += 1
                 y_return.append(e)
         return x_return, y_return
+
 
 class Slice:
     def __init__(self, spikes, licks, position_x, position_y, speed, trial_timestamp):
@@ -435,6 +471,24 @@ class Slice:
             new_spikes.append([x - start for x in list(from_start)])
         return new_spikes
 
+    def slice_list_of_licks(self, licks, time_slice):
+        if licks == []:
+            return []
+        start = 0 if time_slice.start is None else time_slice.start
+        if time_slice.stop is None:
+            stop = self.end_time
+        else:
+            if time_slice.stop < 0:
+                stop = len(self.position_x) + time_slice.stop
+            else:
+                stop = time_slice.stop
+        keys_containing_time = [k.time for k in licks]
+        ret = []
+        for d in licks:
+            if start <= d.time < stop:
+                ret.append(d)
+        return ret
+
     def slice_list_of_dict(self, ld, time_slice):
         if ld == []:
             return []
@@ -469,7 +523,7 @@ class Slice:
             else:
                 stop = time_slice.stop
         spikes = self.slice_spikes(time_slice)
-        licks = self.slice_list_of_dict(self.licks, time_slice)
+        licks = self.slice_list_of_licks(self.licks, time_slice)
         position_x = self.position_x[time_slice]
         position_y = self.position_y[time_slice]
         speed = self.speed[time_slice]
@@ -532,7 +586,7 @@ class Slice:
         # timestamp for foster data
         foster_timestamp = [(x - timestamps[0]) / sample_rate * 1000 for ind, x in enumerate(timestamps)
                             if (eventtype_ttl[ind], eventch_ttl[ind], eventid_ttl[ind], recording_num[ind]) == (
-                            3, 2, 1, 0)]
+                                3, 2, 1, 0)]
 
         if len(initial_detection) > len(foster_timestamp):
             foster_data = foster_data[:, 0:foster_timestamp.size]
@@ -551,10 +605,9 @@ class Slice:
                             "trial_id": ind}
                            for ind, well in enumerate(lickwells) if rewarded[ind] == 1]
         # licks
-        licks = [{"time": float(initial_detection_timestamp[i]),
-                  "lickwell": int(lickwells[i]),
-                  "rewarded": int(rewarded[i]),
-                  "lick_id":i}
+
+        licks = [Lick(time=float(initial_detection_timestamp[i]), lickwell=int(lickwells[i]), rewarded=int(rewarded[i]),
+                      lick_id=i)
                  for i in
                  range(1, len(initial_detection_timestamp))]  # Please note that first lick is deleted by default TODO
         print("finished loading session")
