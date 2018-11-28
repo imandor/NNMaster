@@ -147,21 +147,84 @@ def get_label_total_count(y):
     return np.sum(y, axis=0)
 
 
+class Lickwell_metric:
+    def __init__(self, correct_guesses, guesses_by_well, total_samples, accuracy, discriminate_count,
+                 discriminate_correct_count):
+        self.correct_guesses = correct_guesses
+        self.guesses_by_well = guesses_by_well
+        self.total_samples = total_samples
+        self.accuracy = accuracy
+        self.discriminate_count = discriminate_count
+        self.discriminate_correct_count = discriminate_correct_count
+
+
+def cross_validate_lickwell_data(metrics):
+    metrics_average = []
+    for i, metrics_by_epoch in enumerate(metrics[0]):
+        accuracy = []  # fraction
+        correct_guesses = []  # array of length number of lickwells
+        discriminate_correct_count = []  # array of length number of discriminate licks
+        discriminate_count = []  # array of length number of discriminate licks
+        guesses_by_well = []  # array of length number of lickwells
+        total_samples = []
+        for j, metrics_k in enumerate(metrics):
+            accuracy.append(metrics[j][i].accuracy)
+            correct_guesses.append(metrics[j][i].correct_guesses)
+            discriminate_correct_count.append(metrics[j][i].discriminate_correct_count)
+            discriminate_count.append(metrics[j][i].discriminate_count)
+            guesses_by_well.append(metrics[j][i].guesses_by_well)
+            total_samples.append(metrics[j][i].total_samples)
+        accuracy = np.average(accuracy, axis=0)
+        correct_guesses = np.average(correct_guesses, axis=0)
+        discriminate_correct_count = np.sum(discriminate_correct_count, axis=0)
+        discriminate_count = np.sum(discriminate_count, axis=0)
+        guesses_by_well = np.sum(guesses_by_well, axis=0)
+        total_samples = np.sum(total_samples, axis=0)
+        metrics_average.append(Lickwell_metric(correct_guesses=correct_guesses, guesses_by_well=guesses_by_well,
+                                               total_samples=total_samples, accuracy=accuracy,
+                                               discriminate_count=discriminate_count,
+                                               discriminate_correct_count=discriminate_correct_count))
+    return metrics_average
+
+
+def get_lickwell_accuracy(metrics_average):
+    accuracy = []
+    for metrics in metrics_average:
+        accuracy.append(metrics.accuracy)
+    return accuracy
+
 
 def test_discrete_accuracy(sess, S, nd, X, y, metadata):
     y_predicted, y_target = predict_discrete(S, sess, X, y, nd)
-    correct_count = get_label_correct_count(y_predicted, y_target)
+    correct_guesses = get_label_correct_count(y_predicted, y_target)
     accuracy = get_label_accuracy(y_predicted, y_target)
-    total_count = get_label_total_count(y_predicted)
+    guesses_by_well = get_label_total_count(y_predicted)
     total_samples = get_label_total_count(y_target)
-    print("correct guesses", correct_count)
-    print("guesses by well", total_count)
+    discriminate_count, discriminate_correct_count = test_discriminate_discrete_accuracy(y_predicted, y_target,
+                                                                                         metadata, nd)
+    print("correct guesses", correct_guesses)
+    print("guesses by well", guesses_by_well)
     print("total samples", total_samples)
     print("accuracy", accuracy)
     # y_predicted, y_target = predict_discrete(S, sess, X, y, nd)
-    return total_count, correct_count, accuracy
+    return Lickwell_metric(correct_guesses=correct_guesses, guesses_by_well=guesses_by_well,
+                           total_samples=total_samples,
+                           accuracy=accuracy, discriminate_count=discriminate_count,
+                           discriminate_correct_count=discriminate_correct_count)
 
-def test_discriminate_discrete_accuracy():
+
+def test_discriminate_discrete_accuracy(y_predicted, y_target, metadata, nd):
+    unique = np.unique(nd.valid_licks, return_counts=False)
+    correct_counter = np.zeros(unique.shape)
+    counts = np.zeros(unique.shape)
+    for i, e in enumerate(y_predicted):
+        if metadata[i].lick_id in nd.valid_licks:
+            index = np.where(unique == metadata[i].lick_id)
+            counts[index] += 1
+            if np.array_equal(e, y_target[i]):
+                correct_counter[index] += 1
+    return counts, correct_counter
+
 
 def test_map_accuracy(sess, S, nd, X, y, epoch, print_distance=False):
     y_predicted, y_target = predict_map(S, sess, X, y)

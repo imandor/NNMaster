@@ -4,6 +4,10 @@ from src.preprocessing import lickwells_io
 from src.network_functions import run_network_process, initiate_lickwell_network, run_lickwell_network
 
 if __name__ == '__main__':
+
+
+
+
     # prefrontal cortex
 
     # MODEL_PATH = "G:/master_datafiles/trained_networks/MLP_PFC_2018-11-13_1000_200_100_lickwell_normalized/"
@@ -12,9 +16,10 @@ if __name__ == '__main__':
 
     # hippocampus
 
-    MODEL_PATH = "G:/master_datafiles/trained_networks/MLP_HC_2018-11-22_1000_200_100_lickwell/"
-    RAW_DATA_PATH = "G:/master_datafiles/raw_data/2018-05-16_17-13-37/"
-    FILTERED_DATA_PATH = "slice_HC_200.pkl"
+    # MODEL_PATH = "G:/master_datafiles/trained_networks/MLP_HC_2018-11-22_1000_200_100_lickwell/"
+    # RAW_DATA_PATH = "G:/master_datafiles/raw_data/2018-05-16_17-13-37/"
+    # FILTERED_DATA_PATH = "slice_HC_200.pkl"
+
 
     nd = Net_data(
 

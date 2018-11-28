@@ -1,9 +1,10 @@
 from src.database_api_beta import  Net_data
-
+import numpy as np
 
 from src.network_functions import run_network_process, initiate_network, run_network
 
 if __name__ == '__main__':
+
     # prefrontal cortex
 
     # MODEL_PATH = "G:/master_datafiles/trained_networks/MLP_PFC_2018-11-06_1000_200_100_dmf/"
@@ -22,8 +23,12 @@ if __name__ == '__main__':
         TIME_SHIFT_STEPS=1,
         EARLY_STOPPING=True,
         MODEL_PATH=MODEL_PATH,
-        RAW_DATA_PATH=RAW_DATA_PATH,
+        RAW_DATA_PATH=RAW_DATA_PATH
+
+
     )
     session = initiate_network(nd)
+
+
     run_network(nd, session)
     # Create save file directories

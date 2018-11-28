@@ -263,9 +263,7 @@ def loadEvents(filepath):
     recordingNumber = np.zeros(MAX_NUMBER_OF_EVENTS)
 
     while f.tell() < os.fstat(f.fileno()).st_size:
-
         index += 1
-
         timestamps[index] = np.fromfile(f, np.dtype('<i8'), 1)
         sampleNum[index] = np.fromfile(f, np.dtype('<i2'), 1)
         eventType[index] = np.fromfile(f, np.dtype('<u1'), 1)

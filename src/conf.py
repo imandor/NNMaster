@@ -16,7 +16,7 @@ network_1.fc1.out_units = 5
 
 mlp = Map()
 mlp.fc1 = Map()
-mlp.fc1.weights = tf.truncated_normal(shape=(50*56,400), stddev=0.01) # 166 * 17
+mlp.fc1.weights = tf.truncated_normal(shape=(50*111,400), stddev=0.01) # 56, 111, 147
 # [147, 133, 118, 103, 89, 74, 59, 45, 30, 15]
 mlp.fc1.activation = tf.nn.relu
 mlp.fc2 = Map()
@@ -46,7 +46,7 @@ mlp_discrete.fc3.weights = tf.truncated_normal(shape=(100, 5), stddev=0.01)
 mlp_discrete.fc3.activation = tf.identity
 mlp_discrete.reshape = Map()
 mlp_discrete.reshape.shape = [None, 5]
-mlp_discrete.loss_type = "softmax_cross_entropy"
+mlp_discrete.loss_type = "sigmoid_cross_entropy"
 mlp_discrete.optimizer = tf.train.AdamOptimizer(0.0005, epsilon=1e-14)
 # mlp_discrete.optimizer = tf.train.GradientDescentOptimizer(0.005)
 

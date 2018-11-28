@@ -10,7 +10,7 @@ def conf_to_loss(loss_type, logits, labels):
     if loss_type == "softmax_cross_entropy":
         return tf.nn.softmax_cross_entropy_with_logits_v2(logits=logits, labels=labels)
     elif loss_type == "sigmoid_cross_entropy":
-        return tf.nn.sigmoid_cross_entropy_with_logits_v2(logits=logits, labels=labels)
+        return tf.nn.sigmoid_cross_entropy_with_logits(logits=logits, labels=labels)
     elif loss_type == "mse":
         axis = list(range(1, len(logits.shape.as_list())))
         return tf.reduce_mean((logits - labels) ** 2, axis=axis)

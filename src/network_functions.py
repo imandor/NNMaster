@@ -3,7 +3,7 @@ from src.nets import MultiLayerPerceptron
 from src.metrics import test_accuracy, test_discrete_accuracy, plot_histogram
 from src.conf import mlp, mlp_discrete
 from src.database_api_beta import Slice, Filter, hann
-from src.metrics import print_Net_data
+from src.metrics import print_Net_data,cross_validate_lickwell_data,get_lickwell_accuracy
 import numpy as np
 from src.settings import save_as_pickle, load_pickle, save_net_dict
 from src.preprocessing import time_shift_positions, shuffle_io, position_as_map, lickwells_io, generate_counter, \
@@ -86,14 +86,13 @@ def run_lickwell_network_process(nd):
             #                                       print_distance=True)
 
             if nd.evaluate_training is True:
-                total, avg_acc, acc_valid = test_discrete_accuracy(sess=sess, S=S, nd=nd, X=X_train, y=logits_train,
+                epoch_metric = test_discrete_accuracy(sess=sess, S=S, nd=nd, X=X_train, y=logits_train,
                                                                    metadata=nd.y_train)
 
             print("Validation results:")
-            total, avg_acc, acc_valid = test_discrete_accuracy(sess=sess, S=S, nd=nd, X=X_valid, y=logits_valid,
+            epoch_metric = test_discrete_accuracy(sess=sess, S=S, nd=nd, X=X_valid, y=logits_valid,
                                                                metadata=nd.y_valid)
-            acc_scores_valid.append(acc_valid)
-            avg_acc_valid.append(avg_acc)
+            acc_scores_valid.append(epoch_metric)
             metric_counter = 0
             if nd.EARLY_STOPPING is True and i >= 5:  # most likely overfitting instead of training
                 if i % 1 == 0:
@@ -124,7 +123,6 @@ def run_lickwell_network_process(nd):
     nd.avg_scores_valid = avg_acc_valid
     nd.acc_scores_valid = acc_scores_valid
     nd.metric_step_counter = metric_step_counter
-
     # Close session and add current time shift to network save file
 
     sess.close()
@@ -241,16 +239,16 @@ def initiate_network(nd):
         if exc.errno != errno.EEXIST:
             raise
     # TODO
-    # session = Slice.from_raw_data(nd.RAW_DATA_PATH)
-    # session.filter_neurons(100)
-    # session.print_details()
-    # print("Convolving data...")
-    # session.set_filter(nd.session_filter)
-    # print("Finished convolving data")
-    # session.filtered_spikes = stats.zscore(session.filtered_spikes, axis=1)  # Z Score neural activity
-    # session.to_pickle("slice_HC.pkl")
+    session = Slice.from_raw_data(nd.RAW_DATA_PATH)
+    session.filter_neurons(100)
+    session.print_details()
+    print("Convolving data...")
+    session.set_filter(nd.session_filter)
+    print("Finished convolving data")
+    session.filtered_spikes = stats.zscore(session.filtered_spikes, axis=1)  # Z Score neural activity
+    session.to_pickle(nd.FILTERED_DATA_PATH)
     # TODO
-    session = Slice.from_pickle("slice_HC.pkl")
+    session = Slice.from_pickle(nd.FILTERED_DATA_PATH)
     session.filter_neurons_randomly(nd.NEURONS_KEPT_FACTOR)
     session.print_details()
     nd.N_NEURONS = session.n_neurons
@@ -313,7 +311,7 @@ def run_network(nd, session):
 
         for k in range(0, nd.K_CROSS_VALIDATION):
             print("cross validation step", str(k + 1), "of", nd.K_CROSS_VALIDATION)
-            nd.assign_training_testing_lickwell(X, y, k)
+            nd.assign_training_testing(X, y, k)
             if nd.TIME_SHIFT_STEPS == 1:
                 save_nd = run_network_process(nd)
             else:
@@ -395,31 +393,36 @@ def run_lickwell_network(nd, session, X, y, metadata):
     if len(X) != len(y):
         raise ValueError("Error: Length of x and y are not identical")
 
-    acc_score_k_valid = []
-    avg_score_k_valid = []
-    acc_score_k_train = []
+    metrics_k = []
+
     for k in range(0, nd.K_CROSS_VALIDATION):
         print("cross validation step", str(k + 1), "of", nd.K_CROSS_VALIDATION)
         nd.assign_training_testing_lickwell(X, metadata, k, excluded_wells=[1], normalize=nd.lw_normalize)
         save_nd = run_lickwell_network_process(nd)
-        acc_score_k_valid.append(save_nd.acc_scores_valid)
-        avg_score_k_valid.append(save_nd.avg_scores_valid)
+        metrics_k.append(save_nd.acc_scores_valid)
 
     save_dict = create_save_dict(save_nd, nd.TIME_SHIFT)
-    if k != 1:
-        save_dict["acc_scores_valid"] = np.average(np.array(acc_score_k_valid), axis=0)
-        save_dict["avg_scores_valid"] = np.average(np.array(avg_score_k_valid), axis=0)
-
+    metrics = cross_validate_lickwell_data(metrics_k)
+    accuracy = get_lickwell_accuracy(metrics)
     now = datetime.datetime.now().isoformat()
     path = nd.MODEL_PATH + "output/" + now[0:10] + "_network_output_timeshift=" + str(
         nd.TIME_SHIFT) + ".pkl"
 
-    print("Maximum average:", max(save_dict["acc_scores_valid"]), "(epoch",
-          str(1 + np.argmax(save_dict["acc_scores_valid"])), ")")
-    print("average epoch 10: ", save_dict["acc_scores_valid"][-1])
-    asd = []
-    for v in acc_score_k_valid:
-        asd.append(v[-1])
-    print("Minimum epoch 10:", min(asd))
+    print("Maximum average:", np.max(accuracy), "(epoch",
+          str(1 + np.argmax(accuracy)), ")")
+    print("average last epoch: ", accuracy[-1])
+
+    print("Minimum last epoch:", min(accuracy))
     save_as_pickle(path, save_dict)
+    best_metric = metrics[np.argmax(accuracy)]
+    print("Correct guesses",best_metric.correct_guesses)
+    print("Discriminate correct count",best_metric.correct_guesses)
+    print("Correct guesses",best_metric.correct_guesses)
+    print("Discriminate correct count",best_metric.discriminate_correct_count)
+    print("Discriminate count",best_metric.discriminate_count)
+    print("Discriminate total accuracy",np.sum(best_metric.discriminate_correct_count)/np.sum(best_metric.discriminate_count))
+    print("Guesses by well",best_metric.guesses_by_well)
+    print("Total samples",best_metric.total_samples)
+
+
     print("fin")

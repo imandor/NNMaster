@@ -3,6 +3,17 @@ import numpy as np
 
 
 def position_as_map(pos_list, xstep, ystep, X_MAX, X_MIN, Y_MAX, Y_MIN):
+    """
+
+    :param pos_list: positions as tuple [[x,x,x,x,x],[y,y,y,y,y]]
+    :param xstep:
+    :param ystep:
+    :param X_MAX:
+    :param X_MIN:
+    :param Y_MAX:
+    :param Y_MIN:
+    :return:
+    """
     pos_list = np.asarray(pos_list)
     if np.isscalar(pos_list[0]):
         x_list = np.array(pos_list[0])

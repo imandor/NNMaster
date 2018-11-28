@@ -249,6 +249,33 @@ class Net_data:
                     current_phase_well = next_well
         self.valid_licks = filtered_licks
 
+    def assign_training_testing(self, X, y, k):
+        if self.K_CROSS_VALIDATION == 1:
+            valid_length = int(len(X) * self.VALID_RATIO)
+            self.X_train = X[valid_length:]
+            self.y_train = y[valid_length:]
+            self.X_valid = X[:valid_length // 2]
+            self.y_valid = y[:valid_length // 2]
+            self.X_test = X[valid_length // 2:valid_length]
+            self.y_test = y[valid_length // 2:valid_length]
+        else:
+            k_len = int(len(X) // self.K_CROSS_VALIDATION)
+            k_slice_test = slice(k_len * k, int(k_len * (k + 0.5)))
+            k_slice_valid = slice(int(k_len * (k + 0.5)), k_len * (k + 1))
+            not_k_slice_1 = slice(0, k_len * k)
+            not_k_slice_2 = slice(k_len * (k + 1), len(X))
+            self.X_train = X[not_k_slice_1] + X[not_k_slice_2]
+            self.y_train = y[not_k_slice_1] + y[not_k_slice_2]
+            self.X_test = X[k_slice_test]
+            self.y_test = y[k_slice_test]
+            self.X_valid = X[k_slice_valid]
+            self.y_valid = y[k_slice_valid]
+        if self.keep_neuron != -1:
+            for i in range(len(self.X_valid)):
+                for j in range(len(self.X_valid[0])):
+                    if j != self.keep_neuron:
+                        self.X_valid[i][j] = np.zeros(self.X_valid[i][j].shape)
+
 
     def assign_training_testing_lickwell(self, X, y, k, excluded_wells=[1], normalize=False):
         """"
@@ -644,3 +671,4 @@ class Slice:
     def to_pickle(self, path):
         with open(path, 'wb') as f:
             pickle.dump(self, f)
+
