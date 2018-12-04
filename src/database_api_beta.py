@@ -110,7 +110,7 @@ class Lick():
 
 
 class Net_data:
-    WIN_SIZE = 20
+    WIN_SIZE = 100
     SEARCH_RADIUS = WIN_SIZE * 2
 
     def __init__(self,
@@ -118,7 +118,7 @@ class Net_data:
                  RAW_DATA_PATH,
                  MAKE_HISTOGRAM=False,
                  STRIDE=100,
-                 Y_SLICE_SIZE=200,
+                 Y_SLICE_SIZE=100,
                  network_type="MLP",
                  EPOCHS=20,
                  evaluate_training=False,
@@ -161,7 +161,8 @@ class Net_data:
                  FILTERED_DATA_PATH="slice.pkl",
                  metric="map",
                  licks=None,
-                 valid_licks=None):
+                 valid_licks=None,
+                 filter_tetrodes=None):
         self.MAKE_HISTOGRAM = MAKE_HISTOGRAM
         self.evaluate_training = evaluate_training
         self.STRIDE = STRIDE
@@ -223,6 +224,7 @@ class Net_data:
         self.FILTERED_DATA_PATH = FILTERED_DATA_PATH
         self.licks = licks
         self.valid_licks = valid_licks
+        self.filter_tetrodes = filter_tetrodes
 
     def get_all_valid_licks(self, session, start_well=1, change_is_valid=False):
         """
@@ -275,7 +277,6 @@ class Net_data:
                 for j in range(len(self.X_valid[0])):
                     if j != self.keep_neuron:
                         self.X_valid[i][j] = np.zeros(self.X_valid[i][j].shape)
-
 
     def assign_training_testing_lickwell(self, X, y, k, excluded_wells=[1], normalize=False):
         """"
@@ -570,7 +571,13 @@ class Slice:
         return new
 
     @classmethod
-    def from_raw_data(cls, path):
+    def from_raw_data(cls, path, filter_tetrodes=None):
+        """
+
+        :param path:
+        :param filter_tetrodes: list or range of tetrodes to be removed from session
+        :return:
+        """
         print("start loading session")
         foster_path = glob.glob(path + "/*_fostertask.dat")[0]
         all_channels_path = path + "/all_channels.events"
@@ -579,19 +586,22 @@ class Slice:
         # Extract spiketracker data
 
         spiketracker_data = scipy.io.loadmat(spiketracker_path)
+        if filter_tetrodes is not None:  # This value apparently only exists in session 3 but is necessary to distinguish pfc and hc
+            tetrode_channel_list = spiketracker_data["waveform"]["tetrode_n"][0][0][0]
 
         # param: head_s, pixelcm, speed_s, spike_templates, spike_times, waveform,x_s, y_s
 
         position_x = spiketracker_data["x_s"].squeeze().astype(float)
         position_y = spiketracker_data["y_s"].squeeze().astype(float)
         speed = spiketracker_data["speed_s"].squeeze().astype(float)
-        spikes = spiketracker_data["spike_times"]
-        spikes = [s[0].tolist() for s in spikes[0]]  # remove useless dims
-
-        for i in range(len(spikes)):
+        spikes_raw = spiketracker_data["spike_times"]
+        spikes_raw = [s[0].tolist() for s in spikes_raw[0]]  # remove useless dims
+        spikes = []
+        for i, spike in enumerate(spikes_raw):
             # the raw data contains spikes outside the session scope
-            spikes[i] = spikes[i][:bisect.bisect_left(spikes[i], len(position_x))]
-
+            spikes.append(spikes_raw[i][:bisect.bisect_left(spikes_raw[i], len(position_x))])
+            if filter_tetrodes is not None and tetrode_channel_list[i] in filter_tetrodes:
+                spikes.pop(-1)
         # load foster data
 
         with open(foster_path, "r") as f:
@@ -601,6 +611,8 @@ class Slice:
         initial_detection = [x == 2 for x in foster_data[:, 0]]
 
         # load data from all_channels.event file with ephys
+
+        # test_dict = OpenEphys.load(path + "/TT0.spikes")
 
         all_channels_dict = OpenEphys.load(all_channels_path)
         # param: eventType, sampleNum, header, timestamps, recordingNumber, eventId, nodeId, channel
@@ -671,4 +683,3 @@ class Slice:
     def to_pickle(self, path):
         with open(path, 'wb') as f:
             pickle.dump(self, f)
-

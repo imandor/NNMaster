@@ -126,10 +126,6 @@ def predict_discrete(S, sess, X, Y, nd):
     return y_predicted, y_target
 
 
-def test_accuracy(sess, S, nd, X, y, epoch, print_distance=False):
-    return test_map_accuracy(sess, S, nd, X, y, epoch, print_distance=print_distance)
-
-
 def get_label_accuracy(y_predicted, y_target):
     correct_count = 0
     for i in range(len(y_predicted)):
@@ -226,24 +222,63 @@ def test_discriminate_discrete_accuracy(y_predicted, y_target, metadata, nd):
     return counts, correct_counter
 
 
-def test_map_accuracy(sess, S, nd, X, y, epoch, print_distance=False):
-    y_predicted, y_target = predict_map(S, sess, X, y)
-    r2 = get_r2(y_predicted, y_target, [nd.X_STEP, nd.Y_STEP])
-    distance = get_avg_distance(y_predicted, y_target, [nd.X_STEP, nd.Y_STEP])
-    accuracy = []
-    for i in range(0, 20):
-        acc = get_radius_accuracy(y_predicted, y_target, [nd.X_STEP, nd.Y_STEP], i)
-        accuracy.append(acc)
-        if i == 19 and print_distance is True: print("Fraction pos error less than", i, ":", acc)
-    if False:  # plot planes
-        plot_all_planes(X, y, y_predicted, y_target, nd)
-    if False:
-        save_as_pickle("C:/Users/NN/AppData/Local/Temp/animation/predicted/step=" + str(nd.epochs_trained),
-                       y_predicted[0])
-        save_as_pickle("C:/Users/NN/AppData/Local/Temp/animation/target/step=" + str(nd.epochs_trained), y_target[0])
-    if False:
-        plot_results_as_map(sess, S, X, epoch, nd)
-    return r2, distance, accuracy
+class Network_output:  # object containing list of metrics by cross validation partition
+    def __init__(self, net_data, metric_by_cvs=[], r2_avg=None, ape_avg=None, acc20_avg=None):
+        self.metric_by_cvs = metric_by_cvs  # metric by cross validation step
+        self.r2_avg = r2_avg
+        if ape_avg is not None:
+            self.ape_avg = ape_avg
+        else:
+            self.set_average_r2()
+        if ape_avg is not None:
+            self.acc20_avg = acc20_avg
+        else:
+            self.set_average_ape()
+        if ape_avg is not None:
+            self.net_data = net_data
+        else:
+            self.set_average_acc20()
+
+    def set_average_r2(self):
+        self.r2_avg = np.average([a.r2_best for a in self.metric_by_cvs])
+
+    def set_average_ape(self):
+        self.ape_avg = np.average([a.ape_best for a in self.metric_by_cvs])
+
+    def set_average_acc20(self):
+
+        self.acc20_avg = np.average([a.acc20_best for a in self.metric_by_cvs])
+
+
+class Metric:  # object containing evaluation metrics for all epochs
+    def __init__(self, r2_by_epoch=[], ape_by_epoch=[], acc20_by_epoch=[], r2_best=None,
+                 ape_best=None, acc20_best=None):
+        self.r2_by_epoch = r2_by_epoch
+        self.ape_by_epoch = ape_by_epoch  # absolute position error
+        self.acc20_by_epoch = acc20_by_epoch
+        self.r2_best = r2_best
+        self.ape_best = ape_best
+        self.acc20_best = acc20_best
+
+    def set_bests(self, stops_early):
+        if stops_early is True:
+            self.r2_best = self.r2_by_epoch[-1]
+            self.ape_best = self.ape_by_epoch[-1]
+            self.acc20_best = self.acc20_by_epoch[-1]
+        else:
+            self.r2_best = np.max(self.r2_by_epoch)
+            self.ape_best = np.min(self.ape_by_epoch)
+            self.acc20_best = np.max(self.acc20_by_epoch)
+
+
+    def test_accuracy(self,sess, S, nd, X, y):
+        y_predicted, y_target = predict_map(S, sess, X, y)
+        r2 = get_r2(y_predicted, y_target, [nd.X_STEP, nd.Y_STEP])  # r2 score
+        ape = get_avg_distance(y_predicted, y_target, [nd.X_STEP, nd.Y_STEP])  # absolute position error
+        acc20 = get_radius_accuracy(y_predicted, y_target, [nd.X_STEP, nd.Y_STEP], 20)  # accuracy 20
+        self.r2_by_epoch.append(r2)
+        self.ape_by_epoch.append(ape)
+        self.acc20_by_epoch.append(acc20)
 
 
 def plot_all_planes(X, y, is_training_data, y_predicted, y_target, nd):

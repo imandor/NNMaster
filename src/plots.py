@@ -10,6 +10,8 @@ from matplotlib.patches import Patch
 
 def load_trained_network(path):
     dict_files = glob.glob(path + "output/" + "*.pkl")
+    if len(dict_files) == 0:
+        raise OSError("Warning: network Directory is empty")
     r2_scores_valid_list = []
     r2_scores_train_list = []
     acc_scores_valid_list = []
@@ -46,17 +48,17 @@ def load_trained_network(path):
 # PATH_2 = "G:/master_datafiles/trained_networks/MLP_HC_2018-11-11_1000_200_100_dmf/"
 # PATH = "G:/master_datafiles/trained_networks/MLP_PFC_2018-11-06_1000_200_100_dmf/"
 
-PATH = "G:/master_datafiles/trained_networks/MLP_HC_2018-11-13_1000_200_100_lickwell/"
-PATH_2 = "G:/master_datafiles/trained_networks/MLP_HC_2018-11-13_1000_200_100_lickwell_normalized/"
+PATH = "G:/master_datafiles/trained_networks/MLP_PFC_2018-12-03_1000_200_200_dmf/" #"G:/master_datafiles/trained_networks/test_MLP_HC_2018-11-13_1000_200_100_dmf/"#
+PATH_2 = "G:/master_datafiles/trained_networks/MLP_PFC_2018-12-03_1000_200_200_dmf/"#"G:/master_datafiles/trained_networks/test_MLP_HC_2018-11-13_1000_200_100_dmf/"
 SINGLE_ACCURACY = False
 SINGLE_AVERAGE = False
 SINGLE_R2 = False
 COMPARE_ACCURACY = False
 COMPARE_DISTANCE = False
 COMPARE_R2 = False
-PAIRED_T_TEST = False
+PAIRED_T_TEST = True
 FILTER_NEURON_TEST = False
-COMPARE_DISCRETE = True
+COMPARE_DISCRETE = False
 
 r2_scores_valid_list, r2_scores_train_list, acc_scores_valid_list, acc_scores_train_list, avg_scores_valid_list, avg_scores_train_list, net_dict, time_shift_list = load_trained_network(
     PATH)
@@ -68,9 +70,9 @@ for i in range(0, len(r2_scores_valid_list[0]) - 1):
 # ----------------------------------------------------
 
 
-# r2_scores_valid = [x[-1] for x in r2_scores_valid_list] # TODO uncomment
+r2_scores_valid = [x[-1] for x in r2_scores_valid_list] # TODO uncomment
 # r2_scores_train = [x[-1] for x in r2_scores_train_list]
-# acc_scores_valid = list(map(list, zip(*[e[-1] for e in acc_scores_valid_list]))) # TODO uncomment
+acc_scores_valid = list(map(list, zip(*[e[-1] for e in acc_scores_valid_list]))) # TODO uncomment
 # acc_scores_train = list(map(list, zip(*[e[-1] for e in acc_scores_train_list])))
 distance_scores_valid = [x[-1] for x in avg_scores_valid_list]  # takes the latest trained value for each time shift
 # distance_scores_train = [x[-1] for x in avg_scores_train_list]
@@ -89,7 +91,6 @@ plt.ion()
 #     # acc_scores_train_list = np.array(acc_scores_train_list).T.tolist()
 #     # distance_scores_valid_list = np.array(distance_scores_valid_list).T.tolist()
 #     # distance_scores_valid_list = np.array(distance_scores_valid_list).T.tolist()
-#
 
 
 # cf = ax0.contourf(time_shift_list,distance_list,acc_scores_train, levels=levels, cmap=cmap)
@@ -158,16 +159,16 @@ if SINGLE_R2 is True:
 
 r2_scores_valid_list_2, r2_scores_train_list_2, acc_scores_valid_list_2, acc_scores_train_list_2, avg_scores_valid_list_2, avg_scores_train_list_2, net_dict_2, time_shift_list_2 = load_trained_network(
     PATH_2)
-# acc_scores_valid = list(map(list, zip(*[e[-1] for e in acc_scores_valid_list]))) # TODO uncomment
-# acc_scores_valid_2 = list(map(list, zip(*[e[-1] for e in acc_scores_valid_list_2])))
-# r2_scores_valid = [x[-1][0] for x in r2_scores_valid_list]
-# r2_scores_valid_2 = [x[-1][0] for x in r2_scores_valid_list_2]
-# distance_scores_valid = [x[-1] for x in avg_scores_valid_list]  # takes the latest trained value for each time shift
-# distance_scores_valid_2 = [x[-1] for x in avg_scores_valid_list_2]  # takes the latest trained value for each time shift
-#
-# acc_scores_middle = np.ndarray.tolist(np.array(acc_scores_valid) - np.array(acc_scores_valid_2))
-# r2_scores_middle = np.ndarray.tolist(np.array(r2_scores_valid) - np.array(r2_scores_valid_2))
-# distance_scores_middle = np.ndarray.tolist(np.array(distance_scores_valid) - np.array(distance_scores_valid_2))
+acc_scores_valid = list(map(list, zip(*[e[-1] for e in acc_scores_valid_list]))) # TODO uncomment
+acc_scores_valid_2 = list(map(list, zip(*[e[-1] for e in acc_scores_valid_list_2])))
+r2_scores_valid = [x[-1][0] for x in r2_scores_valid_list]
+r2_scores_valid_2 = [x[-1][0] for x in r2_scores_valid_list_2]
+distance_scores_valid = [x[-1] for x in avg_scores_valid_list]  # takes the latest trained value for each time shift
+distance_scores_valid_2 = [x[-1] for x in avg_scores_valid_list_2]  # takes the latest trained value for each time shift
+
+acc_scores_middle = np.ndarray.tolist(np.array(acc_scores_valid) - np.array(acc_scores_valid_2))
+r2_scores_middle = np.ndarray.tolist(np.array(r2_scores_valid) - np.array(r2_scores_valid_2))
+distance_scores_middle = np.ndarray.tolist(np.array(distance_scores_valid) - np.array(distance_scores_valid_2))
 
 # Compare accuracy plot
 if COMPARE_ACCURACY is True:
