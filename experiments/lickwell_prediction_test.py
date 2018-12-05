@@ -28,7 +28,7 @@ if __name__ == '__main__':
         evaluate_training=False,
         SLICE_SIZE=200,
         STRIDE=200,
-        Y_STEP=200,
+        y_step=200,
         WIN_SIZE=200,
         SEARCH_RADIUS=200,
         K_CROSS_VALIDATION=10,

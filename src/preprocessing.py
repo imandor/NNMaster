@@ -2,16 +2,16 @@ from random import seed, shuffle, randint
 import numpy as np
 
 
-def position_as_map(pos_list, xstep, ystep, X_MAX, X_MIN, Y_MAX, Y_MIN):
+def position_as_map(pos_list, xstep, ystep, x_max, x_min, y_max, y_min):
     """
 
     :param pos_list: positions as tuple [[x,x,x,x,x],[y,y,y,y,y]]
     :param xstep:
     :param ystep:
-    :param X_MAX:
-    :param X_MIN:
-    :param Y_MAX:
-    :param Y_MIN:
+    :param x_max:
+    :param x_min:
+    :param y_max:
+    :param y_min:
     :return:
     """
     pos_list = np.asarray(pos_list)
@@ -23,7 +23,7 @@ def position_as_map(pos_list, xstep, ystep, X_MAX, X_MIN, Y_MAX, Y_MIN):
         y_list = pos_list[1, :]
     pos_list = np.dstack((x_list, y_list))[0]
     pos_list = np.unique(pos_list, axis=0)
-    ret = np.zeros(((X_MAX - X_MIN) // xstep, (Y_MAX - Y_MIN) // ystep))
+    ret = np.zeros(((x_max - x_min) // xstep, (y_max - y_min) // ystep))
     for pos in pos_list:
         try:
             # ret[pos[0], pos[1]] = 1
@@ -39,9 +39,9 @@ def filter_overrepresentation_map(x, y, max_occurrences, nd, axis=0):
     y_return = []
     y = np.array(y)
     if axis == 0:
-        pos_counter = np.zeros((nd.X_MAX - nd.X_MIN) // nd.X_STEP)
+        pos_counter = np.zeros((nd.x_max - nd.x_min) // nd.x_step)
     else:
-        pos_counter = np.zeros((nd.Y_MAX - nd.Y_MIN) // nd.Y_STEP)
+        pos_counter = np.zeros((nd.y_max - nd.y_min) // nd.y_step)
 
     for i, e in enumerate(y):
         y_pos = np.unravel_index(e.argmax(), e.shape)[axis]  # TODO should not work 100%
@@ -54,9 +54,9 @@ def filter_overrepresentation_map(x, y, max_occurrences, nd, axis=0):
 
 def count_occurrences(y, net_dict, axis=0):
     if axis == 0:
-        pos_counter = np.zeros((net_dict["X_MAX"] - net_dict["X_MIN"]) // net_dict["X_STEP"])
+        pos_counter = np.zeros((net_dict["x_max"] - net_dict["x_min"]) // net_dict["x_step"])
     else:
-        pos_counter = np.zeros((net_dict["Y_MAX"] - net_dict["Y_MIN"]) // net_dict["Y_STEP"])
+        pos_counter = np.zeros((net_dict["y_max"] - net_dict["y_min"]) // net_dict["y_step"])
     for i, e in enumerate(y):
         y_pos = np.unravel_index(e.argmax(), e.shape)[axis]  # TODO should not work 100%
         pos_counter[y_pos] += 1
@@ -65,10 +65,10 @@ def count_occurrences(y, net_dict, axis=0):
 
 def shuffle_io(X, y, nd, seed_no, shuffle_batch_size=None):
     # Shuffle data
-    if nd.SHUFFLE_DATA is False:
+    if nd.shuffle_data is False:
         return X, y
     if shuffle_batch_size is None:
-        shuffle_batch_size = nd.SHUFFLE_FACTOR
+        shuffle_batch_size = nd.shuffle_factor
     seed(seed_no)
 
     # crop length to fit shuffle factor
@@ -96,20 +96,20 @@ def shuffle_io(X, y, nd, seed_no, shuffle_batch_size=None):
 
 
 def time_shift_positions(session, shift, nd):
-    SLICE_SIZE = nd.SLICE_SIZE
-    WIN_SIZE = nd.WIN_SIZE
-    X_STEP = nd.X_STEP
-    Y_STEP = nd.Y_STEP
-    X_MAX = nd.X_MAX
-    X_MIN = nd.X_MIN
-    Y_MAX = nd.Y_MAX
-    Y_MIN = nd.Y_MIN
-    STRIDE = nd.STRIDE
-    Y_SLICE_SIZE = nd.Y_SLICE_SIZE
+    slice_size = nd.slice_size
+    win_size = nd.win_size
+    x_step = nd.x_step
+    y_step = nd.y_step
+    x_max = nd.x_max
+    x_min = nd.x_min
+    y_max = nd.y_max
+    y_min = nd.y_min
+    stride = nd.stride
+    y_slice_size = nd.y_slice_size
 
     # Shift positions
 
-    shift_in_filtered_spikes = int(shift / WIN_SIZE)
+    shift_in_filtered_spikes = int(shift / win_size)
     position_x = session.position_x
     position_y = session.position_y
     filtered_spikes = session.filtered_spikes
@@ -125,35 +125,35 @@ def time_shift_positions(session, shift, nd):
     y = []
     pos_x = position_x
     pos_y = position_y
-    BINS_IN_SAMPLE = SLICE_SIZE // WIN_SIZE
-    BINS_IN_STRIDE = STRIDE // WIN_SIZE
-    SURROUNDING_INDEX = int(0.5 * (SLICE_SIZE - Y_SLICE_SIZE))
+    bins_in_sample = slice_size // win_size
+    bins_in_stride = stride // win_size
+    surrounding_index = int(0.5 * (slice_size - y_slice_size))
     X = []
-    while len(filtered_spikes[0]) >= SLICE_SIZE:
+    while len(filtered_spikes[0]) >= slice_size:
 
         # Input
 
         bins_to_X = []
         remaining_bins = []
         for spike in filtered_spikes:
-            bins_to_X.append(spike[:BINS_IN_SAMPLE])
-            remaining_bins.append(spike[BINS_IN_STRIDE:])
+            bins_to_X.append(spike[:bins_in_sample])
+            remaining_bins.append(spike[bins_in_stride:])
         bins_to_X = np.reshape(bins_to_X, [len(bins_to_X), len(bins_to_X[0])])
         X.append(bins_to_X)
         filtered_spikes = remaining_bins
 
         # output
 
-        norm_x = pos_x[:SLICE_SIZE]
-        norm_y = pos_y[:SLICE_SIZE]
-        right_index_border = len(norm_x) - SURROUNDING_INDEX
-        x_list = (((norm_x[SURROUNDING_INDEX:right_index_border]) - X_MIN) // X_STEP).astype(int)
-        y_list = (((norm_y[SURROUNDING_INDEX:right_index_border]) - Y_MIN) // Y_STEP).astype(int)
+        norm_x = pos_x[:slice_size]
+        norm_y = pos_y[:slice_size]
+        right_index_border = len(norm_x) - surrounding_index
+        x_list = (((norm_x[surrounding_index:right_index_border]) - x_min) // x_step).astype(int)
+        y_list = (((norm_y[surrounding_index:right_index_border]) - y_min) // y_step).astype(int)
 
         posxy_list = [x_list, y_list]  # remove surrounding positional data and form average
-        y.append(position_as_map(posxy_list, X_STEP, Y_STEP, X_MAX, X_MIN, Y_MAX, Y_MIN))
-        pos_x = pos_x[BINS_IN_STRIDE * WIN_SIZE:]
-        pos_y = pos_y[BINS_IN_STRIDE * WIN_SIZE:]
+        y.append(position_as_map(posxy_list, x_step, y_step, x_max, x_min, y_max, y_min))
+        pos_x = pos_x[bins_in_stride * win_size:]
+        pos_y = pos_y[bins_in_stride * win_size:]
     return X, y
 
 
@@ -241,7 +241,7 @@ def lickwells_io(session, nd, excluded_wells=[1], shift=1, normalize=False, diff
         lick_start = int(lick.time - 5000)
         lick_end = int(lick.time + 5000)
         slice = session[lick_start:lick_end]
-        for j in range(0, 10000 // nd.WIN_SIZE - 11):
+        for j in range(0, 10000 // nd.win_size - 11):
             bins_to_x = [c[j:j + 11] for c in slice.filtered_spikes]
             bins_to_x = np.reshape(bins_to_x, [len(bins_to_x), len(bins_to_x[0])])
             X.append(bins_to_x)

@@ -60,7 +60,7 @@ def average_position(mapping):
 
 def plot_histogram(sess, S, nd, X, y):
     y_predicted, y_target = predict_map(S, sess, X, y)
-    distances = get_distances(y_predicted, y_target, [nd.X_STEP, nd.Y_STEP])
+    distances = get_distances(y_predicted, y_target, [nd.x_step, nd.y_step])
     fig, ax = plt.subplots()
     x_axis_labels = np.linspace(0, 150, 15)
     # ax.plot(time_shift_list,distance_scores_train,label='Training set',color='r')
@@ -226,6 +226,7 @@ class Network_output:  # object containing list of metrics by cross validation p
     def __init__(self, net_data, metric_by_cvs=[], r2_avg=None, ape_avg=None, acc20_avg=None):
         self.metric_by_cvs = metric_by_cvs  # metric by cross validation step
         self.r2_avg = r2_avg
+        self.net_data = net_data
         if ape_avg is not None:
             self.ape_avg = ape_avg
         else:
@@ -235,7 +236,7 @@ class Network_output:  # object containing list of metrics by cross validation p
         else:
             self.set_average_ape()
         if ape_avg is not None:
-            self.net_data = net_data
+            self.ape_avg = ape_avg
         else:
             self.set_average_acc20()
 
@@ -273,9 +274,9 @@ class Metric:  # object containing evaluation metrics for all epochs
 
     def test_accuracy(self,sess, S, nd, X, y):
         y_predicted, y_target = predict_map(S, sess, X, y)
-        r2 = get_r2(y_predicted, y_target, [nd.X_STEP, nd.Y_STEP])  # r2 score
-        ape = get_avg_distance(y_predicted, y_target, [nd.X_STEP, nd.Y_STEP])  # absolute position error
-        acc20 = get_radius_accuracy(y_predicted, y_target, [nd.X_STEP, nd.Y_STEP], 20)  # accuracy 20
+        r2 = get_r2(y_predicted, y_target, [nd.x_step, nd.y_step])  # r2 score
+        ape = get_avg_distance(y_predicted, y_target, [nd.x_step, nd.y_step])  # absolute position error
+        acc20 = get_radius_accuracy(y_predicted, y_target, [nd.x_step, nd.y_step], 20)  # accuracy 20
         self.r2_by_epoch.append(r2)
         self.ape_by_epoch.append(ape)
         self.acc20_by_epoch.append(acc20)
@@ -283,7 +284,7 @@ class Metric:  # object containing evaluation metrics for all epochs
 
 def plot_all_planes(X, y, is_training_data, y_predicted, y_target, nd):
     map_list = y
-    distance_list = get_radius_distance_list(y_predicted, y_target, [nd.X_STEP, nd.Y_STEP],
+    distance_list = get_radius_distance_list(y_predicted, y_target, [nd.x_step, nd.y_step],
                                              absolute_margin=50)
     # y_target_f = []
     # y_prediction_f = []
@@ -387,18 +388,18 @@ def plot_axis_representation_1d(y_values, path, is_training):
 
 def print_Net_data(nd):
     print("session_filter", nd.session_filter)
-    print("SLICE_SIZE", nd.SLICE_SIZE)
-    print("Y_SLICE_SIZE", nd.Y_SLICE_SIZE)
-    print("STRIDE", nd.STRIDE)
-    print("WIN_SIZE", nd.WIN_SIZE)
-    print("EPOCHS", nd.EPOCHS)
-    print("TIME_SHIFT_STEPS", nd.TIME_SHIFT_STEPS)
-    print("SHUFFLE_DATA", nd.SHUFFLE_DATA)
-    print("SHUFFLE_FACTOR", nd.SHUFFLE_FACTOR)
-    print("TIME_SHIFT_ITER", nd.TIME_SHIFT_ITER)
-    print("METRIC_ITER", nd.METRIC_ITER)
-    print("BATCH_SIZE", nd.BATCH_SIZE)
-    print("= SEARCH_RADIUS", nd.SEARCH_RADIUS)
+    print("slice_size", nd.slice_size)
+    print("y_slice_size", nd.y_slice_size)
+    print("stride", nd.stride)
+    print("win_size", nd.win_size)
+    print("epochs", nd.epochs)
+    print("time_shift_steps", nd.time_shift_steps)
+    print("shuffle_data", nd.shuffle_data)
+    print("shuffle_factor", nd.shuffle_factor)
+    print("time_shift_iter", nd.time_shift_iter)
+    print("metric_iter", nd.metric_iter)
+    print("batch_size", nd.batch_size)
+    print("= SEARCH_RADIUS", nd.search_radius)
 
 
 def plot_plane(y, nd, path):
@@ -407,8 +408,8 @@ def plot_plane(y, nd, path):
     for i, posxy in enumerate(y):
         pos_x_list.append(posxy[0])
         pos_y_list.append(posxy[1])
-    a = position_as_map([pos_x_list, pos_y_list], nd.X_STEP, nd.Y_STEP, nd.X_MAX,
-                        nd.X_MIN, nd.Y_MAX, nd.Y_MIN)
+    a = position_as_map([pos_x_list, pos_y_list], nd.x_step, nd.y_step, nd.x_max,
+                        nd.x_min, nd.y_max, nd.y_min)
     Y = a
     # print("plot:", "sample size is", len(y))
     fig, ax = plt.subplots()
@@ -418,11 +419,11 @@ def plot_plane(y, nd, path):
     Y -= np.min(y)
     # Y /= np.max(1,np.max(y))
     Y *= 255
-    Y[30 // nd.X_STEP, 50 // nd.Y_STEP] = 30
-    Y[70 // nd.X_STEP, 50 // nd.Y_STEP] = 30
-    Y[115 // nd.X_STEP, 50 // nd.Y_STEP] = 30
-    Y[160 // nd.X_STEP, 50 // nd.Y_STEP] = 30
-    Y[205 // nd.X_STEP, 50 // nd.Y_STEP] = 30
+    Y[30 // nd.x_step, 50 // nd.y_step] = 30
+    Y[70 // nd.x_step, 50 // nd.y_step] = 30
+    Y[115 // nd.x_step, 50 // nd.y_step] = 30
+    Y[160 // nd.x_step, 50 // nd.y_step] = 30
+    Y[205 // nd.x_step, 50 // nd.y_step] = 30
 
     ax.imshow(Y, cmap="gray")
     plt.savefig(path)

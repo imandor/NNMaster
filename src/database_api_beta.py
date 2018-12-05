@@ -114,94 +114,82 @@ class Net_data:
     SEARCH_RADIUS = WIN_SIZE * 2
 
     def __init__(self,
-                 MODEL_PATH,
-                 RAW_DATA_PATH,
-                 MAKE_HISTOGRAM=False,
-                 STRIDE=100,
-                 Y_SLICE_SIZE=100,
+                 model_path,
+                 raw_data_path,
+                 filtered_data_path="slice.pkl",
+                 stride=100,
+                 y_slice_size=100,
                  network_type="MLP",
-                 EPOCHS=20,
+                 epochs=20,
                  evaluate_training=False,
                  session_filter=Filter(func=hann, search_radius=SEARCH_RADIUS, step_size=WIN_SIZE),
-                 TIME_SHIFT_STEPS=1,
-                 SHUFFLE_DATA=True,
-                 SHUFFLE_FACTOR=500,
-                 TIME_SHIFT_ITER=200,
-                 r2_scores_train=[],
-                 r2_scores_valid=[],
-                 acc_scores_train=[],
-                 acc_scores_valid=[],
-                 avg_scores_train=[],
-                 avg_scores_valid=[],
-                 INITIAL_TIMESHIFT=0,
-                 METRIC_ITER=1,
-                 BATCH_SIZE=50,
-                 SLICE_SIZE=1000,
-                 X_MAX=240,
-                 Y_MAX=190,
-                 X_MIN=0,
-                 Y_MIN=100,
-                 X_STEP=3,
-                 Y_STEP=3,
-                 WIN_SIZE=WIN_SIZE,
-                 EARLY_STOPPING=False,
-                 SEARCH_RADIUS=SEARCH_RADIUS,
-                 NAIVE_TEST=False,
-                 VALID_RATIO=0.1,
+                 time_shift_steps=1,
+                 shuffle_data=True,
+                 shuffle_factor=500,
+                 time_shift_iter=200,
+                 initial_timeshift=0,
+                 metric_iter=1,
+                 batch_size=50,
+                 slice_size=1000,
+                 x_max=240,
+                 y_max=190,
+                 x_min=0,
+                 y_min=100,
+                 x_step=3,
+                 y_step=3,
+                 win_size=WIN_SIZE,
+                 early_stopping=False,
+                 search_radius=SEARCH_RADIUS,
+                 naive_test=False,
+                 valid_ratio=0.1,
                  testing_ratio=0.1,
-                 K_CROSS_VALIDATION=1,
-                 LOAD_MODEL=False,
-                 TRAIN_MODEL=True,
+                 k_cross_validation=1,
+                 load_model=False,
+                 train_model=True,
                  keep_neuron=-1,
-                 NEURONS_KEPT_FACTOR=1.0,
+                 neurons_kept_factor=1.0,
                  lw_classifications=None,
                  lw_normalize=False,
                  lw_differentiate_false_licks=True,
                  num_wells=5,
-                 FILTERED_DATA_PATH="slice.pkl",
                  metric="map",
                  licks=None,
                  valid_licks=None,
                  filter_tetrodes=None):
-        self.MAKE_HISTOGRAM = MAKE_HISTOGRAM
         self.evaluate_training = evaluate_training
-        self.STRIDE = STRIDE
-        self.TRAIN_MODEL = TRAIN_MODEL
-        self.Y_SLICE_SIZE = Y_SLICE_SIZE
+        self.stride = stride
+        self.train_model = train_model
+        self.y_slice_size = y_slice_size
         self.network_type = network_type
-        self.EPOCHS = EPOCHS
+        self.epochs = epochs
         self.session_filter = session_filter
-        self.TIME_SHIFT_STEPS = TIME_SHIFT_STEPS
-        self.SHUFFLE_DATA = SHUFFLE_DATA
-        self.SHUFFLE_FACTOR = SHUFFLE_FACTOR
-        self.TIME_SHIFT_ITER = TIME_SHIFT_ITER
-        self.MODEL_PATH = MODEL_PATH
+        self.time_shift_steps = time_shift_steps
+        self.shuffle_data = shuffle_data
+        self.shuffle_factor = shuffle_factor
+        self.time_shift_iter = time_shift_iter
+        self.model_path = model_path
         self.learning_rate = "placeholder"  # TODO
-        self.r2_scores_train = r2_scores_train
-        self.r2_scores_valid = r2_scores_valid
-        self.acc_scores_train = acc_scores_train
-        self.acc_scores_valid = acc_scores_valid
-        self.avg_scores_train = avg_scores_train
-        self.avg_scores_valid = avg_scores_valid
-        self.INITIAL_TIMESHIFT = INITIAL_TIMESHIFT
-        self.METRIC_ITER = METRIC_ITER
-        self.BATCH_SIZE = BATCH_SIZE
-        self.SLICE_SIZE = SLICE_SIZE
-        self.RAW_DATA_PATH = RAW_DATA_PATH
-        self.X_MAX = X_MAX
-        self.Y_MAX = Y_MAX
-        self.X_MIN = X_MIN
-        self.Y_MIN = Y_MIN
-        self.X_STEP = X_STEP
-        self.Y_STEP = Y_STEP
-        self.WIN_SIZE = WIN_SIZE
-        self.SEARCH_RADIUS = SEARCH_RADIUS
-        self.EARLY_STOPPING = EARLY_STOPPING
-        self.NAIVE_TEST = NAIVE_TEST
-        self.VALID_RATIO = VALID_RATIO
-        self.K_CROSS_VALIDATION = K_CROSS_VALIDATION
-        self.N_NEURONS = None
+        self.initial_timeshift = initial_timeshift
+        self.metric_iter = metric_iter
+        self.batch_size = batch_size
+        self.slice_size = slice_size
+        self.raw_data_path = raw_data_path
+        self.x_max = x_max
+        self.y_max = y_max
+        self.x_min = x_min
+        self.y_min = y_min
+        self.x_step = x_step
+        self.y_step = y_step
+        self.win_size = win_size
+        self.search_radius = search_radius
+        self.early_stopping = early_stopping
+        self.naive_test = naive_test
+        self.valid_ratio = valid_ratio
+        self.k_cross_validation = k_cross_validation
+        self.n_neurons = None
         self.X_train = None
+        self.X_test = None
+        self.y_test = None
         self.y_train = None
         self.metadata_train = None,
         self.X_valid = None
@@ -210,10 +198,10 @@ class Net_data:
         self.X_eval = None
         self.y_eval = None
         self.metadata_eval = None
-        self.LOAD_MODEL = LOAD_MODEL
+        self.load_model = load_model
         self.keep_neuron = keep_neuron
         self.metric = metric
-        self.NEURONS_KEPT_FACTOR = NEURONS_KEPT_FACTOR
+        self.neurons_kept_factor = neurons_kept_factor
         self.x_shape = None
         self.y_shape = None
         self.lw_classifications = lw_classifications
@@ -221,10 +209,26 @@ class Net_data:
         self.lw_differentiate_false_licks = lw_differentiate_false_licks
         self.num_wells = num_wells
         self.testing_ratio = testing_ratio
-        self.FILTERED_DATA_PATH = FILTERED_DATA_PATH
+        self.filtered_data_path = filtered_data_path
         self.licks = licks
         self.valid_licks = valid_licks
         self.filter_tetrodes = filter_tetrodes
+
+    def clear_io(self):
+        self.X_train = None
+        self.y_train = None
+        self.X_test = None
+        self.y_test = None
+        self.metadata_train = None,
+        self.X_valid = None
+        self.y_valid = None
+        self.metadata_valid = None
+        self.X_eval = None
+        self.y_eval = None
+        self.metadata_eval = None
+        self.licks = None
+        self.valid_licks = None
+        self.filter_tetrodes = None
 
     def get_all_valid_licks(self, session, start_well=1, change_is_valid=False):
         """
@@ -252,8 +256,8 @@ class Net_data:
         self.valid_licks = filtered_licks
 
     def assign_training_testing(self, X, y, k):
-        if self.K_CROSS_VALIDATION == 1:
-            valid_length = int(len(X) * self.VALID_RATIO)
+        if self.k_cross_validation == 1:
+            valid_length = int(len(X) * self.valid_ratio)
             self.X_train = X[valid_length:]
             self.y_train = y[valid_length:]
             self.X_valid = X[:valid_length // 2]
@@ -261,7 +265,7 @@ class Net_data:
             self.X_test = X[valid_length // 2:valid_length]
             self.y_test = y[valid_length // 2:valid_length]
         else:
-            k_len = int(len(X) // self.K_CROSS_VALIDATION)
+            k_len = int(len(X) // self.k_cross_validation)
             k_slice_test = slice(k_len * k, int(k_len * (k + 0.5)))
             k_slice_valid = slice(int(k_len * (k + 0.5)), k_len * (k + 1))
             not_k_slice_1 = slice(0, k_len * k)
@@ -282,8 +286,8 @@ class Net_data:
         """"
         Splits data in to training and testing, supports cross validation
         """
-        valid_ratio = self.VALID_RATIO
-        if self.K_CROSS_VALIDATION == 1:
+        valid_ratio = self.valid_ratio
+        if self.k_cross_validation == 1:
             valid_length = int(len(X) * valid_ratio)
             self.X_train = X[valid_length:]
             self.y_train = y[valid_length:]
@@ -295,7 +299,7 @@ class Net_data:
             k_len = int(len(X) // valid_ratio)
             if normalize is True:
                 counts = fill_counter(self.num_wells, excluded_wells, y)
-                k_len = int(self.VALID_RATIO * (self.num_wells - len(excluded_wells)) * min(
+                k_len = int(self.valid_ratio * (self.num_wells - len(excluded_wells)) * min(
                     counts))  # excludes area of samples which is not evenly spread over well types
             k_slice_test = slice(k_len * k, int(k_len * (k + 0.5)))
             k_slice_valid = slice(int(k_len * (k + 0.5)), k_len * (k + 1))
@@ -307,7 +311,7 @@ class Net_data:
             self.y_test = y[k_slice_test]
             self.X_valid = X[k_slice_valid]
             self.y_valid = y[k_slice_valid]
-            if self.EARLY_STOPPING is False:
+            if self.early_stopping is False:
                 self.X_valid = self.X_valid + self.X_test
                 self.y_valid = self.y_valid + self.y_test
 

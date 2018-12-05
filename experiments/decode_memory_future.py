@@ -7,7 +7,7 @@ if __name__ == '__main__':
 
     # prefrontal cortex
 
-    MODEL_PATH = "G:/master_datafiles/trained_networks/MLP_PFC_2018-12-03_1000_200_200_dmf/"
+    MODEL_PATH = "G:/master_datafiles/trained_networks/DMF_PFC_2018-12-05_dmf/"
     RAW_DATA_PATH = "G:/master_datafiles/raw_data/2018-04-09_14-39-52/"
     FILTERED_DATA_PATH = "session_pfc"
 
@@ -18,14 +18,14 @@ if __name__ == '__main__':
     # FILTERED_DATA_PATH = "session_hc"
 
     nd = Net_data(
-        INITIAL_TIMESHIFT=0,
-        EPOCHS=2,
-        TIME_SHIFT_ITER=500,
-        TIME_SHIFT_STEPS=1,
-        EARLY_STOPPING=False,
-        MODEL_PATH=MODEL_PATH,
-        RAW_DATA_PATH=RAW_DATA_PATH,
-        K_CROSS_VALIDATION = 5
+        initial_timeshift=-30000,
+        epochs=20,
+        time_shift_iter=500,
+        time_shift_steps=65,
+        early_stopping=False,
+        model_path=MODEL_PATH,
+        raw_data_path=RAW_DATA_PATH,
+        k_cross_validation = 1
 
 
     )

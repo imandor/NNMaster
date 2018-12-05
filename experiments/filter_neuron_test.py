@@ -62,7 +62,7 @@ if __name__ == '__main__':
         X_MIN=0,
         Y_MIN=100,
         X_STEP=3,
-        Y_STEP=3,
+        y_step=3,
         LOAD_MODEL= False,
         session_filter=session_filter,
         MODEL_PATH=MODEL_PATH,
