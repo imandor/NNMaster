@@ -1,9 +1,9 @@
 import tensorflow as tf
 from src.nets import MultiLayerPerceptron
-from src.metrics import test_discrete_accuracy, plot_histogram, Metric, Network_output
+from src.metrics import  plot_histogram, Metric, Network_output
 from src.conf import mlp, mlp_discrete
 from src.database_api_beta import Slice, Filter, hann
-from src.metrics import print_Net_data, cross_validate_lickwell_data, get_lickwell_accuracy
+from src.metrics import print_Net_data, cross_validate_lickwell_data, Lick_Metric_By_Epoch,print_lickwell_metrics
 import numpy as np
 from src.settings import save_as_pickle, load_pickle, save_net_dict
 from src.preprocessing import time_shift_positions, shuffle_io, position_as_map, lickwells_io, generate_counter, \
@@ -42,7 +42,7 @@ def time_shift_data(X, y, n):
 def licks_to_logits(licks, num_wells):
     return_list = []
     for lick in licks:
-        return_list.append(abs_to_logits(lick.prediction, num_wells))
+        return_list.append(abs_to_logits(lick.target, num_wells))
     return return_list
 
 
@@ -80,31 +80,21 @@ def run_lickwell_network_process(nd):
             metric_step_counter.append(i)
 
             # Evaluate
+
             print("\n_-_-_-_-_-_-_-_-_-_-Epoch", i, "_-_-_-_-_-_-_-_-_-_-\n")
             # print("Training results:")
             # total, avg_acc, acc_valid = test_accuracy(sess=sess, S=S, nd=nd, X=nd.X_train, y=nd.y_train, epoch=i,
             #                                       print_distance=True)
 
             if nd.evaluate_training is True:
-                epoch_metric = test_discrete_accuracy(sess=sess, S=S, nd=nd, X=X_train, y=logits_train,
-                                                      metadata=nd.y_train)
+                epoch_metric = Lick_Metric_By_Epoch.test_accuracy(sess=sess, S=S, nd=nd, X=X_train, y=logits_train,
+                                                                  metadata=nd.y_train, epoch=i)
 
             print("Validation results:")
-            epoch_metric = test_discrete_accuracy(sess=sess, S=S, nd=nd, X=X_valid, y=logits_valid,
-                                                  metadata=nd.y_valid)
+            epoch_metric = Lick_Metric_By_Epoch.test_accuracy(sess=sess, S=S, nd=nd, X=X_valid, y=logits_valid,
+                                                              metadata=nd.y_valid, epoch=i)
             acc_scores_valid.append(epoch_metric)
             metric_counter = 0
-            if nd.early_stopping is True and i >= 5:  # most likely overfitting instead of training
-                if i % 1 == 0:
-
-                    _, _, acc_test = test_discrete_accuracy(sess=sess, S=S, nd=nd, X=X_test, y=logits_test,
-                                                            metadata=nd.y_test)
-                    acc = acc_test[19]
-                    if early_stop_max < acc:
-                        early_stop_max = acc
-                    else:
-                        if acc < early_stop_max - 0.01:
-                            acc_scores_valid = acc_scores_valid[0:-1]
 
         # Train network
 
@@ -126,7 +116,7 @@ def run_lickwell_network_process(nd):
     # Close session and add current time shift to network save file
 
     sess.close()
-    return nd
+    return acc_scores_valid
 
 
 def run_network_process(nd):
@@ -166,14 +156,14 @@ def run_network_process(nd):
             print("\n_-_-_-_-_-_-_-_-_-_-Epoch", i, "_-_-_-_-_-_-_-_-_-_-\n")
 
             print("Validation results:")
-            metric_eval.test_accuracy(sess=sess, S=S, nd=nd, X=nd.X_valid, y=nd.y_valid)
+            metric_eval.set_metrics(epoch=i, sess=sess, S=S, nd=nd, X=nd.X_valid, y=nd.y_valid)
             print("R2-score:", metric_eval.r2_by_epoch[-1])
             print("Avg-distance:", metric_eval.ape_by_epoch[-1])
             # saver.save(sess, nd.model_path, global_step=i, write_meta_graph=False)
             metric_counter = 0
             if nd.early_stopping is True and i >= 10:  # most likely overfitting instead of training
                 if i % 1 == 0:
-                    metric_test.test_accuracy(sess=sess, S=S, nd=nd, X=nd.X_test, y=nd.y_test)
+                    metric_test.set_metrics(sess=sess, S=S, nd=nd, X=nd.X_test, y=nd.y_test)
                     acc = metric_test.acc20_by_epoch[-1]
                     if early_stop_max < acc:
                         early_stop_max = acc
@@ -319,29 +309,13 @@ def run_lickwell_network(nd, session, X, y, metadata):
         print("cross validation step", str(k + 1), "of", nd.k_cross_validation)
         nd.assign_training_testing_lickwell(X, metadata, k, excluded_wells=[1], normalize=nd.lw_normalize)
         save_nd = run_lickwell_network_process(nd)
-        metrics_k.append(save_nd.acc_scores_valid)
+        metrics_k.append(save_nd)
 
-    metrics = cross_validate_lickwell_data(metrics_k)
-    accuracy = get_lickwell_accuracy(metrics)
-    now = datetime.datetime.now().isoformat()
-    path = nd.model_path + "output/" + now[0:10] + "_network_output_timeshift=" + str(
+    metrics = cross_validate_lickwell_data(metrics=metrics_k,licks=session.licks,epoch=-1,nd=nd)
+    path = nd.model_path + "output/network_output_timeshift=" + str(
         nd.time_shift) + ".pkl"
 
-    print("Maximum average:", np.max(accuracy), "(epoch",
-          str(1 + np.argmax(accuracy)), ")")
-    print("average last epoch: ", accuracy[-1])
 
-    print("Minimum last epoch:", min(accuracy))
-    save_as_pickle(path, save_dict)
-    best_metric = metrics[np.argmax(accuracy)]
-    print("Correct guesses", best_metric.correct_guesses)
-    print("Discriminate correct count", best_metric.correct_guesses)
-    print("Correct guesses", best_metric.correct_guesses)
-    print("Discriminate correct count", best_metric.discriminate_correct_count)
-    print("Discriminate count", best_metric.discriminate_count)
-    print("Discriminate total accuracy",
-          np.sum(best_metric.discriminate_correct_count) / np.sum(best_metric.discriminate_count))
-    print("Guesses by well", best_metric.guesses_by_well)
-    print("Total samples", best_metric.total_samples)
-
+    save_as_pickle(path, metrics)
+    print_lickwell_metrics(metrics, nd)
     print("fin")

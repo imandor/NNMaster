@@ -11,7 +11,7 @@ from statsmodels.nonparametric.smoothers_lowess import lowess
 
 def metric_plot_a(save_path, x, y, axis_label_x, axis_label_y):
     fig, ax = plt.subplots()
-    plt.rc('font', family='serif', serif='Times')
+    # plt.rc('font', family='serif', serif='Times')
     plt.rc('text', usetex=True)
     plt.rc('xtick', labelsize=8)
     plt.rc('ytick', labelsize=8)

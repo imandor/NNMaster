@@ -169,10 +169,10 @@ def generate_counter(num_wells, excluded_wells):
 def fill_counter(num_wells, excluded_wells, licks):
     counter = generate_counter(num_wells=num_wells, excluded_wells=excluded_wells)
     for i, lick in enumerate(licks):
-        if lick.prediction is None:
+        if lick.target is None:
             well = lick.lickwell
         else:
-            well = lick.prediction
+            well = lick.target
         if well not in excluded_wells:
             index = normalize_well(well, num_wells, excluded_wells)
             counter[index] += 1
@@ -180,13 +180,23 @@ def fill_counter(num_wells, excluded_wells, licks):
 
 
 def normalize_well(well, num_wells, excluded_wells):
+    """
+
+    :param well:
+    :param num_wells:
+    :param excluded_wells:
+    :return: a normalized well id
+    """
     return int((well - 1 - len(excluded_wells)) % (num_wells - len(excluded_wells)))
 
 
-
-
-
 def abs_to_logits(y_abs, num_wells):
+    """
+
+    :param y_abs:
+    :param num_wells:
+    :return: cast of well_id to logit format
+    """
     y_i = np.zeros(num_wells)
     y_i[int(y_abs) - 1] = 1
     return y_i
@@ -199,7 +209,9 @@ def lickwells_io(session, nd, excluded_wells=[1], shift=1, normalize=False, diff
     # Filter licks and spread them as evenly as possible
 
     licks = session.licks  # np.zeros(len(session.licks))
-    nd.get_all_valid_licks(session, start_well=1, change_is_valid=True)
+    nd.get_all_valid_lick_ids(session, start_well=1)
+    nd.get_all_phase_change_ids(session=session)
+    # nd.valid_licks = session.licks
     filtered_licks = []
     filtered_next_wells = []
     # create list of valid licks
@@ -247,7 +259,7 @@ def lickwells_io(session, nd, excluded_wells=[1], shift=1, normalize=False, diff
             X.append(bins_to_x)
             if differentiate_false_licks is False:
                 y_abs.append(next_well[i])
-                lick.prediction = next_well[i]
+                lick.target = next_well[i]
                 metadata.append(lick)
             # else:
             # TODO

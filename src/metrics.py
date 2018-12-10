@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from src.preprocessing import position_as_map
+from src.database_api_beta import Evaluated_Lick
 from src.settings import save_as_pickle
 
 
@@ -111,21 +112,6 @@ def predict_map(S, sess, X, Y):
     return y_predicted, y_target
 
 
-def predict_discrete(S, sess, X, Y, nd):
-    y_predicted = np.zeros((len(Y), nd.lw_classifications))
-    y_target = np.zeros((len(Y), nd.lw_classifications))
-    for j in range(0, len(X), 1):
-        x = np.array([data_slice for data_slice in X[j:j + 1]])
-        y = np.array(Y[j:j + 1])
-        x = np.reshape(x, [1] + [nd.x_shape[1]] + [nd.x_shape[2]] + [nd.x_shape[3]])
-        prediction = S.valid(sess, x)[0]
-        y_predicted[j] = np.where(prediction == np.max(prediction), 1, 0)  # int(np.argmax(S.valid(sess, x)[0]))
-        if np.max(prediction) == 0:  # TODO
-            y_predicted[j] = np.array([1, 0, 0, 0, 0])
-        y_target[j] = y
-    return y_predicted, y_target
-
-
 def get_label_accuracy(y_predicted, y_target):
     correct_count = 0
     for i in range(len(y_predicted)):
@@ -143,44 +129,126 @@ def get_label_total_count(y):
     return np.sum(y, axis=0)
 
 
-class Lickwell_metric:
-    def __init__(self, correct_guesses, guesses_by_well, total_samples, accuracy, discriminate_count,
-                 discriminate_correct_count):
-        self.correct_guesses = correct_guesses
-        self.guesses_by_well = guesses_by_well
-        self.total_samples = total_samples
-        self.accuracy = accuracy
-        self.discriminate_count = discriminate_count
-        self.discriminate_correct_count = discriminate_correct_count
+def predict_lickwell(S, sess, X, Y, nd):
+    y_predicted = np.zeros((len(Y), nd.lw_classifications))
+    y_target = np.zeros((len(Y), nd.lw_classifications))
+    for j in range(0, len(X), 1):
+        x = np.array([data_slice for data_slice in X[j:j + 1]])
+        y = np.array(Y[j:j + 1])
+        x = np.reshape(x, [1] + [nd.x_shape[1]] + [nd.x_shape[2]] + [nd.x_shape[3]])
+        prediction = S.valid(sess, x)[0]
+        y_predicted[j] = np.where(prediction == np.max(prediction), 1, 0)  # int(np.argmax(S.valid(sess, x)[0]))
+        if np.max(prediction) == 0:  # TODO
+            y_predicted[j] = np.array([1, 0, 0, 0, 0])
+        y_target[j] = y
+    return y_predicted, y_target
 
 
-def cross_validate_lickwell_data(metrics):
-    metrics_average = []
-    for i, metrics_by_epoch in enumerate(metrics[0]):
-        accuracy = []  # fraction
-        correct_guesses = []  # array of length number of lickwells
-        discriminate_correct_count = []  # array of length number of discriminate licks
-        discriminate_count = []  # array of length number of discriminate licks
-        guesses_by_well = []  # array of length number of lickwells
-        total_samples = []
-        for j, metrics_k in enumerate(metrics):
-            accuracy.append(metrics[j][i].accuracy)
-            correct_guesses.append(metrics[j][i].correct_guesses)
-            discriminate_correct_count.append(metrics[j][i].discriminate_correct_count)
-            discriminate_count.append(metrics[j][i].discriminate_count)
-            guesses_by_well.append(metrics[j][i].guesses_by_well)
-            total_samples.append(metrics[j][i].total_samples)
-        accuracy = np.average(accuracy, axis=0)
-        correct_guesses = np.average(correct_guesses, axis=0)
-        discriminate_correct_count = np.sum(discriminate_correct_count, axis=0)
-        discriminate_count = np.sum(discriminate_count, axis=0)
-        guesses_by_well = np.sum(guesses_by_well, axis=0)
-        total_samples = np.sum(total_samples, axis=0)
-        metrics_average.append(Lickwell_metric(correct_guesses=correct_guesses, guesses_by_well=guesses_by_well,
-                                               total_samples=total_samples, accuracy=accuracy,
-                                               discriminate_count=discriminate_count,
-                                               discriminate_correct_count=discriminate_correct_count))
-    return metrics_average
+def return_guesses(y_predicted, y_target, metadata):
+    guesses = []
+    for i, e in enumerate(metadata):
+        prediction = np.argmax(y_predicted[i])
+        guess_is_correct = True if prediction == np.argmax(y_target[i]) else False
+        lick_id = e.lick_id
+        lickwell = e.lickwell
+        guess = Lick_Metric(guess_is_correct=guess_is_correct, lick_id=lick_id, lickwell=lickwell,
+                            prediction=prediction)
+        guesses.append(guess)
+    return guesses
+
+
+class Lick_Metric_By_Epoch:
+    def __init__(self, epoch, guesses=[]):
+        self.guesses = guesses
+        self.epoch = epoch
+
+    @classmethod
+    def test_accuracy(cls, sess, S, nd, X, y, metadata, epoch):
+        y_predicted, y_target = predict_lickwell(S=S, sess=sess, X=X, Y=y, nd=nd)
+        guesses = return_guesses(y_predicted, y_target, metadata)
+        return cls(epoch=epoch, guesses=guesses)
+
+
+class Lick_Metric:
+    def __init__(self, guess_is_correct, lick_id, lickwell, prediction):
+        self.guess_is_correct = guess_is_correct
+        self.lick_id = lick_id
+        self.lickwell = lickwell
+        self.prediction = prediction
+
+
+def get_main_prediction(guesses, nd):
+    """
+
+    :param guesses:
+    :param nd:
+    :return: sorted list of lick_ids, most frequent guess for each lick_id, fraction of guesses being the most frequent guess
+    """
+    lick_ids = [a.lick_id for a in guesses]
+    sorted_lick_ids = np.unique(lick_ids, return_counts=False)
+    counter_by_id = np.zeros((len(sorted_lick_ids), nd.num_wells))
+    # find most frequent prediction by lick_id
+    for guess in guesses:
+        counter_by_id[np.where(sorted_lick_ids == guess.lick_id)[0][0]][guess.prediction - 1] += 1
+    most_frequent_guess = [np.argmax(a) + 2 for a in counter_by_id] # TODO the + 2 refers to + 1: well id starts at 1 instead of zero, + 1: one well is excluded. No excluded wells parameter in nd yet
+
+    # determine count of most predicted well and total count
+    predicted_count = [np.max(a) for a in counter_by_id]
+    total_count = [np.sum(a) for a in counter_by_id]
+
+    fraction_predicted_by_id = np.divide(predicted_count, total_count)
+
+    return sorted_lick_ids, most_frequent_guess, fraction_predicted_by_id
+
+
+def cross_validate_lickwell_data(metrics, epoch, licks, nd):
+    lick_ids = [lick.lick_id for lick in licks]
+    guesses_by_id = np.zeros(max(lick_ids))
+    correct_guesses_by_id = np.zeros(max(lick_ids))
+    all_guesses = []
+    # Count correct and false guesses sorted by lick id (cross validation normalization is not necessary)
+    for k, metrics_k in enumerate(metrics):  # for each cross validation step (to average later)
+        guesses = metrics_k[epoch].guesses
+        all_guesses.append(guesses)
+        for j, guess in enumerate(guesses):  # for each tested sample in epoch
+            lick_id = guess.lick_id
+            guesses_by_id[lick_id - 1] += 1
+            if guess.guess_is_correct is True:
+                correct_guesses_by_id[lick_id - 1] += 1
+
+    all_guesses = [a for li in all_guesses for a in li] # flatten all_guesses
+
+    # find the most frequently predicted well sorted by id
+
+    sorted_lick_ids, most_frequent_guess_by_id, fraction_predicted_by_id = get_main_prediction(all_guesses, nd)
+
+
+    fraction_decoded_by_id = np.divide(correct_guesses_by_id, guesses_by_id)
+
+    # Create list of objects containing all relevant information TODO: change to Lick object
+    return_list = []
+    for i, lick in enumerate(licks):
+
+        # Determine all parameters for object
+        if lick.lick_id in sorted_lick_ids: # only accept licks confirmed to be in data set
+            if i != 0:
+                last_well = licks[i - 1].lickwell
+            else:
+                last_well = None
+            if i != len(licks) - 1:
+                next_well = licks[i + 1].lickwell
+            else:
+                next_well = None
+            prediction = most_frequent_guess_by_id[np.where(lick.lick_id == sorted_lick_ids)[0][0]]
+            fraction_predicted = fraction_predicted_by_id[np.where(lick.lick_id == sorted_lick_ids)[0][0]]
+
+            evaluated_lick = Evaluated_Lick(lick_id=lick.lick_id, rewarded=lick.rewarded, time=lick.time,
+                                            lickwell=lick.lickwell, prediction=prediction, target=lick.target,
+                                            next_well=next_well, last_well=last_well, fraction_predicted=fraction_predicted,
+                                            fraction_decoded=fraction_decoded_by_id[lick.lick_id - 1],
+                                            total_decoded=guesses_by_id[lick.lick_id - 1])
+            return_list.append(evaluated_lick)
+    return return_list
 
 
 def get_lickwell_accuracy(metrics_average):
@@ -188,25 +256,6 @@ def get_lickwell_accuracy(metrics_average):
     for metrics in metrics_average:
         accuracy.append(metrics.accuracy)
     return accuracy
-
-
-def test_discrete_accuracy(sess, S, nd, X, y, metadata):
-    y_predicted, y_target = predict_discrete(S, sess, X, y, nd)
-    correct_guesses = get_label_correct_count(y_predicted, y_target)
-    accuracy = get_label_accuracy(y_predicted, y_target)
-    guesses_by_well = get_label_total_count(y_predicted)
-    total_samples = get_label_total_count(y_target)
-    discriminate_count, discriminate_correct_count = test_discriminate_discrete_accuracy(y_predicted, y_target,
-                                                                                         metadata, nd)
-    print("correct guesses", correct_guesses)
-    print("guesses by well", guesses_by_well)
-    print("total samples", total_samples)
-    print("accuracy", accuracy)
-    # y_predicted, y_target = predict_discrete(S, sess, X, y, nd)
-    return Lickwell_metric(correct_guesses=correct_guesses, guesses_by_well=guesses_by_well,
-                           total_samples=total_samples,
-                           accuracy=accuracy, discriminate_count=discriminate_count,
-                           discriminate_correct_count=discriminate_correct_count)
 
 
 def test_discriminate_discrete_accuracy(y_predicted, y_target, metadata, nd):
@@ -252,7 +301,7 @@ class Network_output:  # object containing list of metrics by cross validation p
 
 
 class Metric:  # object containing evaluation metrics for all epochs
-    def __init__(self, r2_by_epoch=[], ape_by_epoch=[], acc20_by_epoch=[], r2_best=None,
+    def __init__(self, epoch, r2_by_epoch=[], ape_by_epoch=[], acc20_by_epoch=[], r2_best=None,
                  ape_best=None, acc20_best=None):
         self.r2_by_epoch = r2_by_epoch
         self.ape_by_epoch = ape_by_epoch  # absolute position error
@@ -260,6 +309,7 @@ class Metric:  # object containing evaluation metrics for all epochs
         self.r2_best = r2_best
         self.ape_best = ape_best
         self.acc20_best = acc20_best
+        self.epoch = epoch
 
     def set_bests(self, stops_early):
         if stops_early is True:
@@ -271,8 +321,7 @@ class Metric:  # object containing evaluation metrics for all epochs
             self.ape_best = np.min(self.ape_by_epoch)
             self.acc20_best = np.max(self.acc20_by_epoch)
 
-
-    def test_accuracy(self,sess, S, nd, X, y):
+    def set_metrics(self, sess, S, nd, X, y):
         y_predicted, y_target = predict_map(S, sess, X, y)
         r2 = get_r2(y_predicted, y_target, [nd.x_step, nd.y_step])  # r2 score
         ape = get_avg_distance(y_predicted, y_target, [nd.x_step, nd.y_step])  # absolute position error
@@ -280,6 +329,7 @@ class Metric:  # object containing evaluation metrics for all epochs
         self.r2_by_epoch.append(r2)
         self.ape_by_epoch.append(ape)
         self.acc20_by_epoch.append(acc20)
+        self.epoch = self.epoch
 
 
 def plot_all_planes(X, y, is_training_data, y_predicted, y_target, nd):
@@ -428,3 +478,17 @@ def plot_plane(y, nd, path):
     ax.imshow(Y, cmap="gray")
     plt.savefig(path)
     # plt.close()
+
+
+def print_lickwell_metrics(metrics, nd):
+    print("lick_id: well_1->well_ 2, fraction decoded | most frequently predicted , fraction predicted")
+    for i, m in enumerate(metrics):
+        if not np.isnan(m.fraction_decoded):
+            print(m.lick_id, "1 ->", end=" ")
+            if nd.initial_timeshift == 1:
+                print(m.next_well, end=" ")
+            else:
+                print(m.last_well, end=" ")
+            print(np.round(m.fraction_decoded,2), m.rewarded, "|", m.prediction, np.round(m.fraction_predicted,2))
+            if m.lick_id in nd.phase_change_ids:
+                print("->switch")

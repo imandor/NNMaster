@@ -16,42 +16,42 @@ if __name__ == '__main__':
 
     # hippocampus
 
-    # MODEL_PATH = "G:/master_datafiles/trained_networks/MLP_HC_2018-11-22_1000_200_100_lickwell/"
-    # RAW_DATA_PATH = "G:/master_datafiles/raw_data/2018-05-16_17-13-37/"
-    # FILTERED_DATA_PATH = "slice_HC_200.pkl"
+    MODEL_PATH = "G:/master_datafiles/trained_networks/MLP_HC_2018-11-22_1000_200_100_lickwell/"
+    RAW_DATA_PATH = "G:/master_datafiles/raw_data/2018-05-16_17-13-37/"
+    FILTERED_DATA_PATH = "session_hc_lw.pkl"
 
 
     nd = Net_data(
 
         # Program execution settings
-        EPOCHS=10,
+        epochs=20,
         evaluate_training=False,
-        SLICE_SIZE=200,
-        STRIDE=200,
+        slice_size=200,
+        stride=200,
         y_step=200,
-        WIN_SIZE=200,
-        SEARCH_RADIUS=200,
-        K_CROSS_VALIDATION=10,
+        win_size=200,
+        search_radius=200,
+        k_cross_validation=10,
         session_filter=Filter(func=hann, search_radius=200, step_size=200),
-        VALID_RATIO=0.1,
+        valid_ratio=0.1,
         testing_ratio=0,
-        TIME_SHIFT_STEPS=1,
-        EARLY_STOPPING=False,
-        MODEL_PATH=MODEL_PATH,
-        RAW_DATA_PATH=RAW_DATA_PATH,
-        FILTERED_DATA_PATH=FILTERED_DATA_PATH,
+        time_shift_steps=1,
+        early_stopping=False,
+        model_path=MODEL_PATH,
+        raw_data_path=RAW_DATA_PATH,
+        filtered_data_path=FILTERED_DATA_PATH,
         metric="discrete",
-        SHUFFLE_DATA=True,
-        SHUFFLE_FACTOR=1,
+        shuffle_data=True,
+        shuffle_factor=1,
         lw_classifications=5,
         lw_normalize=True,
         lw_differentiate_false_licks=False,
         num_wells=5,
-        INITIAL_TIMESHIFT=1,
+        initial_timeshift=1,
     )
 
-    session = initiate_lickwell_network(nd)  # Initialize session
-    X, y, metadata = lickwells_io(session, nd, excluded_wells=[1], shift=nd.INITIAL_TIMESHIFT,
+    session = initiate_lickwell_network(nd,load_raw_data=False)  # Initialize session
+    X, y, metadata = lickwells_io(session, nd, excluded_wells=[1], shift=nd.initial_timeshift,
                                   normalize=nd.lw_normalize,
                                   differentiate_false_licks=nd.lw_differentiate_false_licks)
     run_lickwell_network(nd, session, X, y, metadata)

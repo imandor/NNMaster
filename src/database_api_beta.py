@@ -101,14 +101,23 @@ def _convolve_thread_func(filter_func, n_bin_points, neuron_counter, n_neurons, 
 
 
 class Lick():
-    def __init__(self, lickwell, time, rewarded, lick_id, prediction=None):
+    def __init__(self, lickwell, time, rewarded, lick_id, target=None):
         self.time = time
         self.lickwell = lickwell
         self.rewarded = rewarded
         self.lick_id = lick_id
+        self.target = target
+
+class Evaluated_Lick(Lick):  # object containing list of metrics by cross validation partition
+    def __init__(self, lickwell, time, rewarded, lick_id, prediction=None, next_well=None, last_well=None,
+                 fraction_decoded=None, total_decoded=None,target=None,fraction_predicted=None):
+        Lick.__init__(self, lickwell, time, rewarded, lick_id,target)
+        self.next_well = next_well
+        self.last_well = last_well
+        self.fraction_decoded = fraction_decoded
+        self.total_decoded = total_decoded
         self.prediction = prediction
-
-
+        self.fraction_predicted = fraction_predicted
 class Net_data:
     WIN_SIZE = 100
     SEARCH_RADIUS = WIN_SIZE * 2
@@ -155,7 +164,8 @@ class Net_data:
                  metric="map",
                  licks=None,
                  valid_licks=None,
-                 filter_tetrodes=None):
+                 filter_tetrodes=None,
+                 phase_change_ids=None):
         self.evaluate_training = evaluate_training
         self.stride = stride
         self.train_model = train_model
@@ -213,6 +223,7 @@ class Net_data:
         self.licks = licks
         self.valid_licks = valid_licks
         self.filter_tetrodes = filter_tetrodes
+        self.phase_change_ids = None
 
     def clear_io(self):
         self.X_train = None
@@ -230,12 +241,11 @@ class Net_data:
         self.valid_licks = None
         self.filter_tetrodes = None
 
-    def get_all_valid_licks(self, session, start_well=1, change_is_valid=False):
+    def get_all_valid_lick_ids(self, session, start_well=1):
         """
 
         :param session: session object
         :param start_well: dominant well in training phase (usually well 1)
-        :param change_is_valid: if True exclude licks without change in training phase, if False licks with change
         :return: a list of lick_ids of licks corresponding to filter
         """
 
@@ -248,12 +258,41 @@ class Net_data:
             if current_phase_well is None and well != start_well:  # set well that is currently being trained for
                 current_phase_well = well
             if current_phase_well is not None and well == 1:  # append lick if it fits valid_filter
-                if (change_is_valid is True and next_well != current_phase_well) or (
-                        change_is_valid is not True and next_well == current_phase_well):
-                    filtered_licks.append(lick.lick_id)
+                filtered_licks.append(lick.lick_id)
                 if next_well != current_phase_well:  # change phase if applicable
                     current_phase_well = next_well
         self.valid_licks = filtered_licks
+
+    def get_all_phase_change_ids(self, session):
+        """
+        :param session: session object
+        :param start_well: dominant well in training phase (usually well 1)
+        :param change_is_valid: if True exclude licks without change in training phase, if False licks with change
+        :return: a list of lick_ids of licks corresponding to filter
+        """
+
+        licks = session.licks
+        current_phase_well = None
+        filtered_licks = []
+        for i, lick in enumerate(licks[0:-2]):
+            well = lick.lickwell
+            for j in range(1,len(licks[0:-2])): # find next valid well licked
+                if i + j>=len(licks):
+                    next_well = None
+                    break
+                if licks[i+j].rewarded == 1:
+                    next_well = licks[i + j].lickwell
+                    break
+            if current_phase_well is None:  # set well that is currently being trained for
+                current_phase_well = well
+            if current_phase_well is not None and well == 1:  # append lick if it fits valid_filter
+                if next_well != current_phase_well:
+                    filtered_licks.append(lick.lick_id)
+                if next_well != current_phase_well:  # change phase if applicable
+                    current_phase_well = next_well
+
+        self.phase_change_ids = filtered_licks
+
 
     def assign_training_testing(self, X, y, k):
         if self.k_cross_validation == 1:
@@ -296,11 +335,11 @@ class Net_data:
             self.X_test = X[valid_length // 2:valid_length]
             self.y_test = y[valid_length // 2:valid_length]
         else:
-            k_len = int(len(X) // valid_ratio)
-            if normalize is True:
-                counts = fill_counter(self.num_wells, excluded_wells, y)
-                k_len = int(self.valid_ratio * (self.num_wells - len(excluded_wells)) * min(
-                    counts))  # excludes area of samples which is not evenly spread over well types
+            k_len = int(len(X) * valid_ratio)
+            # if normalize is True:
+            #     counts = fill_counter(self.num_wells, excluded_wells, y)
+            #     k_len = int(self.valid_ratio * (self.num_wells - len(excluded_wells)) * min(
+            #         counts))  # excludes area of samples which is not evenly spread over well types
             k_slice_test = slice(k_len * k, int(k_len * (k + 0.5)))
             k_slice_valid = slice(int(k_len * (k + 0.5)), k_len * (k + 1))
             not_k_slice_1 = slice(0, k_len * k)
@@ -347,10 +386,10 @@ class Net_data:
         counts = fill_counter(self.num_wells, excluded_wells, y)  # total number of licks by well
         while len(y_new) > 0:
             i = randint(0, len(y_new) - 1)
-            if max(counts * y_new[i].prediction) < max(counts):  # if count at well position smaller than max
+            if max(counts * y_new[i].target) < max(counts):  # if count at well position smaller than max
                 x_return.append(x_new[i])
-                y_return.append(y_new[i].prediction)
-                counts[np.argmax(y_new[i]).prediction] += 1
+                y_return.append(y_new[i].target)
+                counts[np.argmax(y_new[i].target)] += 1
             else:
                 y_new.pop(i)
                 x_new.pop(i)
@@ -362,7 +401,7 @@ class Net_data:
         y = np.array(y)
         counts = generate_counter(self.num_wells, excluded_wells)
         for i, e in enumerate(y):
-            y_pos = normalize_well(e.prediction, self.num_wells, excluded_wells)
+            y_pos = normalize_well(e.target, self.num_wells, excluded_wells)
             if counts[y_pos] < max_occurrences:
                 x_return.append(x[i])
                 counts[y_pos] += 1
