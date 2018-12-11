@@ -109,11 +109,11 @@ class Lick():
         self.target = target
 
 class Evaluated_Lick(Lick):  # object containing list of metrics by cross validation partition
-    def __init__(self, lickwell, time, rewarded, lick_id, prediction=None, next_well=None, last_well=None,
+    def __init__(self, lickwell, time, rewarded, lick_id, prediction=None, next_lick_id=None, last_lick_id=None,
                  fraction_decoded=None, total_decoded=None,target=None,fraction_predicted=None):
         Lick.__init__(self, lickwell, time, rewarded, lick_id,target)
-        self.next_well = next_well
-        self.last_well = last_well
+        self.next_lick_id = next_lick_id
+        self.last_lick_id = last_lick_id
         self.fraction_decoded = fraction_decoded
         self.total_decoded = total_decoded
         self.prediction = prediction
@@ -241,26 +241,29 @@ class Net_data:
         self.valid_licks = None
         self.filter_tetrodes = None
 
-    def get_all_valid_lick_ids(self, session, start_well=1):
+    def get_all_valid_lick_ids(self, session, start_well=1,shift=1):
         """
 
         :param session: session object
         :param start_well: dominant well in training phase (usually well 1)
         :return: a list of lick_ids of licks corresponding to filter
         """
-
         licks = session.licks
-        current_phase_well = None
         filtered_licks = []
-        for i, lick in enumerate(licks[0:-2]):
-            well = lick.lickwell
-            next_well = licks[i + 1].lickwell
-            if current_phase_well is None and well != start_well:  # set well that is currently being trained for
-                current_phase_well = well
-            if current_phase_well is not None and well == 1:  # append lick if it fits valid_filter
-                filtered_licks.append(lick.lick_id)
-                if next_well != current_phase_well:  # change phase if applicable
-                    current_phase_well = next_well
+        if shift == 1:
+            for i,lick in enumerate(licks[0:-2]):
+                well = lick.lickwell
+                next_well = licks[i + 1].lickwell
+                if well == start_well and next_well != start_well:
+                    filtered_licks.append(lick.lick_id)
+
+        else:
+            for i, lick in enumerate(licks[1:-1]):
+                well = lick.lickwell
+                next_well = licks[i - 1].lickwell
+                if well == start_well and next_well != start_well:
+                    filtered_licks.append(lick.lick_id)
+
         self.valid_licks = filtered_licks
 
     def get_all_phase_change_ids(self, session):
@@ -272,6 +275,9 @@ class Net_data:
         """
 
         licks = session.licks
+        rewarded_list = [lick.rewarded for lick in licks]
+        licks = [lick for i, lick in enumerate(licks) if rewarded_list[i] == 1]
+
         current_phase_well = None
         filtered_licks = []
         for i, lick in enumerate(licks[0:-2]):

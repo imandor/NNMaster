@@ -10,16 +10,15 @@ if __name__ == '__main__':
 
     # prefrontal cortex
 
-    # MODEL_PATH = "G:/master_datafiles/trained_networks/MLP_PFC_2018-11-13_1000_200_100_lickwell_normalized/"
-    # RAW_DATA_PATH = "G:/master_datafiles/raw_data/2018-04-09_14-39-52/"
-    # FILTERED_DATA_PATH = "slice_PFC_200.pkl"
+    MODEL_PATH = "G:/master_datafiles/trained_networks/MLP_PFC_2018-12-11_lickwell/"
+    RAW_DATA_PATH = "G:/master_datafiles/raw_data/2018-04-09_14-39-52/"
+    FILTERED_DATA_PATH = "session_pfc_lw.pkl"
 
     # hippocampus
 
-    MODEL_PATH = "G:/master_datafiles/trained_networks/MLP_HC_2018-11-22_1000_200_100_lickwell/"
-    RAW_DATA_PATH = "G:/master_datafiles/raw_data/2018-05-16_17-13-37/"
-    FILTERED_DATA_PATH = "session_hc_lw.pkl"
-
+    # MODEL_PATH = "G:/master_datafiles/trained_networks/MLP_HC_2018-12-11_lickwell/"
+    # RAW_DATA_PATH = "G:/master_datafiles/raw_data/2018-05-16_17-13-37/"
+    # FILTERED_DATA_PATH = "session_hc_lw.pkl"
 
     nd = Net_data(
 
@@ -47,10 +46,11 @@ if __name__ == '__main__':
         lw_normalize=True,
         lw_differentiate_false_licks=False,
         num_wells=5,
-        initial_timeshift=1,
+        initial_timeshift=-1,
     )
 
-    session = initiate_lickwell_network(nd,load_raw_data=False)  # Initialize session
+    session = initiate_lickwell_network(nd,load_raw_data=True)  # Initialize session
+
     X, y, metadata = lickwells_io(session, nd, excluded_wells=[1], shift=nd.initial_timeshift,
                                   normalize=nd.lw_normalize,
                                   differentiate_false_licks=nd.lw_differentiate_false_licks)

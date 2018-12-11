@@ -81,7 +81,7 @@ def run_lickwell_network_process(nd):
 
             # Evaluate
 
-            print("\n_-_-_-_-_-_-_-_-_-_-Epoch", i, "_-_-_-_-_-_-_-_-_-_-\n")
+            print("Epoch", i, "of",nd.epochs)
             # print("Training results:")
             # total, avg_acc, acc_valid = test_accuracy(sess=sess, S=S, nd=nd, X=nd.X_train, y=nd.y_train, epoch=i,
             #                                       print_distance=True)
@@ -90,7 +90,6 @@ def run_lickwell_network_process(nd):
                 epoch_metric = Lick_Metric_By_Epoch.test_accuracy(sess=sess, S=S, nd=nd, X=X_train, y=logits_train,
                                                                   metadata=nd.y_train, epoch=i)
 
-            print("Validation results:")
             epoch_metric = Lick_Metric_By_Epoch.test_accuracy(sess=sess, S=S, nd=nd, X=X_valid, y=logits_valid,
                                                               metadata=nd.y_valid, epoch=i)
             acc_scores_valid.append(epoch_metric)
@@ -317,5 +316,5 @@ def run_lickwell_network(nd, session, X, y, metadata):
 
 
     save_as_pickle(path, metrics)
-    print_lickwell_metrics(metrics, nd)
+    print_lickwell_metrics(metrics, nd,session.licks)
     print("fin")

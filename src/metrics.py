@@ -190,7 +190,8 @@ def get_main_prediction(guesses, nd):
     # find most frequent prediction by lick_id
     for guess in guesses:
         counter_by_id[np.where(sorted_lick_ids == guess.lick_id)[0][0]][guess.prediction - 1] += 1
-    most_frequent_guess = [np.argmax(a) + 2 for a in counter_by_id] # TODO the + 2 refers to + 1: well id starts at 1 instead of zero, + 1: one well is excluded. No excluded wells parameter in nd yet
+    most_frequent_guess = [np.argmax(a) + 2 for a in
+                           counter_by_id]  # TODO the + 2 refers to + 1: well id starts at 1 instead of zero, + 1: one well is excluded. No excluded wells parameter in nd yet
 
     # determine count of most predicted well and total count
     predicted_count = [np.max(a) for a in counter_by_id]
@@ -216,12 +217,11 @@ def cross_validate_lickwell_data(metrics, epoch, licks, nd):
             if guess.guess_is_correct is True:
                 correct_guesses_by_id[lick_id - 1] += 1
 
-    all_guesses = [a for li in all_guesses for a in li] # flatten all_guesses
+    all_guesses = [a for li in all_guesses for a in li]  # flatten all_guesses
 
     # find the most frequently predicted well sorted by id
 
     sorted_lick_ids, most_frequent_guess_by_id, fraction_predicted_by_id = get_main_prediction(all_guesses, nd)
-
 
     fraction_decoded_by_id = np.divide(correct_guesses_by_id, guesses_by_id)
 
@@ -230,21 +230,22 @@ def cross_validate_lickwell_data(metrics, epoch, licks, nd):
     for i, lick in enumerate(licks):
 
         # Determine all parameters for object
-        if lick.lick_id in sorted_lick_ids: # only accept licks confirmed to be in data set
+        if lick.lick_id in sorted_lick_ids:  # only accept licks confirmed to be in data set
             if i != 0:
-                last_well = licks[i - 1].lickwell
+                last_lick_id = licks[i - 1].lick_id
             else:
-                last_well = None
+                last_lick_id = None
             if i != len(licks) - 1:
-                next_well = licks[i + 1].lickwell
+                next_lick_id = licks[i + 1].lick_id
             else:
-                next_well = None
+                next_lick_id = None
             prediction = most_frequent_guess_by_id[np.where(lick.lick_id == sorted_lick_ids)[0][0]]
             fraction_predicted = fraction_predicted_by_id[np.where(lick.lick_id == sorted_lick_ids)[0][0]]
 
             evaluated_lick = Evaluated_Lick(lick_id=lick.lick_id, rewarded=lick.rewarded, time=lick.time,
                                             lickwell=lick.lickwell, prediction=prediction, target=lick.target,
-                                            next_well=next_well, last_well=last_well, fraction_predicted=fraction_predicted,
+                                            next_lick_id=next_lick_id, last_lick_id=last_lick_id,
+                                            fraction_predicted=fraction_predicted,
                                             fraction_decoded=fraction_decoded_by_id[lick.lick_id - 1],
                                             total_decoded=guesses_by_id[lick.lick_id - 1])
             return_list.append(evaluated_lick)
@@ -480,15 +481,52 @@ def plot_plane(y, nd, path):
     # plt.close()
 
 
-def print_lickwell_metrics(metrics, nd):
-    print("lick_id: well_1->well_ 2, fraction decoded | most frequently predicted , fraction predicted")
+def get_lick_from_id(id, licks,shift=0):
+    """
+
+    :param id: id of lick being searched
+    :param licks: list of lick objects
+    :param shift: if set, gets lick before or after id'd lick
+    :return: corresponding lick
+    """
+    lick_id_list = [lick.lick_id for lick in licks]
+    if id + shift not in lick_id_list:
+        return None
+    else:
+        return [lick for lick in licks if lick.lick_id == id+shift][0]
+
+
+def print_lickwell_metrics(metrics_i, nd,licks):
+    """
+
+    :param metrics_i:
+    :param nd:
+    :return:
+    """
+    print(
+        "lick_id: well_1->well_ 2, fraction decoded | most frequently predicted , fraction predicted, lick_was_correct")
+    metrics = []
+    for i, m in enumerate(metrics_i):
+        if np.isnan(
+                m.fraction_decoded) is not True:  # remove nans if any exist (should be obsolete now due to earlier filtering)
+            metrics.append(m)
     for i, m in enumerate(metrics):
-        if not np.isnan(m.fraction_decoded):
-            print(m.lick_id, "1 ->", end=" ")
-            if nd.initial_timeshift == 1:
-                print(m.next_well, end=" ")
-            else:
-                print(m.last_well, end=" ")
-            print(np.round(m.fraction_decoded,2), m.rewarded, "|", m.prediction, np.round(m.fraction_predicted,2))
-            if m.lick_id in nd.phase_change_ids:
+        print(m.lick_id, m.lickwell,"->", end=" ")
+        if nd.initial_timeshift == 1:
+            predicted_lick = get_lick_from_id( m.next_lick_id,licks)
+            print(predicted_lick.lickwell,end=" ")
+            after_predicted_lick = get_lick_from_id(m.next_lick_id, licks, shift=1)
+            if after_predicted_lick is not None:
+                print("->",after_predicted_lick.lickwell, end=" ")
+        else:
+            predicted_lick = get_lick_from_id(m.last_lick_id,licks)
+            print(predicted_lick.lickwell, end=" ")
+            before_predicted_lick = get_lick_from_id(m.last_lick_id, licks, shift=-1)
+            if before_predicted_lick is not None:
+                print("->", before_predicted_lick.lickwell,end=" ")
+        print(np.round(m.fraction_decoded, 2), "|", m.prediction, np.round(m.fraction_predicted, 2), end=" ")
+        if i != len(metrics) - 1:
+            print(predicted_lick.rewarded)
+            if metrics[i + 1].lick_id in nd.phase_change_ids:
                 print("->switch")
+    pass
