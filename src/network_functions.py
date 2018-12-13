@@ -155,7 +155,7 @@ def run_network_process(nd):
             print("\n_-_-_-_-_-_-_-_-_-_-Epoch", i, "_-_-_-_-_-_-_-_-_-_-\n")
 
             print("Validation results:")
-            metric_eval.set_metrics(epoch=i, sess=sess, S=S, nd=nd, X=nd.X_valid, y=nd.y_valid)
+            metric_eval.set_metrics( sess=sess, S=S, nd=nd, X=nd.X_valid, y=nd.y_valid)
             print("R2-score:", metric_eval.r2_by_epoch[-1])
             print("Avg-distance:", metric_eval.ape_by_epoch[-1])
             # saver.save(sess, nd.model_path, global_step=i, write_meta_graph=False)
@@ -234,7 +234,7 @@ def initiate_lickwell_network(nd, load_raw_data=False):
         if exc.errno != errno.EEXIST:
             raise
     if load_raw_data is True:
-        session = Slice.from_raw_data(nd.raw_data_path)
+        session = Slice.from_raw_data(nd.raw_data_path, filter_tetrodes=nd.filter_tetrodes)
         session.filter_neurons(100)
         session.print_details()
         print("Convolving data...")

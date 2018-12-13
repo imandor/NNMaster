@@ -302,8 +302,8 @@ class Network_output:  # object containing list of metrics by cross validation p
 
 
 class Metric:  # object containing evaluation metrics for all epochs
-    def __init__(self, epoch, r2_by_epoch=[], ape_by_epoch=[], acc20_by_epoch=[], r2_best=None,
-                 ape_best=None, acc20_best=None):
+    def __init__(self,  r2_by_epoch=[], ape_by_epoch=[], acc20_by_epoch=[], r2_best=None,
+                 ape_best=None, acc20_best=None, epoch=None):
         self.r2_by_epoch = r2_by_epoch
         self.ape_by_epoch = ape_by_epoch  # absolute position error
         self.acc20_by_epoch = acc20_by_epoch

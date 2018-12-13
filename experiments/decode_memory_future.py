@@ -21,11 +21,11 @@ if __name__ == '__main__':
         initial_timeshift=-30000,
         epochs=20,
         time_shift_iter=500,
-        time_shift_steps=65,
+        time_shift_steps=60,
         early_stopping=False,
         model_path=MODEL_PATH,
         raw_data_path=RAW_DATA_PATH,
-        k_cross_validation = 1
+        k_cross_validation = 10
 
 
     )

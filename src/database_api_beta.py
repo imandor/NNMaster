@@ -342,10 +342,6 @@ class Net_data:
             self.y_test = y[valid_length // 2:valid_length]
         else:
             k_len = int(len(X) * valid_ratio)
-            # if normalize is True:
-            #     counts = fill_counter(self.num_wells, excluded_wells, y)
-            #     k_len = int(self.valid_ratio * (self.num_wells - len(excluded_wells)) * min(
-            #         counts))  # excludes area of samples which is not evenly spread over well types
             k_slice_test = slice(k_len * k, int(k_len * (k + 0.5)))
             k_slice_valid = slice(int(k_len * (k + 0.5)), k_len * (k + 1))
             not_k_slice_1 = slice(0, k_len * k)
@@ -390,16 +386,18 @@ class Net_data:
         x_new = x.copy()
         y_new = y.copy()  # [y[i] for i in range(0, len(y), lick_batch_size)]
         counts = fill_counter(self.num_wells, excluded_wells, y)  # total number of licks by well
-        while len(y_new) > 0:
+        while len(y_new) > 0: # if endless loop occurs here, check if number of wells in net_data object is correct
             i = randint(0, len(y_new) - 1)
-            if max(counts * y_new[i].target) < max(counts):  # if count at well position smaller than max
+            well = normalize_well(well=y_new[i].target,num_wells=self.num_wells,excluded_wells=excluded_wells)
+            if counts[well] < max(counts):  # if count at well position smaller than max
                 x_return.append(x_new[i])
-                y_return.append(y_new[i].target)
-                counts[np.argmax(y_new[i].target)] += 1
+                y_return.append(y_new[i])
+                counts[well] += 1
             else:
                 y_new.pop(i)
                 x_new.pop(i)
-        return self.filter_overrepresentation_discrete(x_return, y_return, min(counts), excluded_wells)
+        asd = self.filter_overrepresentation_discrete(x_return, y_return, min(counts), excluded_wells)
+        return asd
 
     def filter_overrepresentation_discrete(self, x, y, max_occurrences, excluded_wells):
         x_return = []
@@ -697,7 +695,7 @@ class Slice:
         licks = [Lick(time=float(initial_detection_timestamp[i]), lickwell=int(lickwells[i]), rewarded=int(rewarded[i]),
                       lick_id=i)
                  for i in
-                 range(1, len(initial_detection_timestamp))]  # Please note that first lick is deleted by default TODO
+                 range(1, len(initial_detection_timestamp)) if rewarded[i]==0 or rewarded[i] == 1]  # Please note that first lick is deleted by default TODO
         print("finished loading session")
         return cls(spikes, licks, position_x, position_y, speed, trial_timestamp)
 
