@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from src.preprocessing import position_as_map
 from src.database_api_beta import Evaluated_Lick
-from src.settings import save_as_pickle
+from src.settings import save_as_pickle,load_pickle
 
 
 def get_r2(y_predicted, y_target, step_size):
@@ -496,6 +496,11 @@ def get_lick_from_id(id, licks,shift=0):
         return [lick for lick in licks if lick.lick_id == id+shift][0]
 
 
+def print_metric_details(path):
+
+    metrics = load_pickle(path)
+    print("fin")
+
 def print_lickwell_metrics(metrics_i, nd,licks):
     """
 
@@ -511,20 +516,20 @@ def print_lickwell_metrics(metrics_i, nd,licks):
                 m.fraction_decoded) is not True:  # remove nans if any exist (should be obsolete now due to earlier filtering)
             metrics.append(m)
     for i, m in enumerate(metrics):
-        print(m.lick_id, m.lickwell,"->", end=" ")
+        print(m.lick_id,",", m.lickwell,",", end=" ")
         if nd.initial_timeshift == 1:
             predicted_lick = get_lick_from_id( m.next_lick_id,licks)
-            print(predicted_lick.lickwell,end=" ")
+            print(predicted_lick.lickwell,",",end=" ")
             after_predicted_lick = get_lick_from_id(m.next_lick_id, licks, shift=1)
             if after_predicted_lick is not None:
-                print("->",after_predicted_lick.lickwell, end=" ")
+                print(after_predicted_lick.lickwell,",", end=" ")
         else:
             predicted_lick = get_lick_from_id(m.last_lick_id,licks)
-            print(predicted_lick.lickwell, end=" ")
+            print(predicted_lick.lickwell,",", end=" ")
             before_predicted_lick = get_lick_from_id(m.last_lick_id, licks, shift=-1)
             if before_predicted_lick is not None:
-                print("->", before_predicted_lick.lickwell,end=" ")
-        print(np.round(m.fraction_decoded, 2), "|", m.prediction, np.round(m.fraction_predicted, 2), end=" ")
+                print(before_predicted_lick.lickwell,",",end=" ")
+        print(np.round(m.fraction_decoded, 2), ",", m.prediction,",", np.round(m.fraction_predicted, 2),",", end=" ")
         if i != len(metrics) - 1:
             print(predicted_lick.rewarded)
             if metrics[i + 1].lick_id in nd.phase_change_ids:
