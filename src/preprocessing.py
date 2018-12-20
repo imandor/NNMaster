@@ -63,7 +63,7 @@ def count_occurrences(y, net_dict, axis=0):
     return pos_counter
 
 
-def shuffle_io(X, y, nd, seed_no, shuffle_batch_size=None):
+def shuffle_io(X, y, nd, seed_no=1, shuffle_batch_size=None):
     # Shuffle data
     if nd.shuffle_data is False:
         return X, y

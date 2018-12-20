@@ -324,6 +324,12 @@ class Metric:  # object containing evaluation metrics for all epochs
 
     def set_metrics(self, sess, S, nd, X, y):
         y_predicted, y_target = predict_map(S, sess, X, y)
+        a = []
+        b = []
+        for i,y in enumerate(y_target):
+            a.append(y[0])
+            b.append(y_predicted[i][0])
+        print("average position:",np.average(a),np.average(b))
         r2 = get_r2(y_predicted, y_target, [nd.x_step, nd.y_step])  # r2 score
         ape = get_avg_distance(y_predicted, y_target, [nd.x_step, nd.y_step])  # absolute position error
         acc20 = get_radius_accuracy(y_predicted, y_target, [nd.x_step, nd.y_step], 20)  # accuracy 20
@@ -496,9 +502,25 @@ def get_lick_from_id(id, licks,shift=0):
         return [lick for lick in licks if lick.lick_id == id+shift][0]
 
 
+
+def print_filtered_metric_details(licks):
+    print("Correctly decoded:")
+
+    print("falsely decoded")
+    print("fraction decoded")
+    print("correctly predicted next phase")
+    print("correctly predicted last phase")
+    print("correctly predicted next lick")
+    print("correctly predicted last lick")
+    print("average fraction decoded")
+    print("average fraction of correct answers")
+
+
 def print_metric_details(path):
 
     metrics = load_pickle(path)
+    # all wells
+    print_filtered_metric_details(metrics)
     print("fin")
 
 def print_lickwell_metrics(metrics_i, nd,licks):

@@ -27,14 +27,14 @@ if __name__ == '__main__':
     # FILTERED_DATA_PATH = "slice_C.pkl"
     # filter_tetrodes=range(0,13)
     nd = Net_data(
-        INITIAL_TIMESHIFT=-30000,
-        EPOCHS=20,
-        TIME_SHIFT_ITER=500,
-        TIME_SHIFT_STEPS=40,
-        EARLY_STOPPING=False,
-        MODEL_PATH=MODEL_PATH,
-        RAW_DATA_PATH=RAW_DATA_PATH,
-        K_CROSS_VALIDATION = 1
+        initial_timeshift=-30000,
+        epochs=20,
+        time_shift_iter=500,
+        time_shift_steps=1,
+        early_stopping=False,
+        model_path=MODEL_PATH,
+        raw_data_path=RAW_DATA_PATH,
+        k_cross_validation = 10
     )
     session = initiate_network(nd,load_raw_data=False)
     # x and y are switched for this session and are restored to their original order to make them identical to the other sessions

@@ -22,18 +22,18 @@ def load_trained_network(path):
     sorted_list = []
     for i, file_path in enumerate(dict_files):
         net_dict_i = load_pickle(file_path)
-        sorted_list.append([file_path, net_dict_i["TIME_SHIFT"]])
+        sorted_list.append([file_path, net_dict_i.net_data.time_shift])
     sorted_list = sorted(sorted_list, key=lambda x: x[1])
     dict_files = [i[0] for i in sorted_list]
     for file_path in dict_files:
         print("processing", file_path)
         net_dict_i = load_pickle(file_path)
-        r2_scores_train_list.append(net_dict_i["r2_scores_train"])
-        r2_scores_valid_list.append(net_dict_i["r2_scores_valid"])
-        acc_scores_train_list.append(net_dict_i["acc_scores_train"])
-        acc_scores_valid_list.append(net_dict_i["acc_scores_valid"])
-        avg_scores_train_list.append(net_dict_i["avg_scores_train"])
-        avg_scores_valid_list.append(net_dict_i["avg_scores_valid"])
+        r2_scores_train_list.append(net_dict_i.r2_scores_train)
+        r2_scores_valid_list.append(net_dict_i.r2_scores_valid)
+        acc_scores_train_list.append(net_dict_i.acc_scores_train)
+        acc_scores_valid_list.append(net_dict_i.acc_scores_valid)
+        avg_scores_train_list.append(net_dict_i.avg_scores_train)
+        avg_scores_valid_list.append(net_dict_i.avg_scores_valid)
         time_shift_list.append(net_dict_i["TIME_SHIFT"])
     # if len(dict_files) == 1:
     #     r2_scores_train_list = [r2_scores_train_list]
@@ -47,12 +47,11 @@ def load_trained_network(path):
 
 # PATH_2 = "G:/master_datafiles/trained_networks/MLP_HC_2018-11-11_1000_200_100_dmf/"
 # PATH = "G:/master_datafiles/trained_networks/MLP_PFC_2018-11-06_1000_200_100_dmf/"
-
-PATH = "G:/master_datafiles/trained_networks/MLP_PFC_2018-12-03_1000_200_200_dmf/" #"G:/master_datafiles/trained_networks/test_MLP_HC_2018-11-13_1000_200_100_dmf/"#
+PATH = "C:/Users/NN/Desktop/Master/experiments/decode memory future/MLP_HC_2018-11-13_dmf/" #"G:/master_datafiles/trained_networks/test_MLP_HC_2018-11-13_1000_200_100_dmf/"#
 PATH_2 = "G:/master_datafiles/trained_networks/MLP_PFC_2018-12-03_1000_200_200_dmf/"#"G:/master_datafiles/trained_networks/test_MLP_HC_2018-11-13_1000_200_100_dmf/"
-SINGLE_ACCURACY = False
-SINGLE_AVERAGE = False
-SINGLE_R2 = False
+SINGLE_ACCURACY = True
+SINGLE_AVERAGE = True
+SINGLE_R2 = True
 COMPARE_ACCURACY = False
 COMPARE_DISTANCE = False
 COMPARE_R2 = False

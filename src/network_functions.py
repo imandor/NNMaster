@@ -74,7 +74,7 @@ def run_lickwell_network_process(nd):
     metric_counter = 0  # net_dict["metric_iter"]
     metric_step_counter = []
     for i in range(0, nd.epochs + 1):
-        X_train, logits_train = shuffle_io(X_train, logits_train, nd, i + 1)
+        X_train, logits_train = shuffle_io(X_train, logits_train, nd, seed_no=i + 1)
 
         if metric_counter == nd.metric_iter:
             metric_step_counter.append(i)
@@ -91,7 +91,7 @@ def run_lickwell_network_process(nd):
                                                                   metadata=nd.y_train, epoch=i)
 
             epoch_metric = Lick_Metric_By_Epoch.test_accuracy(sess=sess, S=S, nd=nd, X=X_valid, y=logits_valid,
-                                                              metadata=nd.y_valid, epoch=i)
+                                                              metadata=logits_valid, epoch=i)
             acc_scores_valid.append(epoch_metric)
             metric_counter = 0
 
@@ -146,7 +146,7 @@ def run_network_process(nd):
     metric_step_counter = []
     stop_early = False
     for i in range(0, nd.epochs + 1):
-        X_train, y_train = shuffle_io(X_train, y_train, nd, i + 1)
+        X_train, y_train = shuffle_io(X_train, y_train, nd, seed_no=i + 1)
         if metric_counter == nd.metric_iter and stop_early is False:
             metric_step_counter.append(i)
             if nd.naive_test is True:
@@ -265,7 +265,7 @@ def run_network(nd, session):
         X, y = time_shift_positions(session, z, nd)
         if len(X) != len(y):
             raise ValueError("Error: Length of x and y are not identical")
-        X, y = shuffle_io(X, y, nd, 3)
+        X, y = shuffle_io(X, y, nd, seed_no=1,shuffle_batch_size=nd.shuffle_factor)
 
         metric_list = []
 

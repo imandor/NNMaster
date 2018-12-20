@@ -9,7 +9,7 @@ from matplotlib.patches import Patch
 from statsmodels.nonparametric.smoothers_lowess import lowess
 
 
-def metric_plot_a(save_path, x, y, axis_label_x, axis_label_y):
+def metric_plot_a(save_path, x, y,y_all, axis_label_x, axis_label_y):
     fig, ax = plt.subplots()
     # plt.rc('font', family='serif', serif='Times')
     plt.rc('text', usetex=True)
@@ -19,16 +19,39 @@ def metric_plot_a(save_path, x, y, axis_label_x, axis_label_y):
     width = 3.5
     height = width / 1.5
     fig.set_size_inches(width, height)
-    # ax.plot(timeshift_list,distance_scores_train,label='Training set',color='r')
-    ys = lowess(y, x)[:, 1]
-    ax.plot(x, ys, label='validation set', color='r', marker="X")
+    # ys = lowess(y, x)[:, 1]
+    for i in range(len(y_all[0])):
+        y_i = [a[i] for a in y_all]
+        if i == 0:
+            c = "b"
+        if i == 1:
+            c = "g"
+        if i == 2:
+            c = "r"
+        if i == 3:
+            c = "c"
+        if i == 4:
+            c = "m"
+        if i == 5:
+            c = "y"
+        if i == 6:
+            c = "k"
+        if i == 7:
+            c = "g"
+        if i == 8:
+            c = "sandybrown"
+        if i == 9:
+            c = "goldenrod"
+        ax.plot(x,y_i,color=c,marker="x",label="cv "+str(i+1)+"/10")
+    ax.plot(x, y, label='average', color='r', marker="X",linestyle="None")
+
     ax.legend()
     ax.grid(c='k', ls='-', alpha=0.3)
     ax.set_xlabel(axis_label_x)
     ax.set_ylabel(axis_label_y)
-    fig.tight_layout()
+    # fig.tight_layout()
     plt.show()
-    plt.savefig(save_path)
+    # plt.savefig(save_path)
     plt.close()
 
 class Metrics_Wrt_Time:  # object containing list of metrics by cross validation partition
@@ -49,25 +72,38 @@ class Metrics_Wrt_Time:  # object containing list of metrics by cross validation
         sorted_list = sorted(sorted_list, key=lambda x: x[1])
         dict_files = [i[0] for i in sorted_list]
         for file_path in dict_files:
-            print("processing", file_path)
+            # print("processing", file_path)
             net_dict_i = load_pickle(file_path)
             net_out.append(net_dict_i)
         return net_out
 
 
-    def plot_r2_wrt_ts(self):
+    def plot_r2_wrt_ts(self,epoch=-1):
+        ape_avg_list = [a.r2_avg for a in self.network_output_list]
+        all_samples = [a.metric_by_cvs for a in self.network_output_list]
+        y_all = [[a.r2_by_epoch[epoch] for a in metric] for metric in all_samples]
+        save_path = self.path + "images/ape.pdf"
+        axis_label_x = 'Time shift [ms]'
+        axis_label_y = r'$\varnothing$ absolute position error [cm]'
+        metric_plot_a(save_path, self.timeshift_list, y=ape_avg_list, y_all=y_all,axis_label_x=axis_label_x, axis_label_y=axis_label_y)
         pass
 
     def plot_acc20_wrt_ts(self):
         pass
 
 
-    def plot_ape_wrt_ts(self):
+    def plot_ape_wrt_ts(self,epoch=-1):
+        """ creates plots for absolute position error with respect to timeshift
+        :param epoch: epoch to be plotted
+        :return:
+        """
         ape_avg_list = [a.ape_avg for a in self.network_output_list]
+        all_samples = [a.metric_by_cvs for a in self.network_output_list]
+        y_all = [[a.ape_by_epoch[epoch] for a in metric] for metric in all_samples]
         save_path = self.path + "images/ape.pdf"
         axis_label_x = 'Time shift [ms]'
         axis_label_y = r'$\varnothing$ absolute position error [cm]'
-        metric_plot_a(save_path, self.timeshift_list, y=ape_avg_list, axis_label_x=axis_label_x, axis_label_y=axis_label_y)
+        metric_plot_a(save_path, self.timeshift_list, y=ape_avg_list, y_all=y_all,axis_label_x=axis_label_x, axis_label_y=axis_label_y)
 
     def plot_paired_t_test(self):
 
@@ -123,11 +159,12 @@ class Metrics_Wrt_Time:  # object containing list of metrics by cross validation
     def set_timeshift_list(self):
         self.timeshift_list = [a.net_data.time_shift for a in self.network_output_list]
 
-path = "G:/master_datafiles/trained_networks/DMF_PFC_2018-12-05_dmf/"
+path = "C:/Users/NN/Desktop/Master/experiments/decode memory future/MLP_HC_2018-11-13_dmf/"
 
 net_out = Metrics_Wrt_Time(path)
 net_out.set_timeshift_list()
 
 # net_out.plot_paired_t_test()
-net_out.plot_ape_wrt_ts()
+net_out.plot_r2_wrt_ts()
+# net_out.plot_ape_wrt_ts()
 print("fin")

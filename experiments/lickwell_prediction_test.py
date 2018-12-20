@@ -2,32 +2,32 @@ from src.database_api_beta import Slice, Filter, hann, Net_data
 
 from src.preprocessing import lickwells_io
 from src.network_functions import run_network_process, initiate_lickwell_network, run_lickwell_network
-
+from src.metrics import print_metric_details
 if __name__ == '__main__':
 
 
 
     # Data set 3 raw data path
     RAW_DATA_PATH = "G:/master_datafiles/raw_data/31-07-2018_hc"
-
+    filter_tetrodes=None
     # Data set 1 Prefrontal Cortex
 
-    # MODEL_PATH = "G:/master_datafiles/trained_networks/MLP_PFC_2018-12-11_lickwell/"
+    # MODEL_PATH = "G:/master_datafiles/trained_networks/MLP_PFC_2018-12-17_lickwell/"
     # RAW_DATA_PATH = "G:/master_datafiles/raw_data/2018-04-09_14-39-52/"
     # FILTERED_DATA_PATH = "session_pfc_lw.pkl"
 
     # Data set 2 Hippocampus
 
-    # MODEL_PATH = "G:/master_datafiles/trained_networks/MLP_HC_2018-12-11_lickwell/"
-    # RAW_DATA_PATH = "G:/master_datafiles/raw_data/2018-05-16_17-13-37/"
-    # FILTERED_DATA_PATH = "session_hc_lw.pkl"
+    MODEL_PATH = "G:/master_datafiles/trained_networks/MLP_HC_2018-12-19_lickwell/"
+    RAW_DATA_PATH = "G:/master_datafiles/raw_data/2018-05-16_17-13-37/"
+    FILTERED_DATA_PATH = "session_hc_lw.pkl"
 
 
 
     # Data set 3 Hippocampus
-    MODEL_PATH = "G:/master_datafiles/trained_networks/MLP_CHC_2018-12-11_lickwell/"
-    FILTERED_DATA_PATH = "session_chc_lw.pkl"
-    filter_tetrodes = range(13, 1000)
+    # MODEL_PATH = "G:/master_datafiles/trained_networks/MLP_CHC_2018-12-11_lickwell/"
+    # FILTERED_DATA_PATH = "session_chc_lw.pkl"
+    # filter_tetrodes = range(13, 1000)
 
     # data set 3 Prefrontal Cortex
 
@@ -71,7 +71,7 @@ if __name__ == '__main__':
         num_wells=5,
         initial_timeshift=1,
     )
-
+    print_metric_details("G:/master_datafiles/trained_networks/MLP_HC_2018-12-11_lickwell/network_output_timeshift=1.pkl")
     session = initiate_lickwell_network(nd,load_raw_data=False)  # Initialize session
     X, y, metadata = lickwells_io(session, nd, excluded_wells=[1], shift=nd.initial_timeshift,
                                   normalize=nd.lw_normalize,
