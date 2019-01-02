@@ -101,12 +101,17 @@ def _convolve_thread_func(filter_func, n_bin_points, neuron_counter, n_neurons, 
 
 
 class Lick():
-    def __init__(self, lickwell, time, rewarded, lick_id, target=None):
+    def __init__(self, lickwell, time, rewarded, lick_id, target=None,next_phase=None,last_phase=None,phase=None):
         self.time = time
         self.lickwell = lickwell
         self.rewarded = rewarded
         self.lick_id = lick_id
         self.target = target
+        self.next_phase=next_phase
+        self.last_phase=last_phase
+        self.phase=phase
+
+
 
 class Evaluated_Lick(Lick):  # object containing list of metrics by cross validation partition
     def __init__(self, lickwell, time, rewarded, lick_id, prediction=None, next_lick_id=None, last_lick_id=None,
@@ -118,6 +123,7 @@ class Evaluated_Lick(Lick):  # object containing list of metrics by cross valida
         self.total_decoded = total_decoded
         self.prediction = prediction
         self.fraction_predicted = fraction_predicted
+
 class Net_data:
     WIN_SIZE = 100
     SEARCH_RADIUS = WIN_SIZE * 2
@@ -165,7 +171,9 @@ class Net_data:
                  licks=None,
                  valid_licks=None,
                  filter_tetrodes=None,
-                 phase_change_ids=None):
+                 phases = None,
+                 phase_change_ids=None
+                 ):
         self.evaluate_training = evaluate_training
         self.stride = stride
         self.train_model = train_model
@@ -223,7 +231,8 @@ class Net_data:
         self.licks = licks
         self.valid_licks = valid_licks
         self.filter_tetrodes = filter_tetrodes
-        self.phase_change_ids = None
+        self.phase_change_ids = phase_change_ids
+        self.phases = phases
 
     def clear_io(self):
         self.X_train = None
@@ -280,24 +289,32 @@ class Net_data:
 
         current_phase_well = None
         filtered_licks = []
+        processed_licks = []
+        phases = []
         for i, lick in enumerate(licks[0:-2]):
-            well = lick.lickwell
-            for j in range(1,len(licks[0:-2])): # find next valid well licked
-                if i + j>=len(licks):
-                    next_well = None
-                    break
-                if licks[i+j].rewarded == 1:
-                    next_well = licks[i + j].lickwell
-                    break
-            if current_phase_well is None:  # set well that is currently being trained for
-                current_phase_well = well
-            if current_phase_well is not None and well == 1:  # append lick if it fits valid_filter
-                if next_well != current_phase_well:
-                    filtered_licks.append(lick.lick_id)
-                if next_well != current_phase_well:  # change phase if applicable
-                    current_phase_well = next_well
-
+            if rewarded_list[i]== 1:
+                well = lick.lickwell
+                for j in range(1,len(licks[0:-2])): # find next valid well licked
+                    if i + j>=len(licks):
+                        next_well = None
+                        break
+                    if licks[i+j].rewarded == 1:
+                        next_well = licks[i + j].lickwell
+                        break
+                if current_phase_well is None:  # set well that is currently being trained for
+                    current_phase_well = well
+                if current_phase_well is not None and well == 1:  # append lick if it fits valid_filter
+                    if next_well != current_phase_well:
+                        filtered_licks.append(lick.lick_id)
+                        phases.append(current_phase_well)
+                    # if next_well != current_phase_well:  # change phase if applicable
+                        current_phase_well = next_well
+            # add phase data to lick
+            if i!= 0:
+                lick.last_phase
+        phases.append(current_phase_well)
         self.phase_change_ids = filtered_licks
+        self.phases = phases
 
 
     def assign_training_testing(self, X, y, k):
@@ -696,6 +713,10 @@ class Slice:
                       lick_id=i)
                  for i in
                  range(1, len(initial_detection_timestamp)) if rewarded[i]==0 or rewarded[i] == 1]  # Please note that first lick is deleted by default TODO
+
+        for i,lick in enumerate(licks):
+            if i!=0:
+                lick.last_phase=lasd
         print("finished loading session")
         return cls(spikes, licks, position_x, position_y, speed, trial_timestamp)
 

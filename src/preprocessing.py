@@ -63,13 +63,14 @@ def count_occurrences(y, net_dict, axis=0):
     return pos_counter
 
 
-def shuffle_io(X, y, nd, seed_no=1, shuffle_batch_size=None):
+def shuffle_io(X, y, nd, seed_no=None, shuffle_batch_size=None):
     # Shuffle data
     if nd.shuffle_data is False:
         return X, y
     if shuffle_batch_size is None:
         shuffle_batch_size = nd.shuffle_factor
-    seed(seed_no)
+    if seed_no!= None:
+        seed(seed_no)
 
     # crop length to fit shuffle factor
 
@@ -282,4 +283,5 @@ def lickwells_io(session, nd, excluded_wells=[1], shift=1, normalize=False, diff
         y_i = np.zeros(nd.num_wells)
         y_i[int(val) - 1] = 1
         y.append(y_i)
-    return X, y, metadata
+        nd.licks = metadata
+    return X, y, metadata,nd

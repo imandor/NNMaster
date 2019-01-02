@@ -91,7 +91,7 @@ def run_lickwell_network_process(nd):
                                                                   metadata=nd.y_train, epoch=i)
 
             epoch_metric = Lick_Metric_By_Epoch.test_accuracy(sess=sess, S=S, nd=nd, X=X_valid, y=logits_valid,
-                                                              metadata=logits_valid, epoch=i)
+                                                              metadata=nd.y_valid, epoch=i)
             acc_scores_valid.append(epoch_metric)
             metric_counter = 0
 
@@ -146,7 +146,7 @@ def run_network_process(nd):
     metric_step_counter = []
     stop_early = False
     for i in range(0, nd.epochs + 1):
-        X_train, y_train = shuffle_io(X_train, y_train, nd, seed_no=i + 1)
+        X_train, y_train = shuffle_io(X_train, y_train, nd)
         if metric_counter == nd.metric_iter and stop_early is False:
             metric_step_counter.append(i)
             if nd.naive_test is True:
@@ -260,16 +260,16 @@ def run_network(nd, session):
                    nd.time_shift_iter):
         iter = int(z - nd.initial_timeshift) // nd.time_shift_iter
         nd.time_shift = z  # set current time shift
-        print("Time shift is now", z)
         # Time-Shift input and output
         X, y = time_shift_positions(session, z, nd)
         if len(X) != len(y):
             raise ValueError("Error: Length of x and y are not identical")
-        X, y = shuffle_io(X, y, nd, seed_no=1,shuffle_batch_size=nd.shuffle_factor)
+        X, y = shuffle_io(X, y, nd, seed_no=2,shuffle_batch_size=nd.shuffle_factor)
 
         metric_list = []
 
         for k in range(0, nd.k_cross_validation):
+            print("Timeshift", nd.time_shift)
             print("cross validation step", str(k + 1), "of", nd.k_cross_validation)
             nd.assign_training_testing(X, y, k)
             if nd.time_shift_steps == 1:
@@ -295,7 +295,6 @@ def run_network(nd, session):
 
 def run_lickwell_network(nd, session, X, y, metadata):
     nd.time_shift = nd.initial_timeshift  # set current shift
-    print("Shift is now", nd.time_shift)
 
     # Shift input and output
 

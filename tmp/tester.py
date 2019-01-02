@@ -97,7 +97,7 @@ class Metrics_Wrt_Time:  # object containing list of metrics by cross validation
         :param epoch: epoch to be plotted
         :return:
         """
-        ape_avg_list = [a.ape_avg for a in self.network_output_list]
+        ape_avg_list = [np.average([b.ape_by_epoch[-1] for b in a.metric_by_cvs]) for a in self.network_output_list]
         all_samples = [a.metric_by_cvs for a in self.network_output_list]
         y_all = [[a.ape_by_epoch[epoch] for a in metric] for metric in all_samples]
         save_path = self.path + "images/ape.pdf"
@@ -159,12 +159,13 @@ class Metrics_Wrt_Time:  # object containing list of metrics by cross validation
     def set_timeshift_list(self):
         self.timeshift_list = [a.net_data.time_shift for a in self.network_output_list]
 
-path = "C:/Users/NN/Desktop/Master/experiments/decode memory future/MLP_HC_2018-11-13_dmf/"
-
+# path = "C:/Users/NN/Desktop/Master/experiments/decode memory future/MLP_HC_2018-11-13_dmf/"
+# path = "C:/Users/NN/Desktop/Master/experiments/decode memory future/DMF_PFC_2018-12-13_dmf/"
+path = "G:/master_datafiles/trained_networks/no_shuffle_test_3_different_dataset/"
 net_out = Metrics_Wrt_Time(path)
 net_out.set_timeshift_list()
 
 # net_out.plot_paired_t_test()
-net_out.plot_r2_wrt_ts()
-# net_out.plot_ape_wrt_ts()
+# net_out.plot_r2_wrt_ts()
+net_out.plot_ape_wrt_ts()
 print("fin")

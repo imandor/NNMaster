@@ -18,7 +18,7 @@ if __name__ == '__main__':
 
     # Data set 2 Hippocampus
 
-    MODEL_PATH = "G:/master_datafiles/trained_networks/MLP_HC_2018-12-19_lickwell/"
+    MODEL_PATH = "G:/master_datafiles/trained_networks/MLP_HC_2018-12-29_lickwell/"
     RAW_DATA_PATH = "G:/master_datafiles/raw_data/2018-05-16_17-13-37/"
     FILTERED_DATA_PATH = "session_hc_lw.pkl"
 
@@ -71,11 +71,12 @@ if __name__ == '__main__':
         num_wells=5,
         initial_timeshift=1,
     )
-    print_metric_details("G:/master_datafiles/trained_networks/MLP_HC_2018-12-11_lickwell/network_output_timeshift=1.pkl")
     session = initiate_lickwell_network(nd,load_raw_data=False)  # Initialize session
-    X, y, metadata = lickwells_io(session, nd, excluded_wells=[1], shift=nd.initial_timeshift,
+    X, y, metadata,nd = lickwells_io(session, nd, excluded_wells=[1], shift=nd.initial_timeshift,
                                   normalize=nd.lw_normalize,
                                   differentiate_false_licks=nd.lw_differentiate_false_licks)
-    run_lickwell_network(nd, session, X, y, metadata)
+    path = "G:/master_datafiles/trained_networks/MLP_HC_2018-12-29_lickwell/output/network_output_timeshift=1.pkl"
+    print_metric_details(path,nd)
+    # run_lickwell_network(nd, session, X, y, metadata)
 
     print("fin")

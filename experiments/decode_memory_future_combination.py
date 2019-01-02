@@ -11,9 +11,9 @@ if __name__ == '__main__':
 
     # Hippocampus
 
-    MODEL_PATH = "G:/master_datafiles/trained_networks/MLP_CHC_2018-11-30_1000_200_100_lickwell/"
-    FILTERED_DATA_PATH = "slice_CHC.pkl"
-    filter_tetrodes=range(13,1000)
+    # MODEL_PATH = "G:/master_datafiles/trained_networks/MLP_CHC_2018-11-30_1000_200_100_lickwell/"
+    # FILTERED_DATA_PATH = "slice_CHC.pkl"
+    # filter_tetrodes=range(13,1000)
 
     # Prefrontal Cortex
 
@@ -23,9 +23,10 @@ if __name__ == '__main__':
 
     # Combination
 
-    # MODEL_PATH = "G:/master_datafiles/trained_networks/MLP_CHC_2018-11-30_1000_200_100_lickwell/"
-    # FILTERED_DATA_PATH = "slice_C.pkl"
-    # filter_tetrodes=range(0,13)
+    MODEL_PATH = "G:/master_datafiles/trained_networks/no_shuffle_test_3_different_dataset/"
+
+    FILTERED_DATA_PATH = "slice_C.pkl"
+    filter_tetrodes=None
     nd = Net_data(
         initial_timeshift=-30000,
         epochs=20,
