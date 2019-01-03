@@ -114,9 +114,9 @@ class Lick():
 
 
 class Evaluated_Lick(Lick):  # object containing list of metrics by cross validation partition
-    def __init__(self, lickwell, time, rewarded, lick_id, prediction=None, next_lick_id=None, last_lick_id=None,
-                 fraction_decoded=None, total_decoded=None,target=None,fraction_predicted=None):
-        Lick.__init__(self, lickwell, time, rewarded, lick_id,target)
+    def __init__(self, lickwell, time, rewarded, lick_id, phase,next_phase,last_phase,prediction=None, next_lick_id=None, last_lick_id=None,
+                 fraction_decoded=None, total_decoded=None,target=None,fraction_predicted=None,):
+        Lick.__init__(self, lickwell, time, rewarded, lick_id,target,phase=phase,next_phase=next_phase,last_phase=last_phase)
         self.next_lick_id = next_lick_id
         self.last_lick_id = last_lick_id
         self.fraction_decoded = fraction_decoded
@@ -288,16 +288,18 @@ class Net_data:
         licks = [lick for i, lick in enumerate(licks) if rewarded_list[i] == 1]
 
         current_phase_well = None
-        filtered_licks = []
+        phase_change_ids = []
         processed_licks = []
         phases = []
-        for i, lick in enumerate(licks[0:-2]):
-            if rewarded_list[i]== 1:
-                well = lick.lickwell
-                for j in range(1,len(licks[0:-2])): # find next valid well licked
-                    if i + j>=len(licks):
-                        next_well = None
-                        break
+        next_well = None
+        for i, lick in enumerate(licks):
+            well = lick.lickwell
+            for j in range(1,len(licks)): # find next valid well licked
+                if i + j>=len(licks):
+                    next_well = None
+                    break
+                if (rewarded_list[i] == 1) and i < len(licks) - 2:
+
                     if licks[i+j].rewarded == 1:
                         next_well = licks[i + j].lickwell
                         break
@@ -305,15 +307,21 @@ class Net_data:
                     current_phase_well = well
                 if current_phase_well is not None and well == 1:  # append lick if it fits valid_filter
                     if next_well != current_phase_well:
-                        filtered_licks.append(lick.lick_id)
+                        phase_change_ids.append(lick.lick_id)
                         phases.append(current_phase_well)
-                    # if next_well != current_phase_well:  # change phase if applicable
+                    if next_well != current_phase_well:  # change phase if applicable
                         current_phase_well = next_well
-            # add phase data to lick
-            if i!= 0:
-                lick.last_phase
+
+            # add phase data to lick object
+            lick.phase = current_phase_well
+            if len(phases)!= 1 and len(phases)!=0:
+                lick.last_phase = phases[-1]
+            lick.next_phase = next_well
+            processed_licks.append(lick)
+
         phases.append(current_phase_well)
-        self.phase_change_ids = filtered_licks
+        self.licks= processed_licks
+        self.phase_change_ids = phase_change_ids
         self.phases = phases
 
 

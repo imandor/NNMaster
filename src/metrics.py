@@ -247,7 +247,7 @@ def cross_validate_lickwell_data(metrics, epoch, licks, nd):
                                             next_lick_id=next_lick_id, last_lick_id=last_lick_id,
                                             fraction_predicted=fraction_predicted,
                                             fraction_decoded=fraction_decoded_by_id[lick.lick_id - 1],
-                                            total_decoded=guesses_by_id[lick.lick_id - 1])
+                                            total_decoded=guesses_by_id[lick.lick_id - 1],phase=lick.phase,next_phase=lick.next_phase,last_phase=lick.last_phase)
             return_list.append(evaluated_lick)
     return return_list
 
@@ -602,13 +602,13 @@ def print_metric_details(path, nd):
         last_lick = get_lick_from_id(lick.lick_id, nd.licks, shift=-1)
         if last_lick is not None and lick.prediction == last_lick.lickwell:  # if lick predicted was last lick
             last_lick_correct[i] = 1
-        if lick.prediction == lick.get_phase(nd, 0):
+        if lick.prediction == lick.phase:
             current_phase_correct[i] = 1
-        if lick.prediction == lick.get_phase(nd, 1):
-            asd = lick.get_phase(nd,1)
+        if lick.prediction == lick.next_phase:
+            asd = lick.next_phase
             next_phase_correct[i] = 1
-            asd = lick.get_phase(nd,-1)
-        if lick.prediction == lick.get_phase(nd, -1):
+            asd = lick.last_phase
+        if lick.prediction == lick.last_phase:
             last_phase_correct[i] = 1
         print("---")
         print("lick id:",lick.lick_id)
@@ -616,9 +616,9 @@ def print_metric_details(path, nd):
         print("prediction:", lick.prediction)
         if next_lick is not None: print("after next lick:",next_lick.lickwell)
         if last_lick is not None: print("last lick:",last_lick.lickwell)
-        print("current phase:",lick.get_phase(nd, 0))
-        print("last phase:",lick.get_phase(nd, -1))
-        print("next phase:",lick.get_phase(nd, 1))
+        print("current phase:",lick.phase)
+        print("last phase:",lick.last_phase)
+        print("next phase:",lick.next_phase)
     lick_id_details = Lick_id_details(licks=metrics, filter=np.zeros(len(metrics)) + 1, correct_licks=correct_licks,
                                       false_licks=false_licks, prior_phase_change=prior_switch_licks,
                                       post_phase_change=after_switch_licks,

@@ -76,7 +76,7 @@ if __name__ == '__main__':
                                   normalize=nd.lw_normalize,
                                   differentiate_false_licks=nd.lw_differentiate_false_licks)
     path = "G:/master_datafiles/trained_networks/MLP_HC_2018-12-29_lickwell/output/network_output_timeshift=1.pkl"
-    print_metric_details(path,nd)
-    # run_lickwell_network(nd, session, X, y, metadata)
+    # print_metric_details(path,nd)
+    run_lickwell_network(nd, session, X, y, metadata)
 
     print("fin")
