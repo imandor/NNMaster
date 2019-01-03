@@ -211,7 +211,8 @@ def lickwells_io(session, nd, excluded_wells=[1], shift=1, normalize=False, diff
 
     nd.get_all_valid_lick_ids(session, start_well=1,shift=shift)
     nd.get_all_phase_change_ids(session=session)
-    licks = nd.licks  # np.zeros(len(session.licks))
+    # session.licks = nd.licks  # np.zeros(len(session.licks))
+    licks = nd.licks
     # nd.valid_licks = session.licks
     filtered_licks = []
     filtered_next_wells = []
@@ -258,13 +259,9 @@ def lickwells_io(session, nd, excluded_wells=[1], shift=1, normalize=False, diff
             bins_to_x = [c[j:j + 11] for c in slice.filtered_spikes]
             bins_to_x = np.reshape(bins_to_x, [len(bins_to_x), len(bins_to_x[0])])
             X.append(bins_to_x)
-            if differentiate_false_licks is False:
-                y_abs.append(next_well[i])
-                lick.target = next_well[i]
-                metadata.append(lick)
-            # else:
-            # TODO
-            # y_abs.append(next_well +(licks[i + shift].rewarded*nd.lw_classifications))
+            y_abs.append(next_well[i])
+            lick.target = next_well[i]
+            metadata.append(lick)
 
     print("Lickwell count:")
     unique, counts = np.unique(y_abs, return_counts=True)
@@ -283,5 +280,5 @@ def lickwells_io(session, nd, excluded_wells=[1], shift=1, normalize=False, diff
         y_i = np.zeros(nd.num_wells)
         y_i[int(val) - 1] = 1
         y.append(y_i)
-        nd.licks = metadata
+    nd.licks = metadata
     return X, y, metadata,nd

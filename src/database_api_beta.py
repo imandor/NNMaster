@@ -168,7 +168,6 @@ class Net_data:
                  lw_differentiate_false_licks=True,
                  num_wells=5,
                  metric="map",
-                 licks=None,
                  valid_licks=None,
                  filter_tetrodes=None,
                  phases = None,
@@ -292,25 +291,23 @@ class Net_data:
         processed_licks = []
         phases = []
         next_well = None
-        for i, lick in enumerate(licks):
+        for i, lick in enumerate(licks[0:-2]):
             well = lick.lickwell
-            for j in range(1,len(licks)): # find next valid well licked
-                if i + j>=len(licks):
+            for j in range(1, len(licks[0:-2])):  # find next valid well licked
+                if i + j >= len(licks):
                     next_well = None
                     break
-                if (rewarded_list[i] == 1) and i < len(licks) - 2:
-
-                    if licks[i+j].rewarded == 1:
-                        next_well = licks[i + j].lickwell
-                        break
-                if current_phase_well is None:  # set well that is currently being trained for
-                    current_phase_well = well
-                if current_phase_well is not None and well == 1:  # append lick if it fits valid_filter
-                    if next_well != current_phase_well:
-                        phase_change_ids.append(lick.lick_id)
-                        phases.append(current_phase_well)
-                    if next_well != current_phase_well:  # change phase if applicable
-                        current_phase_well = next_well
+                if licks[i + j].rewarded == 1:
+                    next_well = licks[i + j].lickwell
+                    break
+            if current_phase_well is None:  # set well that is currently being trained for
+                current_phase_well = well
+            if current_phase_well is not None and well == 1:  # append lick if it fits valid_filter
+                if next_well != current_phase_well:
+                    phase_change_ids.append(lick.lick_id)
+                    phases.append(current_phase_well)
+                if next_well != current_phase_well:  # change phase if applicable
+                    current_phase_well = next_well
 
             # add phase data to lick object
             lick.phase = current_phase_well
@@ -318,7 +315,11 @@ class Net_data:
                 lick.last_phase = phases[-1]
             lick.next_phase = next_well
             processed_licks.append(lick)
-
+        for i in [-2,-1]:
+            lick = licks[i]
+            lick.phase=current_phase_well
+            lick.last_phase=phases[-1]
+            processed_licks.append(lick)
         phases.append(current_phase_well)
         self.licks= processed_licks
         self.phase_change_ids = phase_change_ids
@@ -722,9 +723,6 @@ class Slice:
                  for i in
                  range(1, len(initial_detection_timestamp)) if rewarded[i]==0 or rewarded[i] == 1]  # Please note that first lick is deleted by default TODO
 
-        for i,lick in enumerate(licks):
-            if i!=0:
-                lick.last_phase=lasd
         print("finished loading session")
         return cls(spikes, licks, position_x, position_y, speed, trial_timestamp)
 

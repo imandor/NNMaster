@@ -567,9 +567,11 @@ class Lick_id_details:
         print("average fraction of correct answers")
 
 
-def print_metric_details(path, nd):
+def print_metric_details(path):
     # Create binary arrays for licks corresponding to each inspected filter
-    metrics = load_pickle(path)
+    metrics = load_pickle(path+"network_output_timeshift=1.pkl")
+    nd = load_pickle(path + "nd_timeshift=1.pkl")
+    # print_lickwell_metrics(metrics, nd,session.licks)
 
     # for metric in metrics:
     #     print(metric.get_phase(nd, shift=1))
@@ -647,7 +649,7 @@ def print_lickwell_metrics(metrics_i, nd, licks):
                 m.fraction_decoded) is not True:  # remove nans if any exist (should be obsolete now due to earlier filtering)
             metrics.append(m)
     for i, m in enumerate(metrics):
-        print(m.lick_id, ",", m.lickwell, ",", end=" ")
+        print(m.lick_id,  ",", end=" ")
         if nd.initial_timeshift == 1:
             predicted_lick = get_lick_from_id(m.next_lick_id, licks)
             print(predicted_lick.lickwell, ",", end=" ")
