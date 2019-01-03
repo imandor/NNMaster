@@ -73,7 +73,7 @@ if __name__ == '__main__':
     )
 
     path = "G:/master_datafiles/trained_networks/MLP_HC_2018-12-29_lickwell/output/"
-    # print_metric_details(path)
+    print_metric_details(path)
     session = initiate_lickwell_network(nd,load_raw_data=False)  # Initialize session
     X, y, metadata,nd = lickwells_io(session, nd, excluded_wells=[1], shift=nd.initial_timeshift,
                                   normalize=nd.lw_normalize,

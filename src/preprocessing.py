@@ -210,10 +210,8 @@ def lickwells_io(session, nd, excluded_wells=[1], shift=1, normalize=False, diff
     # Filter licks and spread them as evenly as possible
 
     nd.get_all_valid_lick_ids(session, start_well=1,shift=shift)
-    nd.get_all_phase_change_ids(session=session)
-    # session.licks = nd.licks  # np.zeros(len(session.licks))
-    licks = nd.licks
-    # nd.valid_licks = session.licks
+    nd = session.add_lick_data_to_session_and_net_data(nd=nd)
+    licks = session.licks
     filtered_licks = []
     filtered_next_wells = []
     # create list of valid licks
@@ -280,5 +278,4 @@ def lickwells_io(session, nd, excluded_wells=[1], shift=1, normalize=False, diff
         y_i = np.zeros(nd.num_wells)
         y_i[int(val) - 1] = 1
         y.append(y_i)
-    nd.licks = metadata
     return X, y, metadata,nd

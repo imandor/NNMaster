@@ -571,6 +571,8 @@ def print_metric_details(path):
     # Create binary arrays for licks corresponding to each inspected filter
     metrics = load_pickle(path+"network_output_timeshift=1.pkl")
     nd = load_pickle(path + "nd_timeshift=1.pkl")
+    licks = load_pickle(path + "licks_timeshift=1.pkl")
+
     # print_lickwell_metrics(metrics, nd,session.licks)
 
     # for metric in metrics:
@@ -598,10 +600,14 @@ def print_metric_details(path):
                 after_switch_licks[i + 1] = 1
 
 
-        next_lick = get_lick_from_id(lick.lick_id, nd.licks, shift=1)
+        next_lick = get_lick_from_id(lick.lick_id, licks, shift=1)
+        print("---")
+        print("lick id:",lick.lick_id)
+        print("next lick:",lick.target)
+        print("prediction:", lick.prediction)
         if next_lick is not None and lick.prediction == lick.target:  # if lick predicted was next lick
             next_lick_correct[i] = 1
-        last_lick = get_lick_from_id(lick.lick_id, nd.licks, shift=-1)
+        last_lick = get_lick_from_id(lick.lick_id, licks, shift=-1)
         if last_lick is not None and lick.prediction == last_lick.lickwell:  # if lick predicted was last lick
             last_lick_correct[i] = 1
         if lick.prediction == lick.phase:
@@ -612,10 +618,6 @@ def print_metric_details(path):
             asd = lick.last_phase
         if lick.prediction == lick.last_phase:
             last_phase_correct[i] = 1
-        print("---")
-        print("lick id:",lick.lick_id)
-        print("next lick:",lick.target)
-        print("prediction:", lick.prediction)
         if next_lick is not None: print("after next lick:",next_lick.lickwell)
         if last_lick is not None: print("last lick:",last_lick.lickwell)
         print("current phase:",lick.phase)
@@ -634,13 +636,14 @@ def print_metric_details(path):
     print("fin")
 
 
-def print_lickwell_metrics(metrics_i, nd, licks):
+def print_lickwell_metrics(metrics_i, nd,session):
     """
 
     :param metrics_i:
     :param nd:
     :return:
     """
+    licks = session.licks
     print(
         "lick_id: well_1->well_ 2, fraction decoded | most frequently predicted , fraction predicted, lick_was_correct")
     metrics = []
@@ -651,20 +654,20 @@ def print_lickwell_metrics(metrics_i, nd, licks):
     for i, m in enumerate(metrics):
         print(m.lick_id,  ",", end=" ")
         if nd.initial_timeshift == 1:
-            predicted_lick = get_lick_from_id(m.next_lick_id, licks)
-            print(predicted_lick.lickwell, ",", end=" ")
-            after_predicted_lick = get_lick_from_id(m.next_lick_id, licks, shift=1)
+            target_lick = get_lick_from_id(m.next_lick_id, licks)
+            print(m.target, ",", end=" ")
+            after_predicted_lick = get_lick_from_id(m.next_lick_id, licks, shift=0)
             if after_predicted_lick is not None:
-                print(after_predicted_lick.lickwell, ",", end=" ")
+                print(after_predicted_lick.target, ",", end=" ")
         else:
-            predicted_lick = get_lick_from_id(m.last_lick_id, licks)
-            print(predicted_lick.lickwell, ",", end=" ")
-            before_predicted_lick = get_lick_from_id(m.last_lick_id, licks, shift=-1)
+            target_lick = get_lick_from_id(m.last_lick_id, licks)
+            print(m.target, ",", end=" ")
+            before_predicted_lick = get_lick_from_id(m.last_lick_id, licks, shift=0)
             if before_predicted_lick is not None:
-                print(before_predicted_lick.lickwell, ",", end=" ")
+                print(before_predicted_lick.target, ",", end=" ")
         print(np.round(m.fraction_decoded, 2), ",", m.prediction, ",", np.round(m.fraction_predicted, 2), ",", end=" ")
         if i != len(metrics) - 1:
-            print(predicted_lick.rewarded)
-            if metrics[i + 1].lick_id in nd.phase_change_ids:
-                print("->switch")
+            print(target_lick.rewarded)
+            # if metrics[i + 1].lick_id in nd.phase_change_ids:
+            #     print("->switch")
     pass
