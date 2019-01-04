@@ -4,7 +4,6 @@ from src.preprocessing import position_as_map
 from src.database_api_beta import Evaluated_Lick
 from src.settings import save_as_pickle, load_pickle
 
-
 def get_r2(y_predicted, y_target, step_size):
     R2_list = []
     y_predicted = y_predicted * step_size
@@ -529,7 +528,7 @@ class Lick_id_details:
     def __init__(self, licks, correct_licks=None, false_licks=None, prior_phase_change=None, post_phase_change=None,
                  filter=None,
                  next_phase_correct=None, last_phase_correct=None, next_lick_correct=None, last_lick_correct=None,
-                 current_phase_correct=None):
+                 current_phase_correct=None,fraction_decoded=None,fraction_predicted=None):
         self.licks = licks
         self.correct_licks = correct_licks
         self.false_licks = false_licks
@@ -538,9 +537,9 @@ class Lick_id_details:
         self.next_lick_correct = next_lick_correct
         self.last_lick_correct = last_lick_correct
         self.current_phase_correct = current_phase_correct
-
         self.filter = filter
-
+        self.fraction_decoded = fraction_decoded
+        self.fraction_predicted = fraction_predicted
     def print_details(self):
 
         correct_licks = self.correct_licks * self.filter
@@ -549,22 +548,26 @@ class Lick_id_details:
         for i, li in enumerate(self.filter):
             if li == 1:
                 licks.append(self.licks[i])
+        licks = np.array(licks)
         last_phase_correct = self.last_phase_correct * self.filter
         next_phase_correct = self.next_phase_correct * self.filter
         current_phase_correct = self.current_phase_correct * self.filter
         last_lick_correct = self.last_lick_correct * self.filter
         next_lick_correct = self.next_lick_correct * self.filter
+        fraction_decoded = self.fraction_decoded * self.filter
+        fraction_predicted = self.fraction_predicted * self.filter
 
+        print("Licks in filter:",licks.shape[0])
         print("Correctly decoded:", np.sum(correct_licks))
         print("falsely decoded", np.sum(false_licks))
         print("fraction decoded", np.sum(correct_licks) / (np.sum(false_licks) + np.sum(correct_licks)))
         print("correctly predicted next phase",np.sum(next_phase_correct))
         print("correctly predicted last phase",np.sum(last_phase_correct))
         print("correctly predicted current phase",np.sum(current_phase_correct))
-        print("correctly predicted lick after current",np.sum(next_lick_correct))
+        print("correctly predicted lick after next lick",np.sum(next_lick_correct))
         print("correctly predicted last lick",np.sum(last_lick_correct))
-        print("average fraction decoded")
-        print("average fraction of correct answers")
+        print("average fraction of samples decoded",np.average(fraction_decoded))
+        print("average fraction of samples with correct well",np.average(fraction_predicted))
 
 
 def print_metric_details(path):
@@ -572,6 +575,7 @@ def print_metric_details(path):
     metrics = load_pickle(path+"network_output_timeshift=1.pkl")
     nd = load_pickle(path + "nd_timeshift=1.pkl")
     licks = load_pickle(path + "licks_timeshift=1.pkl")
+    # print_lickwell_metrics(metrics, nd,session)
 
     # print_lickwell_metrics(metrics, nd,session.licks)
 
@@ -588,24 +592,27 @@ def print_metric_details(path):
     current_phase_correct = np.zeros(len(metrics))
     next_lick_correct = np.zeros(len(metrics))
     last_lick_correct = np.zeros(len(metrics))
+    fraction_decoded = np.zeros(len(metrics))
+    fraction_predicted = np.zeros(len(metrics))
+
     for i, lick in enumerate(metrics):
+        fraction_predicted[i] = lick.fraction_predicted
+        fraction_decoded[i] = lick.fraction_predicted
         if lick.prediction == lick.target:
             correct_licks[i] = 1
         else:
             false_licks[i] = 1
         if i != len(metrics) - 1:
             if lick.next_lick_id in nd.phase_change_ids:
-                print("->switch")
+                # print("->switch")
                 prior_switch_licks[i] = 1
                 after_switch_licks[i + 1] = 1
-
-
-        next_lick = get_lick_from_id(lick.lick_id, licks, shift=1)
-        print("---")
-        print("lick id:",lick.lick_id)
-        print("next lick:",lick.target)
-        print("prediction:", lick.prediction)
-        if next_lick is not None and lick.prediction == lick.target:  # if lick predicted was next lick
+        next_lick = get_lick_from_id(lick.lick_id, licks, shift=2)
+        # print("---")
+        # print("lick id:",lick.lick_id)
+        # print("next lick:",lick.target)
+        # print("prediction:", lick.prediction)
+        if next_lick is not None and lick.prediction == next_lick.lickwell:  # if lick predicted was next lick
             next_lick_correct[i] = 1
         last_lick = get_lick_from_id(lick.lick_id, licks, shift=-1)
         if last_lick is not None and lick.prediction == last_lick.lickwell:  # if lick predicted was last lick
@@ -623,15 +630,40 @@ def print_metric_details(path):
         print("current phase:",lick.phase)
         print("last phase:",lick.last_phase)
         print("next phase:",lick.next_phase)
+
+    print("Filter: all licks")
     lick_id_details = Lick_id_details(licks=metrics, filter=np.zeros(len(metrics)) + 1, correct_licks=correct_licks,
                                       false_licks=false_licks, prior_phase_change=prior_switch_licks,
                                       post_phase_change=after_switch_licks,
                                       current_phase_correct=current_phase_correct,
                                       last_phase_correct=last_phase_correct,
                                       next_phase_correct=next_phase_correct, next_lick_correct=next_lick_correct,
-                                      last_lick_correct=last_lick_correct)
+                                      last_lick_correct=last_lick_correct,fraction_decoded=fraction_decoded,fraction_predicted=fraction_predicted)
     # convert_index_list_to_binary_array(list_length, list)
-
+    lick_id_details.print_details()
+    print("Filter: correct licks")
+    lick_id_details.filter = correct_licks
+    lick_id_details.print_details()
+    print("Filter: false licks")
+    lick_id_details.filter = false_licks
+    lick_id_details.print_details()
+    print("Filter: licks prior to switch")
+    lick_id_details.filter = prior_switch_licks
+    lick_id_details.print_details()
+    print("Filter: licks after switch")
+    lick_id_details.filter = after_switch_licks
+    lick_id_details.print_details()
+    print("Filter: next well licked is 2")
+    lick_id_details.filter = correct_licks
+    lick_id_details.print_details()
+    print("Filter: next well licked is 3")
+    lick_id_details.filter = correct_licks
+    lick_id_details.print_details()
+    print("Filter: next well licked is 4")
+    lick_id_details.filter = correct_licks
+    lick_id_details.print_details()
+    print("Filter: next well licked is 5")
+    lick_id_details.filter = correct_licks
     lick_id_details.print_details()
     print("fin")
 

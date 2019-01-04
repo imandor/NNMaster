@@ -423,46 +423,30 @@ class Slice:
             if i + shift < len(licks) and i + shift >= 0:
                 self.licks[i].target = licks[i + shift].lickwell
 
-        # licks = [lick for i, lick in enumerate(licks) if rewarded_list[i] == 1]
+        # get ids of phase changes and corresponding phases as respectively filtered_lick_ids and filtered_lickwells
 
-        current_phase_well = None
-        phase_change_ids = []
+        filtered_lickwells = [lick.target for i, lick in enumerate(self.licks[0:-2]) if licks[i+1].rewarded == 1 and lick.lickwell == 1]
+        filtered_lickwell_ids = [lick.lick_id for i, lick in enumerate(self.licks[0:-2]) if licks[i+1].rewarded == 1 and lick.lickwell == 1]
+        filtered_lickwell_phasechange_ids = [filtered_lickwell_ids[i] for i,lickwell in enumerate(filtered_lickwells[0:-2]) if filtered_lickwells[i]!=filtered_lickwells[i+1]] + [licks[-1].lick_id]
+        filtered_lickwells = [lickwell for i,lickwell in enumerate(filtered_lickwells[0:-2]) if filtered_lickwells[i]!=filtered_lickwells[i+1]] + [filtered_lickwells[-1]]
+        filtered_lickwells = np.array(filtered_lickwells)
 
-        # find first training phase
-        phases = [[lick.target for i,lick in enumerate(licks[0:-2]) if licks[i+1].rewarded==1][0]]
-        well = phases[0]
-        next_well = phases[0]
-        for i, lick in enumerate(licks):
-            if lick.rewarded == 1:
-                well = lick.lickwell
-                for j in range(1, len(licks)):  # find next valid well licked
-                    if i + j >= len(licks):
-                        next_well = None
-                        break
-                    if licks[i + j].rewarded == 1:
-                        next_well = licks[i + j].lickwell
-                        break
-            if current_phase_well is None:  # set well that is currently being trained for
-                current_phase_well = well
-            if current_phase_well is not None and well == 1:  # append lick if it fits valid_filter
-                if next_well != current_phase_well:
-                    phase_change_ids.append(lick.lick_id)
-                    current_phase_well = next_well
-                    phases.append(current_phase_well)
+        # set phases for each lick
 
-            # add phase data to lick object
-            lick.phase = current_phase_well
-            try:
-                lick.last_phase = phases[-1]
-            except(IndexError):
-                pass
-            lick.next_phase = next_well
-            lick.phase = current_phase_well
-            lick.last_phase = phases[-1]
+        current_phase_counter = 0
+        for i,lick in enumerate(self.licks):
+            lick.phase = filtered_lickwells[current_phase_counter]
+            if current_phase_counter != 0:
+                lick.last_phase = filtered_lickwells[current_phase_counter-1]
+            if current_phase_counter != len(filtered_lickwells)-1:
+                lick.next_phase = filtered_lickwells[current_phase_counter + 1]
+            if lick.lick_id in filtered_lickwell_phasechange_ids:
+                current_phase_counter += 1
             self.licks[i] = lick
-        phases.append(current_phase_well)
-        nd.phase_change_ids = phase_change_ids
-        nd.phases = phases
+        # set nd data
+        nd.phase_change_ids = filtered_lickwell_phasechange_ids
+        nd.phases = filtered_lickwells
+
         return nd
 
     def _convolve(self):

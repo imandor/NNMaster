@@ -2,7 +2,7 @@ from src.database_api_beta import Slice, Filter, hann, Net_data
 
 from src.preprocessing import lickwells_io
 from src.network_functions import run_network_process, initiate_lickwell_network, run_lickwell_network
-from src.metrics import print_metric_details
+from src.metrics import print_metric_details,print_lickwell_metrics
 if __name__ == '__main__':
 
 
