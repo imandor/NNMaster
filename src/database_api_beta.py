@@ -418,7 +418,7 @@ class Slice:
 
         # add target data
         licks = self.licks
-        shift = nd.initial_timeshift
+        shift = 1
         for i, lick in enumerate(licks):
             if i + shift < len(licks) and i + shift >= 0:
                 self.licks[i].target = licks[i + shift].lickwell
