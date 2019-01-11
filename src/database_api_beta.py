@@ -132,12 +132,14 @@ class Net_data:
 
     def __init__(self,
                  model_path,
+                 network_shape,
                  raw_data_path,
                  filtered_data_path="slice.pkl",
                  stride=100,
                  y_slice_size=100,
                  network_type="MLP",
                  epochs=20,
+                 session_from_raw=True,
                  evaluate_training=False,
                  session_filter=Filter(func=hann, search_radius=SEARCH_RADIUS, step_size=WIN_SIZE),
                  time_shift_steps=1,
@@ -175,6 +177,8 @@ class Net_data:
                  phases=None,
                  phase_change_ids=None
                  ):
+        self.session_from_raw = session_from_raw
+        self.network_shape=network_shape
         self.evaluate_training = evaluate_training
         self.stride = stride
         self.train_model = train_model
@@ -370,8 +374,7 @@ class Net_data:
             else:
                 y_new.pop(i)
                 x_new.pop(i)
-        asd = self.filter_overrepresentation_discrete(x_return, y_return, min(counts), excluded_wells)
-        return asd
+        return self.filter_overrepresentation_discrete(x_return, y_return, min(counts), excluded_wells)
 
     def filter_overrepresentation_discrete(self, x, y, max_occurrences, excluded_wells):
         x_return = []

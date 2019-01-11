@@ -42,8 +42,8 @@ def metric_plot_a(save_path, x, y,y_all, axis_label_x, axis_label_y):
             c = "sandybrown"
         if i == 9:
             c = "goldenrod"
-        ax.plot(x,y_i,color=c,marker="x",label="cv "+str(i+1)+"/10")
-    ax.plot(x, y, label='average', color='r', marker="X",linestyle="None")
+        ax.plot(x,y_i,color=c)#label="cv "+str(i+1)+"/10",
+    ax.plot(x, y, label='average', color='r', marker="X") #,linestyle="None"
 
     ax.legend()
     ax.grid(c='k', ls='-', alpha=0.3)
@@ -125,8 +125,8 @@ class Metrics_Wrt_Time:  # object containing list of metrics by cross validation
         # Plot
 
         fig, ax = plt.subplots()
-        plt.rc('font', family='serif', serif='Times')
-        plt.rc('text', usetex=True)
+        # plt.rc('font', family='serif', serif='Times')
+        # plt.rc('text', usetex=True)
         plt.rc('xtick', labelsize=8)
         plt.rc('ytick', labelsize=8)
         plt.rc('axes', labelsize=8)
@@ -134,11 +134,11 @@ class Metrics_Wrt_Time:  # object containing list of metrics by cross validation
         height = width / 1.5
         fig.set_size_inches(width, height)
         ax.plot(timeshift_list_t_test, t_score_list, color='k')
-        ax.plot(timeshift_list_t_test, positive_ape_avg_list, color='darkgreen')
+        ax.plot(timeshift_list_t_test, positive_ape_avg_list, color='darkblue')
         ax.plot(timeshift_list_t_test, negative_ape_avg_list, color='maroon')
         ax.axhline(y=0)
         # ax.legend()
-        custom_lines = [Patch(facecolor='green', edgecolor='b',
+        custom_lines = [Patch(facecolor='blue', edgecolor='b',
                               label='d_1'),
                         Patch(facecolor='red', edgecolor='b',
                               label='d_2')
@@ -150,7 +150,7 @@ class Metrics_Wrt_Time:  # object containing list of metrics by cross validation
         ax.set_ylabel('absolute position error [cm]')
         f = interp1d(timeshift_list_t_test, t_score_list)
         x = np.linspace(timeshift_list_t_test[0], timeshift_list_t_test[-1], 1000)
-        ax.fill_between(x, 0, f(x), where=(np.array(f(x))) < 0, color='green')
+        ax.fill_between(x, 0, f(x), where=(np.array(f(x))) < 0, color='blue')
         ax.fill_between(x, 0, f(x), where=(np.array(f(x))) > 0, color='red')
         plt.show()
         plt.savefig(self.path + "images/t_test.pdf")
@@ -159,13 +159,15 @@ class Metrics_Wrt_Time:  # object containing list of metrics by cross validation
     def set_timeshift_list(self):
         self.timeshift_list = [a.net_data.time_shift for a in self.network_output_list]
 
-# path = "C:/Users/NN/Desktop/Master/experiments/decode memory future/MLP_HC_2018-11-13_dmf/"
+path = "C:/Users/NN/Desktop/Master/experiments/decode memory future/MLP_HC_2018-11-13_dmf/"
+# path = "C:/Users/NN/Desktop/Master/experiments/decode memory future/DMF_CHC_2019-01-04_dmf/"
+# path = "C:/Users/NN/Desktop/Master/experiments/decode memory future/DMF_CPFC_2019-01-04_dmf/"
+# path = "C:/Users/NN/Desktop/Master/experiments/decode memory future/DMF_C_2019-01-03_dmf/"
 # path = "C:/Users/NN/Desktop/Master/experiments/decode memory future/DMF_PFC_2018-12-13_dmf/"
-path = "G:/master_datafiles/trained_networks/no_shuffle_test_3_different_dataset/"
 net_out = Metrics_Wrt_Time(path)
 net_out.set_timeshift_list()
 
-# net_out.plot_paired_t_test()
+net_out.plot_paired_t_test()
 # net_out.plot_r2_wrt_ts()
-net_out.plot_ape_wrt_ts()
+# net_out.plot_ape_wrt_ts()
 print("fin")

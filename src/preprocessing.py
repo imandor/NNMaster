@@ -223,7 +223,6 @@ def lickwells_io(session, nd, excluded_wells=[1], shift=1, normalize=False, diff
             filtered_licks.append(lick)
             next_well = int(licks[i + shift].lickwell)
             filtered_next_wells.append(next_well)
-            # counter[next_well-len(excluded_wells)-1] += 1
 
     # distribute list of licks as evenly over well type as possible
 

@@ -560,17 +560,17 @@ class Lick_id_details:
         fraction_decoded = self.fraction_decoded * self.filter
         fraction_predicted = self.fraction_predicted * self.filter
 
-        # print("Licks in filter:",licks.shape[0])
-        # print("Correctly decoded:", np.sum(correct_licks))
-        # print("falsely decoded", np.sum(false_licks))
-        # print("fraction decoded", np.sum(correct_licks) / (np.sum(false_licks) + np.sum(correct_licks)))
-        # print("correctly predicted next phase",np.sum(next_phase_correct))
-        # print("correctly predicted last phase",np.sum(last_phase_correct))
-        # print("correctly predicted current phase",np.sum(current_phase_correct))
-        # print("correctly predicted lick after next lick",np.sum(next_lick_correct))
-        # print("correctly predicted last lick",np.sum(last_lick_correct))
-        # print("average fraction of samples decoded",np.average(fraction_decoded))
-        # print("average fraction of samples with correct well",np.average(fraction_predicted))
+        print("Licks in filter:",licks.shape[0])
+        print("Correctly decoded:", np.sum(correct_licks))
+        print("falsely decoded", np.sum(false_licks))
+        print("fraction decoded", np.sum(correct_licks) / (np.sum(false_licks) + np.sum(correct_licks)))
+        print("correctly predicted next phase",np.sum(next_phase_correct))
+        print("correctly predicted last phase",np.sum(last_phase_correct))
+        print("correctly predicted current phase",np.sum(current_phase_correct))
+        print("correctly predicted lick after next lick",np.sum(next_lick_correct))
+        print("correctly predicted last lick",np.sum(last_lick_correct))
+        print("average fraction of samples decoded",np.average(fraction_decoded))
+        print("average fraction of samples with correct well",np.average(fraction_predicted))
         print(licks.shape[0])
         print(np.sum(correct_licks))
         print(np.sum(false_licks))
@@ -580,8 +580,8 @@ class Lick_id_details:
         print(np.sum(current_phase_correct))
         print(np.sum(next_lick_correct))
         print(np.sum(last_lick_correct))
-        print(np.average(fraction_decoded))
-        print(np.average(fraction_predicted))
+        print(np.sum(fraction_decoded)/np.sum(self.filter))
+        print(np.sum(fraction_predicted)/np.sum(self.filter))
 
 def print_metric_details(path,timeshift):
     # Create binary arrays for licks corresponding to each inspected filter

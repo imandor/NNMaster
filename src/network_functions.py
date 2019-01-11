@@ -59,8 +59,10 @@ def run_lickwell_network_process(nd):
     logits_valid = licks_to_logits(nd.y_valid, nd.num_wells)
     X_test = nd.X_test
     logits_test = licks_to_logits(nd.y_test, nd.num_wells)
+    ns = nd.network_shape
+    ns.fc1.weights = tf.truncated_normal(shape=(11*nd.n_neurons,100), stddev=0.01) # 36, 56, 75, 111, 147
 
-    S = MultiLayerPerceptron([None, nd.n_neurons, 11, 1], mlp_discrete)
+    S = MultiLayerPerceptron([None, nd.n_neurons, 11, 1], ns)
     nd.x_shape = [nd.batch_size] + list(X_train[0].shape) + [1]
     nd.y_shape = [nd.batch_size] + [nd.num_wells]
     if nd.load_model is True:
@@ -225,7 +227,7 @@ def initiate_network(nd, load_raw_data=False):
     return session
 
 
-def initiate_lickwell_network(nd, load_raw_data=False):
+def initiate_lickwell_network(nd):
     try:
         os.makedirs(os.path.dirname(nd.model_path))
         os.makedirs(os.path.dirname(nd.model_path + "output/"))
@@ -233,7 +235,7 @@ def initiate_lickwell_network(nd, load_raw_data=False):
     except OSError as exc:  # Guard against race condition
         if exc.errno != errno.EEXIST:
             raise
-    if load_raw_data is True:
+    if nd.session_from_raw is True:
         session = Slice.from_raw_data(nd.raw_data_path, filter_tetrodes=nd.filter_tetrodes)
         session.filter_neurons(100)
         session.print_details()
