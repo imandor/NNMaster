@@ -42,8 +42,8 @@ def metric_plot_a(save_path, x, y,y_all, axis_label_x, axis_label_y):
             c = "sandybrown"
         if i == 9:
             c = "goldenrod"
-        ax.plot(x,y_i,color=c)#label="cv "+str(i+1)+"/10",
-    ax.plot(x, y, label='average', color='r', marker="X") #,linestyle="None"
+        ax.plot(x,y_i,color=c,linestyle="None")#label="cv "+str(i+1)+"/10",
+    ax.plot(x, y, label='average', color='r', marker="X",linestyle="None") #,linestyle="None"
 
     ax.legend()
     ax.grid(c='k', ls='-', alpha=0.3)
@@ -53,6 +53,17 @@ def metric_plot_a(save_path, x, y,y_all, axis_label_x, axis_label_y):
     plt.show()
     # plt.savefig(save_path)
     plt.close()
+
+def compare_neuron_filter(path):
+    ape_avg_list = [np.average([b.ape_by_epoch[-1] for b in a.metric_by_cvs]) for a in self.network_output_list]
+    all_samples = [a.metric_by_cvs for a in self.network_output_list]
+    y_all = [[a.ape_by_epoch[epoch] for a in metric] for metric in all_samples]
+    save_path = self.path + "images/ape.pdf"
+    axis_label_x = 'Time shift [ms]'
+    axis_label_y = r'$\varnothing$ absolute position error [cm]'
+    metric_plot_a(save_path, self.timeshift_list, y=ape_avg_list, y_all=y_all, axis_label_x=axis_label_x,
+                  axis_label_y=axis_label_y)
+
 
 class Metrics_Wrt_Time:  # object containing list of metrics by cross validation partition
     def __init__(self, path):
@@ -165,11 +176,12 @@ class Metrics_Wrt_Time:  # object containing list of metrics by cross validation
 # path = "C:/Users/NN/Desktop/Master/experiments/decode memory future/DMF_C_2019-01-03_dmf/"
 # path = "C:/Users/NN/Desktop/Master/experiments/decode memory future/DMF_PFC_2018-12-13_dmf/"
 # path = "C:/Users/NN/Desktop/Master/experiments/naive test/MLP_HC_2019-01-04_naive/"
-path = "C:/Users/NN/Desktop/Master/experiments/naive test/DMF_PFC_2019-01-11_naive/"
+path = "C:/Users/NN/Desktop/Master/experiments/naive test/naive_pfc/"
 net_out = Metrics_Wrt_Time(path)
 net_out.set_timeshift_list()
 
 # net_out.plot_paired_t_test()
 # net_out.plot_r2_wrt_ts()
 net_out.plot_ape_wrt_ts()
+# run_filter_neuron_test()
 print("fin")

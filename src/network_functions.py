@@ -138,8 +138,8 @@ def run_network_process(nd):
     if nd.load_model is True:
         saver = tf.train.import_meta_graph(nd.model_path + ".meta")
         saver.restore(sess, nd.model_path)
-        init_op = tf.initialize_all_variables()
-        sess.run(init_op)
+        # init_op = tf.initialize_all_variables()
+        # sess.run(init_op)
     else:
         S.initialize(sess)
 
@@ -156,7 +156,7 @@ def run_network_process(nd):
         X_train, y_train = shuffle_io(X_train, y_train, nd)
         if metric_counter == nd.metric_iter and stop_early is False:
             metric_step_counter.append(i)
-            if nd.naive_test is True:
+            if nd.naive_test is True and nd.load_model is False:
                 saver.save(sess, nd.model_path)
 
             print("\n_-_-_-_-_-_-_-_-_-_-Epoch", i, "_-_-_-_-_-_-_-_-_-_-\n")
@@ -281,6 +281,7 @@ def run_network(nd, session):
             print("cross validation step", str(k + 1), "of", nd.k_cross_validation)
             if nd.naive_test is True and nd.time_shift != 0:
                 nd.load_model = True
+                nd.epochs=1
             nd.assign_training_testing(X, y, k)
             if nd.time_shift_steps == 1:
                 metric = run_network_process(nd)
@@ -296,7 +297,6 @@ def run_network(nd, session):
         path = save_nd.model_path + "output/" + "network_output_timeshift=" + str(
             z) + ".pkl"
         save_as_pickle(path, save_metric)
-
     print("fin")
 
 
