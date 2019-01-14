@@ -132,13 +132,13 @@ class Net_data:
 
     def __init__(self,
                  model_path,
-                 network_shape,
                  raw_data_path,
                  filtered_data_path="slice.pkl",
                  stride=100,
                  y_slice_size=100,
                  network_type="MLP",
                  epochs=20,
+                 network_shape = 10,
                  session_from_raw=True,
                  evaluate_training=False,
                  session_filter=Filter(func=hann, search_radius=SEARCH_RADIUS, step_size=WIN_SIZE),
@@ -239,6 +239,7 @@ class Net_data:
         self.phases = phases
 
     def clear_io(self):
+        self.network_shape = None
         self.X_train = None
         self.y_train = None
         self.X_test = None

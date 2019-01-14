@@ -12,6 +12,7 @@ import multiprocessing
 import os
 import errno
 import datetime
+import copy
 from scipy import stats
 
 
@@ -59,7 +60,7 @@ def run_lickwell_network_process(nd):
     logits_valid = licks_to_logits(nd.y_valid, nd.num_wells)
     X_test = nd.X_test
     logits_test = licks_to_logits(nd.y_test, nd.num_wells)
-    ns = nd.network_shape
+    ns = mlp_discrete
     ns.fc1.weights = tf.truncated_normal(shape=(11*nd.n_neurons,100), stddev=0.01) # 36, 56, 75, 111, 147
 
     S = MultiLayerPerceptron([None, nd.n_neurons, 11, 1], ns)
@@ -122,7 +123,9 @@ def run_lickwell_network_process(nd):
 
 def run_network_process(nd):
     # S = ConvolutionalNeuralNetwork1([None, 56, 10, 1], cnn1)
-    S = MultiLayerPerceptron([None, nd.n_neurons, 10, 1], mlp)  # 56 147
+    ns = mlp
+    ns.fc1.weights = tf.truncated_normal(shape=(10*nd.n_neurons,400), stddev=0.01) # 36, 56, 75, 111, 147
+    S = MultiLayerPerceptron([None, nd.n_neurons, 10, 1], ns)  # 56 147
     sess = tf.Session()
     metric_eval = Metric(r2_by_epoch=[], ape_by_epoch=[], acc20_by_epoch=[], r2_best=None,
                          ape_best=None, acc20_best=None)
@@ -135,6 +138,8 @@ def run_network_process(nd):
     if nd.load_model is True:
         saver = tf.train.import_meta_graph(nd.model_path + ".meta")
         saver.restore(sess, nd.model_path)
+        init_op = tf.initialize_all_variables()
+        sess.run(init_op)
     else:
         S.initialize(sess)
 
@@ -199,7 +204,7 @@ def run_network_process(nd):
     return metric_eval
 
 
-def initiate_network(nd, load_raw_data=False):
+def initiate_network(nd):
     try:
         os.makedirs(os.path.dirname(nd.model_path))
         os.makedirs(os.path.dirname(nd.model_path + "output/"))
@@ -207,7 +212,7 @@ def initiate_network(nd, load_raw_data=False):
     except OSError as exc:  # Guard against race condition
         if exc.errno != errno.EEXIST:
             raise
-    if load_raw_data is True:
+    if nd.session_from_raw is True:
         session = Slice.from_raw_data(nd.raw_data_path, filter_tetrodes=nd.filter_tetrodes)
         session.filter_neurons(100)
         session.print_details()
@@ -261,6 +266,7 @@ def run_network(nd, session):
     for z in range(nd.initial_timeshift, nd.initial_timeshift + nd.time_shift_steps * nd.time_shift_iter,
                    nd.time_shift_iter):
         iter = int(z - nd.initial_timeshift) // nd.time_shift_iter
+        # nd.network_shape = mlp
         nd.time_shift = z  # set current time shift
         # Time-Shift input and output
         X, y = time_shift_positions(session, z, nd)
@@ -273,6 +279,8 @@ def run_network(nd, session):
         for k in range(0, nd.k_cross_validation):
             print("Timeshift", nd.time_shift)
             print("cross validation step", str(k + 1), "of", nd.k_cross_validation)
+            if nd.naive_test is True and nd.time_shift != 0:
+                nd.load_model = True
             nd.assign_training_testing(X, y, k)
             if nd.time_shift_steps == 1:
                 metric = run_network_process(nd)
@@ -281,14 +289,11 @@ def run_network(nd, session):
                         1) as p:  # keeping network inside process prevents memory issues when restarting session
                     metric = p.map(run_network_process, [nd])[0]
                     p.close()
-                if nd.naive_test is True:
-                    nd.load_model = True
-                    nd.epochs = 1
-
-            metric_list.append(metric)
-        nd.clear_io()
-        save_metric = Network_output(net_data=nd, metric_by_cvs=metric_list)
-        path = nd.model_path + "output/" + "network_output_timeshift=" + str(
+        metric_list.append(metric)
+        save_nd = copy.deepcopy(nd)
+        save_nd.clear_io()
+        save_metric = Network_output(net_data=save_nd, metric_by_cvs=metric_list)
+        path = save_nd.model_path + "output/" + "network_output_timeshift=" + str(
             z) + ".pkl"
         save_as_pickle(path, save_metric)
 
@@ -307,6 +312,7 @@ def run_lickwell_network(nd, session, X, y, metadata):
 
     for k in range(0, nd.k_cross_validation):
         print("cross validation step", str(k + 1), "of", nd.k_cross_validation)
+        nd.network_shape = mlp_discrete
         nd.assign_training_testing_lickwell(X, metadata, k, excluded_wells=[1], normalize=nd.lw_normalize)
         save_nd = run_lickwell_network_process(nd)
         metrics_k.append(save_nd)
@@ -317,6 +323,7 @@ def run_lickwell_network(nd, session, X, y, metadata):
 
 
     save_as_pickle(path, metrics)
+    nd.clear_io()
     save_as_pickle(nd.model_path + "output/nd_timeshift="+str(nd.time_shift)+".pkl",nd)
     save_as_pickle(nd.model_path + "output/licks_timeshift="+str(nd.time_shift)+".pkl",session.licks)
     print_lickwell_metrics(metrics, nd,session)

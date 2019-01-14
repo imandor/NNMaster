@@ -1,12 +1,9 @@
 from appJar import gui
 import tmp.sample_experiments as se
-from src.database_api_beta import Slice, Filter, hann, Net_data
-
 from src.preprocessing import lickwells_io
 from src.network_functions import run_network_process, initiate_lickwell_network, run_lickwell_network
-from src.metrics import print_metric_details,print_lickwell_metrics
-
-
+from src.metrics import print_metric_details
+from src.network_functions import run_network_process, initiate_network, run_network
 def press(button):
     if button == "Cancel":
         app.stop()
@@ -20,6 +17,17 @@ def press(button):
             experiment = se.lickwell_experiment_hc_future
         if option == "Last lickwell prediction prefrontal cortex":
             experiment = se.lickwell_experiment_hc_memory
+        if option == "Position decoding prefrontal cortex":
+            experiment = se.position_decoding_pfc
+        if option == "Position decoding hippocampus":
+            experiment = se.position_decoding_hc
+        if option == "Naive test hippocampus":
+            experiment = se.naive_test_hc
+        if option == "Naive test prefrontal cortex":
+            experiment = se.naive_test_pfc
+
+
+
 
 
         if app.getCheckBox("preprocessed session") is True:
@@ -36,17 +44,21 @@ def press(button):
             run_lickwell_network(nd, session, X, y, metadata)
             path = nd.model_path + "output/"
             print_metric_details(path, nd.initial_timeshift)
+        if experiment.study == "position":
+            nd = experiment.nd
+            session = initiate_network(nd)
+            run_network(nd, session)
 
 if __name__ == '__main__':
 
     options = ["Future lickwell prediction hippocampus",
                "Future lickwell prediction prefrontal cortex",
                 "Last lickwell prediction hippocampus",
-               "Last lickwell prediction prefrontal cortex"
-
-
-
-
+               "Last lickwell prediction prefrontal cortex",
+               "Position decoding prefrontal cortex",
+               "Position decoding hippocampus",
+               "Naive test hippocampus",
+               "Naive test prefrontal cortex"
                ]
 
     app = gui()

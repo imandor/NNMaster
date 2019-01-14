@@ -13,23 +13,25 @@ if __name__ == '__main__':
 
     # hippocampus
 
-    MODEL_PATH = "G:/master_datafiles/trained_networks/no_shuffle_test_3_different_seed/"
+    MODEL_PATH = "G:/master_datafiles/trained_networks/naive_test_hc/"
     RAW_DATA_PATH = "G:/master_datafiles/raw_data/2018-05-16_17-13-37/"
     FILTERED_DATA_PATH = "session_hc"
 
     nd = Net_data(
-        initial_timeshift=-30000,
-        epochs=10,
-        time_shift_iter=500,
-        time_shift_steps=10,
+        initial_timeshift=0,
+        time_shift_iter=-500,
+        time_shift_steps=11,
         early_stopping=False,
         model_path=MODEL_PATH,
         raw_data_path=RAW_DATA_PATH,
-        k_cross_validation = 10
+        k_cross_validation = 1,
+        naive_test=True,
+        session_from_raw=False,
+        epochs = 10
 
 
     )
-    session = initiate_network(nd,load_raw_data=False)
+    session = initiate_network(nd)
 
     run_network(nd, session)
     # Create save file directories

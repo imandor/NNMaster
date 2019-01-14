@@ -159,15 +159,17 @@ class Metrics_Wrt_Time:  # object containing list of metrics by cross validation
     def set_timeshift_list(self):
         self.timeshift_list = [a.net_data.time_shift for a in self.network_output_list]
 
-path = "C:/Users/NN/Desktop/Master/experiments/decode memory future/MLP_HC_2018-11-13_dmf/"
+# path = "C:/Users/NN/Desktop/Master/experiments/decode memory future/MLP_HC_2018-11-13_dmf/"
 # path = "C:/Users/NN/Desktop/Master/experiments/decode memory future/DMF_CHC_2019-01-04_dmf/"
 # path = "C:/Users/NN/Desktop/Master/experiments/decode memory future/DMF_CPFC_2019-01-04_dmf/"
 # path = "C:/Users/NN/Desktop/Master/experiments/decode memory future/DMF_C_2019-01-03_dmf/"
 # path = "C:/Users/NN/Desktop/Master/experiments/decode memory future/DMF_PFC_2018-12-13_dmf/"
+# path = "C:/Users/NN/Desktop/Master/experiments/naive test/MLP_HC_2019-01-04_naive/"
+path = "C:/Users/NN/Desktop/Master/experiments/naive test/DMF_PFC_2019-01-11_naive/"
 net_out = Metrics_Wrt_Time(path)
 net_out.set_timeshift_list()
 
-net_out.plot_paired_t_test()
+# net_out.plot_paired_t_test()
 # net_out.plot_r2_wrt_ts()
-# net_out.plot_ape_wrt_ts()
+net_out.plot_ape_wrt_ts()
 print("fin")
