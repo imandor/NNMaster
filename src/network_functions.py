@@ -283,6 +283,7 @@ def run_network(nd, session):
                 nd.load_model = True
                 nd.epochs=1
             nd.assign_training_testing(X, y, k)
+            nd.plot_validation_position_histogram(k)
             if nd.time_shift_steps == 1:
                 metric = run_network_process(nd)
             else:

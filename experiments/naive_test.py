@@ -24,7 +24,7 @@ if __name__ == '__main__':
         raw_data_path=RAW_DATA_PATH,
         k_cross_validation = 1,
         naive_test=True,
-        session_from_raw=False,
+        from_raw_data=False,
         epochs = 10
 
 

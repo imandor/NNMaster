@@ -7,15 +7,15 @@ if __name__ == '__main__':
 
     # prefrontal cortex
 
-    # MODEL_PATH = "G:/master_datafiles/trained_networks/filter_neurons_pfc_100/"
-    # RAW_DATA_PATH = "G:/master_datafiles/raw_data/PFC/"
-    # FILTERED_DATA_PATH = "session_pfc"
+    MODEL_PATH = "G:/master_datafiles/trained_networks/filter_neurons_pfc_20/"
+    RAW_DATA_PATH = "G:/master_datafiles/raw_data/PFC/"
+    FILTERED_DATA_PATH = "session_pfc"
 
     # hippocampus
 
-    MODEL_PATH = "G:/master_datafiles/trained_networks/filter_neurons_hc_40/"
-    RAW_DATA_PATH = "G:/master_datafiles/raw_data/HC/"
-    FILTERED_DATA_PATH = "session_hc"
+    # MODEL_PATH = "G:/master_datafiles/trained_networks/filter_neurons_hc_20/"
+    # RAW_DATA_PATH = "G:/master_datafiles/raw_data/HC/"
+    # FILTERED_DATA_PATH = "session_hc"
 
     nd = Net_data(
         initial_timeshift=-5000,
@@ -26,9 +26,9 @@ if __name__ == '__main__':
         raw_data_path=RAW_DATA_PATH,
         k_cross_validation = 1,
         naive_test=False,
-        session_from_raw=False,
+        from_raw_data=True,
         epochs = 10,
-        neurons_kept_factor=0.4
+        neurons_kept_factor=0.2
 
 
     )

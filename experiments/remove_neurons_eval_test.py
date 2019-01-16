@@ -25,7 +25,7 @@ if __name__ == '__main__':
         model_path=MODEL_PATH,
         raw_data_path=RAW_DATA_PATH,
         k_cross_validation = 1,
-        session_from_raw=False,
+        from_raw_data=False,
         epochs = 10,
         neurons_kept_factor=0.8
     )

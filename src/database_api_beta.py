@@ -1,5 +1,4 @@
 from multiprocessing.pool import ThreadPool
-import numpy as np
 from itertools import takewhile, dropwhile, repeat
 from src import OpenEphys
 import scipy
@@ -8,9 +7,12 @@ import glob
 import pickle
 from random import seed, randint
 from src.preprocessing import generate_counter, fill_counter, normalize_well
-import time
+import matplotlib.pyplot as plt
+import matplotlib.colors as mcolors
+import numpy as np
+from numpy.random import multivariate_normal
+import matplotlib.colors as colors
 import random
-
 well_to_color = {0: "#ff0000", 1: "#669900", 2: "#0066cc", 3: "#cc33ff", 4: "#003300", 5: "#996633"}
 
 
@@ -139,7 +141,7 @@ class Net_data:
                  network_type="MLP",
                  epochs=20,
                  network_shape = 10,
-                 session_from_raw=True,
+                 from_raw_data=True,
                  evaluate_training=False,
                  session_filter=Filter(func=hann, search_radius=SEARCH_RADIUS, step_size=WIN_SIZE),
                  time_shift_steps=1,
@@ -177,7 +179,7 @@ class Net_data:
                  phases=None,
                  phase_change_ids=None
                  ):
-        self.session_from_raw = session_from_raw
+        self.session_from_raw = from_raw_data
         self.network_shape=network_shape
         self.evaluate_training = evaluate_training
         self.stride = stride
@@ -390,6 +392,25 @@ class Net_data:
                 y_return.append(e)
         return x_return, y_return
 
+    def plot_validation_position_histogram(self,k):
+
+        fig, ax = plt.subplots()
+        pos_sum = np.sum(self.y_valid,axis=0)
+        x = []
+        y = []
+        w = []
+        for i,row in enumerate(pos_sum):
+            for j,value in enumerate(row):
+                if value != 0:
+                    w.append(value)
+                    x.append(i)
+                    y.append(j)
+        ax.set_title('Histogram of coordinates in validation set')
+        ax.hist2d(x, y,weights=w, norm=colors.LogNorm(vmin=1, vmax=5000), bins=50, cmap="binary")
+        ax.set_xlabel("x [cm]")
+        ax.set_ylabel("y [cm]")
+        fig.tight_layout()
+        plt.savefig("C:/Users/NN/Desktop/Master/experiments/Histogram of positions/_"+str(k))
 
 class Slice:
     def __init__(self, spikes, licks, position_x, position_y, speed, trial_timestamp):
@@ -480,6 +501,18 @@ class Slice:
             for s in spike:
                 ax.vlines(s, i, i + 0.8)
         print("")
+
+
+    def plot_positions(self):
+        fig, ax = plt.subplots()
+
+        ax.set_title('Normalized histogram of visited locations')
+        ax.hist2d(self.position_x, self.position_y,norm=colors.LogNorm(vmin=1, vmax=5000), bins=50,cmap="binary")
+        ax.set_xlabel("x [cm]")
+        ax.set_ylabel("y [cm]")
+        fig.tight_layout()
+        plt.show()
+
 
     def print_details(self):
         average_spikes_per_second = np.mean([len(x) for x in self.spikes]) * 1000 / len(self.position_x)
@@ -698,6 +731,9 @@ class Slice:
         initial_detection_timestamp = initial_detection_timestamp
         rewarded = [item[0] for item in foster_data]
         lickwells = [item[2] for item in foster_data]
+        for i,lick in enumerate(lickwells):
+            if lick !=1:
+                lickwells[i] = random.randint(2,5)
         # trial timestamp
         trial_timestamp = [{"time": float(initial_detection_timestamp[ind]),
                             "trial_lickwell": int(well),

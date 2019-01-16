@@ -1,6 +1,6 @@
 from random import seed, shuffle, randint
 import numpy as np
-
+import random
 
 def position_as_map(pos_list, xstep, ystep, x_max, x_min, y_max, y_min):
     """
@@ -212,6 +212,13 @@ def lickwells_io(session, nd, excluded_wells=[1], shift=1, normalize=False, diff
     nd.get_all_valid_lick_ids(session, start_well=1,shift=shift)
     nd = session.add_lick_data_to_session_and_net_data(nd=nd)
     licks = session.licks
+    for i, lick in enumerate(licks):
+        if lick.lickwell!=1:
+            pass
+            # lick.lickwell = random.randint(2,5)
+        else:
+            if i>=2:
+                print(licks[i].lick_id,",",licks[i-2].lickwell)
     filtered_licks = []
     filtered_next_wells = []
     # create list of valid licks
@@ -221,7 +228,7 @@ def lickwells_io(session, nd, excluded_wells=[1], shift=1, normalize=False, diff
                 valid_licks == [] or i in valid_licks):
             # exclude trailing samples to stay inside shift range
             filtered_licks.append(lick)
-            next_well = int(licks[i + shift].lickwell)
+            next_well = int(licks[i + shift].lickwell) # TODO random well
             filtered_next_wells.append(next_well)
 
     # distribute list of licks as evenly over well type as possible

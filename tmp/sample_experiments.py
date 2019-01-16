@@ -176,7 +176,7 @@ naive_test_hc = Experiment(
         filtered_data_path="session_hc",
         k_cross_validation = 1,
         naive_test=True,
-        session_from_raw=False,
+        from_raw_data=False,
         epochs = 10
     )
 )
@@ -193,7 +193,7 @@ naive_test_pfc = Experiment(
         filtered_data_path="session_pfc",
         k_cross_validation = 1,
         naive_test=True,
-        session_from_raw=False,
+        from_raw_data=False,
         epochs = 10
     )
 )
