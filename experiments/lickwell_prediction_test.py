@@ -2,7 +2,7 @@ from src.database_api_beta import Slice, Filter, hann, Net_data
 
 from src.preprocessing import lickwells_io
 from src.network_functions import run_network_process, initiate_lickwell_network, run_lickwell_network
-from src.metrics import print_metric_details,print_lickwell_metrics
+from src.metrics import print_metric_details,print_lickwell_metrics,plot_metric_details
 if __name__ == '__main__':
 
 
@@ -15,9 +15,9 @@ if __name__ == '__main__':
 
     # Data set 2 Hippocampus
 
-    MODEL_PATH = "G:/master_datafiles/trained_networks/MLP_HC_2019-01-15_lickwell_noise_test/"
+    MODEL_PATH = "G:/master_datafiles/trained_networks/MLP_HC_2019-01-17_lickwell/"
     RAW_DATA_PATH = "G:/master_datafiles/raw_data/HC/"
-    FILTERED_DATA_PATH = "session_hc_lw_noise.pkl"
+    FILTERED_DATA_PATH = "session_hc_lw.pkl"
 
 
 
@@ -47,12 +47,13 @@ if __name__ == '__main__':
         lw_normalize=True,
         lw_differentiate_false_licks=False,
         num_wells=5,
-        initial_timeshift=-1,
+        initial_timeshift=1,
         from_raw_data=False
     )
 
     path = MODEL_PATH + "output/"
-    print_metric_details(path,nd.initial_timeshift)
+    plot_metric_details(path, nd.initial_timeshift)
+    # print_metric_details(path,nd.initial_timeshift)
     session = initiate_lickwell_network(nd)  # Initialize session
     X, y, metadata,nd = lickwells_io(session, nd, excluded_wells=[1], shift=nd.initial_timeshift,
                                   normalize=nd.lw_normalize,

@@ -319,13 +319,13 @@ def run_lickwell_network(nd, session, X, y, metadata):
         metrics_k.append(save_nd)
 
     metrics = cross_validate_lickwell_data(metrics=metrics_k,licks=session.licks,epoch=-1,nd=nd)
-    path = nd.model_path + "output/network_output_timeshift=" + str(
-        nd.time_shift) + ".pkl"
-
-
-    save_as_pickle(path, metrics)
+    metrics_k_obj = []
+    for metric in metrics_k:
+        metrics_k_obj.append(cross_validate_lickwell_data(metrics=[metric],licks=session.licks,epoch=-1,nd=nd))
     nd.clear_io()
+    save_as_pickle(nd.model_path + "output/metrics_timeshift=" + str(nd.time_shift) + ".pkl", metrics)
     save_as_pickle(nd.model_path + "output/nd_timeshift="+str(nd.time_shift)+".pkl",nd)
     save_as_pickle(nd.model_path + "output/licks_timeshift="+str(nd.time_shift)+".pkl",session.licks)
+    save_as_pickle(nd.model_path + "output/metrics_k_timeshift="+str(nd.time_shift)+".pkl",metrics_k_obj)
     print_lickwell_metrics(metrics, nd,session)
     print("fin")

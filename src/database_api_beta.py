@@ -731,9 +731,9 @@ class Slice:
         initial_detection_timestamp = initial_detection_timestamp
         rewarded = [item[0] for item in foster_data]
         lickwells = [item[2] for item in foster_data]
-        for i,lick in enumerate(lickwells):
-            if lick !=1:
-                lickwells[i] = random.randint(2,5)
+        # for i,lick in enumerate(lickwells):
+        #     if lick !=1:
+        #         lickwells[i] = random.randint(2,5)
         # trial timestamp
         trial_timestamp = [{"time": float(initial_detection_timestamp[ind]),
                             "trial_lickwell": int(well),
