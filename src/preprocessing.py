@@ -228,7 +228,7 @@ def lickwells_io(session, nd, excluded_wells=[1], shift=1, normalize=False, diff
                 valid_licks == [] or i in valid_licks):
             # exclude trailing samples to stay inside shift range
             filtered_licks.append(lick)
-            next_well = int(licks[i + shift].lickwell) # TODO random well
+            next_well = int(licks[i + shift].lickwell)
             filtered_next_wells.append(next_well)
 
     # distribute list of licks as evenly over well type as possible
@@ -264,7 +264,8 @@ def lickwells_io(session, nd, excluded_wells=[1], shift=1, normalize=False, diff
             bins_to_x = np.reshape(bins_to_x, [len(bins_to_x), len(bins_to_x[0])])
             X.append(bins_to_x)
             y_abs.append(next_well[i])
-            lick.target = next_well[i]
+            # lick.target = next_well[i]
+            lick.target = lick.phase
             metadata.append(lick)
 
     print("Lickwell count:")
@@ -284,4 +285,4 @@ def lickwells_io(session, nd, excluded_wells=[1], shift=1, normalize=False, diff
         y_i = np.zeros(nd.num_wells)
         y_i[int(val) - 1] = 1
         y.append(y_i)
-    return X, y, metadata,nd
+    return X, y, metadata,nd,session
