@@ -135,7 +135,7 @@ class Net_data:
     def __init__(self,
                  model_path,
                  raw_data_path,
-                 filtered_data_path="slice.pkl",
+                 filtered_data_path=None,
                  stride=100,
                  y_slice_size=100,
                  network_type="MLP",

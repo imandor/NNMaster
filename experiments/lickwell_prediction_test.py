@@ -10,9 +10,9 @@ if __name__ == '__main__':
 
     # Data set 1 Prefrontal Cortex
 
-    MODEL_PATH = "G:/master_datafiles/trained_networks/MLP_PFC_2019-01-18_lickwell_phasetarget/"
+    MODEL_PATH = "G:/master_datafiles/trained_networks/MLP_PFC_2019-01-18_lickwell/"
     RAW_DATA_PATH = "G:/master_datafiles/raw_data/PFC/"
-    FILTERED_DATA_PATH = "session_pfc_lw_phasetarget.pkl"
+    FILTERED_DATA_PATH = "session_pfc_lw.pkl"
 
     # Data set 2 Hippocampus
 
@@ -48,15 +48,11 @@ if __name__ == '__main__':
         lw_normalize=True,
         lw_differentiate_false_licks=False,
         num_wells=5,
-        initial_timeshift=-1,
+        initial_timeshift=1,
         from_raw_data=False
     )
     seed(0)
-    path_1 = MODEL_PATH + "output/"
-    path_2 = MODEL_PATH + "output/"
-    plot_performance_comparison(path_1, 1, path_2, -1, "Accuracy for decoding next well", "Accuracy for decoding last well")
-    # print_metric_details(path,nd.initial_timeshift)
-    plot_metric_details_by_lickwell(path, nd.initial_timeshift)
+    print_metric_details(MODEL_PATH,nd.initial_timeshift)
     session = initiate_lickwell_network(nd)  # Initialize session
     X, y, metadata,nd,session = lickwells_io(session, nd, excluded_wells=[1], shift=nd.initial_timeshift,
                                   normalize=nd.lw_normalize,

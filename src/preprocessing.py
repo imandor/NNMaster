@@ -212,13 +212,13 @@ def lickwells_io(session, nd, excluded_wells=[1], shift=1, normalize=False, diff
     nd.get_all_valid_lick_ids(session, start_well=1,shift=shift)
     nd = session.add_lick_data_to_session_and_net_data(nd=nd)
     licks = session.licks
-    for i, lick in enumerate(licks):
-        if lick.lickwell!=1:
-            pass
-            # lick.lickwell = random.randint(2,5)
-        else:
-            if i>=2:
-                print(licks[i].lick_id,",",licks[i-2].lickwell)
+    # for i, lick in enumerate(licks):
+    #     if lick.lickwell!=1:
+    #         pass
+    #         # lick.lickwell = random.randint(2,5)
+    #     else:
+    #         if i>=2:
+    #             print(licks[i].lick_id,",",licks[i-2].lickwell)
     filtered_licks = []
     filtered_next_wells = []
     # create list of valid licks

@@ -36,6 +36,7 @@ if __name__ == '__main__':
         early_stopping=False,
         model_path=MODEL_PATH,
         raw_data_path=RAW_DATA_PATH,
+        filtered_data_path=FILTERED_DATA_PATH,
         k_cross_validation = 10,
         from_raw_data=True
     )

@@ -217,7 +217,7 @@ def cross_validate_lickwell_data(metrics, epoch, licks, nd):
             guesses_by_id[lick_id - 1] += 1
             if guess.guess_is_correct is True:
                 correct_guesses_by_id[lick_id - 1] += 1
-
+    all_guesses_c = all_guesses
     all_guesses = [a for li in all_guesses for a in li]  # flatten all_guesses
 
     # find the most frequently predicted well sorted by id
@@ -251,7 +251,7 @@ def cross_validate_lickwell_data(metrics, epoch, licks, nd):
                                             total_decoded=guesses_by_id[lick.lick_id - 1], phase=lick.phase,
                                             next_phase=lick.next_phase, last_phase=lick.last_phase)
             return_list.append(evaluated_lick)
-    return return_list
+    return return_list,all_guesses_c
 
 
 def get_lickwell_accuracy(metrics_average):
@@ -715,25 +715,49 @@ class Lick_id_details:
 def fraction_decoded_in_array(filter_func, array):
     return np.sum(filter_func * array) / np.sum(filter_func)
 
+def return_guesses_by_lick_id(lick_id_details,all_guesses):
+    lick_ids = [lick.lick_id for lick in lick_id_details.licks]
+    all_guesses_by_id = []
+    all_guesses = [a for li in all_guesses for a in li] # flatten all_guesses
+    for lick_id in lick_ids:
+        all_guesses_id = []
+        for guess in all_guesses:
+            if guess.lick_id == lick_id:
+                if guess.guess_is_correct is True:
+                    all_guesses_id.append(1)
+                else:
+                    all_guesses_id.append(0)
+        all_guesses_by_id.append(all_guesses_id)
+    return all_guesses_by_id
 
-def return_fraction_decoded_and_std(lick_id_details, lick_id_details_k):
+
+def return_fraction_decoded_and_std(lick_id_details, lick_id_details_k,all_guesses_by_id):
     fraction_decoded = fraction_decoded_in_array(lick_id_details.filter,
-                                                 lick_id_details.licks_decoded)
-    fraction_decoded_by_cvs = []
-    weights = []
-    for i, detail in enumerate(lick_id_details_k):
-        filter_func = detail.filter
-        weight = np.sum(filter_func)
-        if weight != 0:  # catch cases where no samples are in cross validation step validation data
-            fraction_decoded_by_cvs.append(fraction_decoded_in_array(filter_func, detail.licks_decoded))
-            weights.append(weight)
-    values = np.array(fraction_decoded_by_cvs)
-    average = np.average(values, weights=weights)
-    variance = np.average((values - average) ** 2, weights=weights)
-    std_well = np.sqrt(variance)
-    # std_well = np.std(np.array(fraction_decoded_by_cvs)) # unweighted standard deviation for error bars, currently not used
+                                                 lick_id_details.fraction_decoded) # TODO licks_decoded?
 
-    return fraction_decoded, std_well
+    std_lick = []
+    for i,guesses in enumerate(all_guesses_by_id):
+        if lick_id_details.filter[i]==1: #ignores invalid licks
+            average = np.average(guesses)
+            values = np.array(guesses)
+            variance = np.average((values-average)**2)
+            std_lick.append(np.sqrt(variance))
+
+    # fraction_decoded_by_cvs = []
+    # weights = []
+    # for i, detail in enumerate(lick_id_details_k):
+    #     filter_func = detail.filter
+    #     weight = np.sum(filter_func)
+    #     if weight != 0:  # catch cases where no samples are in cross validation step validation data
+    #         fraction_decoded_by_cvs.append(fraction_decoded_in_array(filter_func, detail.licks_decoded))
+    #         weights.append(weight)
+    # values = np.array(fraction_decoded_by_cvs)
+    # average = np.average(values, weights=weights)
+    # variance = np.average((values - average) ** 2, weights=weights)
+    # std_well = np.sqrt(variance)
+    # # std_well = np.std(np.array(fraction_decoded_by_cvs)) # unweighted standard deviation for error bars, currently not used
+    std_avg = np.average(std_lick)
+    return fraction_decoded, std_avg
 
 
 def return_fraction_decoded_and_std_by_well(lick_id_details, lick_id_details_k, next_well):
@@ -756,16 +780,67 @@ def return_fraction_decoded_and_std_by_well(lick_id_details, lick_id_details_k, 
 
     return fraction_decoded_well_n, std_well
 
+def plot_accuracy_inside_phase(path,shift,title,save_path,color="darkviolet"):
+
+    # load accuracy data
+
+    metrics = load_pickle(path + "metrics_timeshift=" + str(shift) + ".pkl")
+
+    # plot chart
+    sample_counter = np.zeros(1000)
+    bin_values = []
+    accuracy_sum = np.zeros(1000)
+    position = 0
+    current_phase = metrics[0].phase
+    for i,lick in enumerate(metrics):
+        sample_counter[position]+=1
+        bin_values.append(position)
+        accuracy_sum[position] += lick.fraction_decoded
+        position+=1
+        if lick.phase!=current_phase: # new phase
+            current_phase = lick.phase
+            position = 0
+
+    # remove trailing zeros and normalize phase
+    sample_counter = np.trim_zeros(sample_counter, 'b')
+    accuracy_sum = np.trim_zeros(accuracy_sum,'b')
+
+    y = np.divide(accuracy_sum,sample_counter)
+    fig, ax = plt.subplots()
+    fontsize=12
+    x = np.arange(0,len(y))
+    ax.plot(x, y, label='average', color=color,marker='.',linestyle="None") #,linestyle="None"
+    ax.legend()
+    ax.grid(c='k', ls='-', alpha=0.3)
+    ax.set_xlabel("Number of visits of well 1 inside phase")
+    ax.set_ylabel("Average fraction of samples decoded correctly")
+    ax.set_title(title)
+    ax_b = ax.twinx()
+    ax_b.set_ylabel("Phases with number of visits")
+    z = np.arange(0,12)
+    ax_b.hist(bin_values, bins=z, facecolor='g', alpha=0.2)
+    # plt.show()
+    plt.savefig(save_path)
+
+    pass
+
+def return_sample_count_by_lick_id(lick_id_details_k):
+    lick_ids = [[lick.lick_id for lick in detail.licks] for detail in lick_id_details_k]
+    total_decoded = [[lick.total_decoded for lick in detail.licks] for detail in lick_id_details_k]
+    unique,counts = np.unique(lick_ids, return_counts=True)
+
+    asd = np.sum(lick_id_details_k,axis=0)
+    pass
 
 
-def plot_performance_comparison(path_1,shift_1,path_2,shift_2,title_1,title_2,save_path,barcolor="darkviolet"):
-
+def plot_performance_comparison(path_1,shift_1,path_2,shift_2,title_1,title_2,save_path,barcolor="darkviolet",add_trial_numbers=False):
     # load fraction and std data
 
-    lick_id_details_1,lick_id_details_k_1 = get_metric_details(path_1, shift_1)
-    x_1, std_1 = get_accuracy_for_comparison(lick_id_details_1,lick_id_details_k_1)
-    lick_id_details_2,lick_id_details_k_2 = get_metric_details(path_2, shift_2)
-    x_2, std_2 = get_accuracy_for_comparison(lick_id_details_2, lick_id_details_k_2)
+    lick_id_details_1,lick_id_details_k_1,all_guesses_by_id_1 = get_metric_details(path_1, shift_1)
+    # return_sample_count_by_lick_id(lick_id_details_k_1)
+    x_1, std_1 = get_accuracy_for_comparison(lick_id_details_1,lick_id_details_k_1,all_guesses_by_id_1)
+    lick_id_details_2,lick_id_details_k_2,all_guesses_by_id_2 = get_metric_details(path_2, shift_2)
+    x_2, std_2 = get_accuracy_for_comparison(lick_id_details_2, lick_id_details_k_2,all_guesses_by_id_2)
     std_lower_1,std_upper_1 = get_corrected_std(x_1,std_1)
     std_lower_2,std_upper_2 = get_corrected_std(x_2,std_2)
 
@@ -790,49 +865,59 @@ def plot_performance_comparison(path_1,shift_1,path_2,shift_2,title_1,title_2,sa
     ax_b1.set_ylim(0, 1)
     ax1.set_title(title_1)
     ax1.set_ylabel("fraction decoded correctly",fontsize=fontsize)
+    if add_trial_numbers is True:
+        for i, j in zip(ind, x_1):
+            ax1.annotate(int(x_1[i]), xy=(i+0.05, j+0.05))
+
     ax2.bar(ind, x_2, color=barcolor, yerr=[std_lower_2, std_upper_2], error_kw=error_kw, align='center')
     ax2.set_xticks(ind)
     ax2.set_xticklabels(['all licks', 'target correct', 'target false', 'prior switch','after switch'])
     ax_b2.set_ylim(0, 1)
     ax2.set_title(title_2)
     ax2.set_ylabel("fraction decoded correctly",fontsize=fontsize)
+    if add_trial_numbers is True:
+        for i, j in zip(ind, x_2):
+            ax2.annotate(int(x_2[i]), xy=(i+0.05, j+0.05))
+
     plt.tight_layout(pad=0.1, w_pad=0.5, h_pad=0)
     plt.savefig(save_path)
-
+    plt.show()
     pass
 
-def get_accuracy_for_comparison(lick_id_details, lick_id_details_k):
+
+
+def get_accuracy_for_comparison(lick_id_details, lick_id_details_k,all_guesses_by_id):
     # fraction decoded in all licks
     fractions_decoded_all, std_all = return_fraction_decoded_and_std(lick_id_details=lick_id_details,
-                                                                     lick_id_details_k=lick_id_details_k)
+                                                                     lick_id_details_k=lick_id_details_k,all_guesses_by_id=all_guesses_by_id)
 
     # fraction decoded if target lick is correct
     lick_id_details.filter = lick_id_details.target_lick_correct
     for i, li in enumerate(lick_id_details_k):
         lick_id_details_k[i].filter = li.target_lick_correct
     fractions_decoded_target_correct, std_target_correct = return_fraction_decoded_and_std(
-        lick_id_details=lick_id_details, lick_id_details_k=lick_id_details_k)
+        lick_id_details=lick_id_details, lick_id_details_k=lick_id_details_k,all_guesses_by_id=all_guesses_by_id)
 
     # fraction decoded if target lick is false
     lick_id_details.filter = lick_id_details.target_lick_false
     for i, li in enumerate(lick_id_details_k):
         lick_id_details_k[i].filter = li.target_lick_false
     fractions_decoded_target_false, std_target_false = return_fraction_decoded_and_std(lick_id_details=lick_id_details,
-                                                                                       lick_id_details_k=lick_id_details_k)
+                                                                                       lick_id_details_k=lick_id_details_k,all_guesses_by_id=all_guesses_by_id)
 
     # fraction decoded in licks prior to a switch
     lick_id_details.filter = lick_id_details.licks_prior_to_switch
     for i, li in enumerate(lick_id_details_k):
         lick_id_details_k[i].filter = li.licks_prior_to_switch
     fractions_decoded_licks_prior_to_switch, std_licks_prior_to_switch = return_fraction_decoded_and_std(
-        lick_id_details=lick_id_details, lick_id_details_k=lick_id_details_k)
+        lick_id_details=lick_id_details, lick_id_details_k=lick_id_details_k,all_guesses_by_id=all_guesses_by_id)
 
     # fraction decoded in licks after a switch
     lick_id_details.filter = lick_id_details.licks_after_switch
     for i, li in enumerate(lick_id_details_k):
         lick_id_details_k[i].filter = li.licks_after_switch
     fractions_decoded_licks_after_switch, std_licks_after_switch = return_fraction_decoded_and_std(
-        lick_id_details=lick_id_details, lick_id_details_k=lick_id_details_k)
+        lick_id_details=lick_id_details, lick_id_details_k=lick_id_details_k,all_guesses_by_id=all_guesses_by_id)
 
     fra_list = [fractions_decoded_all, fractions_decoded_target_correct, fractions_decoded_target_false,
                 fractions_decoded_licks_prior_to_switch, fractions_decoded_licks_after_switch]
@@ -860,7 +945,7 @@ def get_corrected_std(bar_values,std_well):
             std_lower.append(bar_values[i])
     return std_lower,std_upper
 
-def plot_lickwell_performance_comparison(lick_id_details, lick_id_details_k,savepath):
+def plot_lickwell_performance_comparison(lick_id_details, lick_id_details_k,all_guesses_k,savepath):
 
     fractions_decoded_2, std_2 = return_fraction_decoded_and_std_by_well(lick_id_details=lick_id_details,
                                                                              lick_id_details_k=lick_id_details_k,
@@ -908,6 +993,7 @@ def get_metric_details(path,timeshift):
     metrics_k = load_pickle(path + "metrics_k_timeshift=" + str(timeshift) + ".pkl")
     nd = load_pickle(path + "nd_timeshift=" + str(timeshift) + ".pkl")
     licks = load_pickle(path + "licks_timeshift=" + str(timeshift) + ".pkl")
+    all_guesses_k = load_pickle(path + "all_guesses_timeshift=" + str(timeshift) + ".pkl")
     lick_id_details = Lick_id_details()
     lick_id_details.from_metrics(nd=nd, metrics=metrics, timeshift=timeshift, licks=licks)
     lick_id_details_k = []
@@ -915,16 +1001,18 @@ def get_metric_details(path,timeshift):
         obj = Lick_id_details()
         obj.from_metrics(nd=nd, metrics=metric, timeshift=timeshift, licks=licks)
         lick_id_details_k.append(obj)
-    return lick_id_details,lick_id_details_k
+    all_guesses_by_id = return_guesses_by_lick_id(lick_id_details,all_guesses_k)
+    return lick_id_details,lick_id_details_k,all_guesses_by_id
 
 
 def plot_metric_details_by_lickwell(path, timeshift,savepath):
-    lick_id_details, lick_id_details_k = get_metric_details(path,timeshift)
-    plot_lickwell_performance_comparison(lick_id_details, lick_id_details_k,savepath)
+    lick_id_details, lick_id_details_k,all_guesses_k = get_metric_details(path,timeshift)
+    plot_lickwell_performance_comparison(lick_id_details, lick_id_details_k,all_guesses_k,savepath)
     pass
 
 
 def print_metric_details(path, timeshift):
+    path = path + "output/"
     # Create binary arrays for licks corresponding to each inspected filter
     metrics = load_pickle(path + "metrics_timeshift=" + str(timeshift) + ".pkl")
     nd = load_pickle(path + "nd_timeshift=" + str(timeshift) + ".pkl")
