@@ -1,6 +1,6 @@
 from dotmap import DotMap as Map
 import tensorflow as tf
-
+# Contains preset network structures
 
 INP_SIZE, OUT_SIZE = 10, 2
 
@@ -13,6 +13,9 @@ network_1.conv2.strides = [5, 5]
 network_1.fc1.out_units = 100
 network_1.fc1.out_units = 5
 
+
+
+# Position decoding
 
 mlp = Map()
 mlp.fc1 = Map()
@@ -30,13 +33,7 @@ mlp.reshape.shape = [None, 80, 30, 1]
 mlp.loss_type = "sigmoid_cross_entropy"
 mlp.optimizer = tf.train.AdamOptimizer(0.0005, epsilon=1e-14)
 
-
-
-
-
-
-
-
+# Well decoding
 
 mlp_discrete = Map()
 mlp_discrete.fc1 = Map()
@@ -52,5 +49,4 @@ mlp_discrete.reshape = Map()
 mlp_discrete.reshape.shape = [None, 5]
 mlp_discrete.loss_type = "sigmoid_cross_entropy"
 mlp_discrete.optimizer = tf.train.AdamOptimizer(0.0005, epsilon=1e-14)
-# mlp_discrete.optimizer = tf.train.GradientDescentOptimizer(0.005)
 

@@ -11,15 +11,15 @@ if __name__ == '__main__':
     path_1 = model_path_list[0] + "output/"
     path_2 =model_path_list[1] + "output/"
     save_path = path + "compare_hc_pfc_phase_next.png"
-    plot_performance_comparison(path_1, 1, path_2, 1, "Prefrontal Cortex accuracy", "Hippocampus accuracy", save_path, barcolor)
+    plot_performance_comparison(path_1, 1, path_2, 1, "Prefrontal Cortex accuracy", "Hippocampus accuracy", save_path, barcolor,add_trial_numbers=True)
     save_path = path + "compare_hc_pfc_phase_last.png"
-    plot_performance_comparison(path_1, -1, path_2, -1, "Prefrontal Cortex accuracy", "Hippocampus accuracy", save_path, barcolor)
+    plot_performance_comparison(path_1, -1, path_2, -1, "Prefrontal Cortex accuracy", "Hippocampus accuracy", save_path, barcolor,add_trial_numbers=True)
 
     # regular data set
 
     path_1 = model_path_list[2] + "output/"
     path_2 =model_path_list[3] + "output/"
     save_path = path + "compare_hc_pfc_next.png"
-    plot_performance_comparison(path_1, 1, path_2, 1, "Prefrontal Cortex accuracy", "Hippocampus accuracy", save_path, barcolor)
+    plot_performance_comparison(path_1, 1, path_2, 1, "Prefrontal Cortex accuracy", "Hippocampus accuracy", save_path, barcolor,add_trial_numbers=True)
     save_path = path + "compare_hc_pfc_last.png"
-    plot_performance_comparison(path_1, -1, path_2, -1, "Prefrontal Cortex accuracy", "Hippocampus accuracy", save_path, barcolor)
+    plot_performance_comparison(path_1, -1, path_2, -1, "Prefrontal Cortex accuracy", "Hippocampus accuracy", save_path, barcolor,add_trial_numbers=True)

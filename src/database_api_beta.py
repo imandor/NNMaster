@@ -17,6 +17,10 @@ well_to_color = {0: "#ff0000", 1: "#669900", 2: "#0066cc", 3: "#cc33ff", 4: "#00
 
 
 def hann(x):
+    """
+    :param x:
+    :return: hann filter of input
+    """
     if np.abs(x) < 1:
         return (1 + np.cos(x * np.pi)) / 2
     else:
@@ -24,6 +28,11 @@ def hann(x):
 
 
 def bin(x):
+    """
+
+    :param x:
+    :return: bin filter of input
+    """
     if np.abs(x) < 1:
         return 1
     else:
@@ -31,6 +40,7 @@ def bin(x):
 
 
 class Filter:
+    # object for convolving input data
     def __init__(self, func, search_radius, step_size):
         self._func = func
         self.search_radius = search_radius
@@ -72,8 +82,7 @@ bin_50_50 = Filter(bin, 50, 50)
 bin_50_25 = Filter(bin, 50, 25)
 
 
-def _convolve_thread_func(filter_func, n_bin_points, neuron_counter, n_neurons, neuron_spikes):
-    # print("Convolving neuron ",neuron_counter, " of ", n_neurons,"...")
+def _convolve_thread_func(filter_func, n_bin_points, neuron_spikes):
     curr_search_window_min_bound = - filter_func.search_radius
     curr_search_window_max_bound = + filter_func.search_radius
     filtered_spikes = np.zeros(n_bin_points)
@@ -87,22 +96,20 @@ def _convolve_thread_func(filter_func, n_bin_points, neuron_counter, n_neurons, 
         curr_search_window_max_bound += filter_func.step_size
         if len(curr_spikes_in_search_window) == 0:
             continue
-        # filtered_spikes[index] = (np.average(curr_spikes_in_search_window) - np.average(
-        #     [curr_search_window_min_bound, curr_search_window_max_bound])) / len(curr_spikes_in_search_window)
         filtered_spikes[index] = sum(map(
             lambda x: filter_func((x - index * filter_func.step_size) / filter_func.search_radius),
             curr_spikes_in_search_window))
         for spike_index, spike in enumerate(neuron_spikes[
-                                            index_first_spike_in_window:index_first_spike_in_window + curr_search_window_max_bound]):  # upper bound because a maximum of 1 spike per ms can occurr and runtime of slice operation is O(i2-i1)
+index_first_spike_in_window:index_first_spike_in_window + curr_search_window_max_bound]):
+            # upper bound because a maximum of 1 spike per ms can occurr and runtime of slice operation is O(i2-i1)
             if spike >= curr_search_window_min_bound:
                 index_first_spike_in_window = index_first_spike_in_window + spike_index
                 break
-
-    # print("Finished convolving neuron ",neuron_counter, " of ", n_neurons,"...")
     return filtered_spikes
 
 
 class Lick():
+    # object describes a lick-event from session data
     def __init__(self, lickwell, time, rewarded, lick_id, target=None, next_phase=None, last_phase=None, phase=None):
         self.time = time
         self.lickwell = lickwell
@@ -114,7 +121,9 @@ class Lick():
         self.phase = phase
 
 
-class Evaluated_Lick(Lick):  # object containing list of metrics by cross validation partition
+class Evaluated_Lick(Lick):
+    # contains additional metrics regarding each lick event after the network finished training. Should only appear
+    # inside output files (but not inside slice objects)
     def __init__(self, lickwell, time, rewarded, lick_id, phase, next_phase, last_phase, prediction=None,
                  next_lick_id=None, last_lick_id=None,
                  fraction_decoded=None, total_decoded=None, target=None, fraction_predicted=None, ):
@@ -129,55 +138,57 @@ class Evaluated_Lick(Lick):  # object containing list of metrics by cross valida
 
 
 class Net_data:
+    # contains all data necessary for training the network. Unlike session data, this data is mutable during runtime
+    # and contains information not directly related to raw session data. Kept separate, since session data is usually very large
+    # and usually only needs to be created once while the neural network specifics often change depending on the study
     WIN_SIZE = 100
     SEARCH_RADIUS = WIN_SIZE * 2
-
     def __init__(self,
-                 model_path,
-                 raw_data_path,
-                 filtered_data_path=None,
-                 stride=100,
-                 y_slice_size=100,
-                 network_type="MLP",
-                 epochs=20,
-                 network_shape = 10,
-                 from_raw_data=True,
-                 evaluate_training=False,
-                 session_filter=Filter(func=hann, search_radius=SEARCH_RADIUS, step_size=WIN_SIZE),
-                 time_shift_steps=1,
-                 shuffle_data=True,
-                 shuffle_factor=500,
-                 time_shift_iter=200,
-                 initial_timeshift=0,
-                 metric_iter=1,
-                 batch_size=50,
-                 slice_size=1000,
-                 x_max=240,
-                 y_max=190,
-                 x_min=0,
-                 y_min=100,
-                 x_step=3,
-                 y_step=3,
-                 win_size=WIN_SIZE,
-                 early_stopping=False,
-                 search_radius=SEARCH_RADIUS,
-                 naive_test=False,
-                 valid_ratio=0.1,
-                 testing_ratio=0.1,
-                 k_cross_validation=1,
-                 load_model=False,
-                 train_model=True,
-                 keep_neuron=-1,
-                 neurons_kept_factor=1.0,
-                 lw_classifications=None,
-                 lw_normalize=False,
-                 lw_differentiate_false_licks=True,
-                 num_wells=5,
-                 metric="map",
-                 valid_licks=None,
-                 filter_tetrodes=None,
-                 phases=None,
-                 phase_change_ids=None
+                 model_path, # where trained network is saved to
+                 raw_data_path, # where session data set(for Slice object) is saved
+                 filtered_data_path=None, # where slice object for session is saved
+                 stride=100, # stride [ms]with which output samples are generated (making it smaller than y_slice_size creates overlapping samples)
+                 y_slice_size=100, # size of each output sample in [ms]
+                 network_type="MLP", # originally multiple network types were tested. This is a descriptor for easier recognition of network type in file data
+                 epochs=20, # how many epochs the network is trained
+                 network_shape = 10, # currently not used, originally showed how many samples are in each batch
+                 from_raw_data=True,# if True, loads session from raw data path, if False loads session from filtered data path (which is much faster)
+                 evaluate_training=False, # if set to True, the network evaluates training performance at runtime (slows down training)
+                 session_filter=Filter(func=hann, search_radius=SEARCH_RADIUS, step_size=WIN_SIZE), # filter function with which to convolve raw data
+                 time_shift_steps=1,# after each step, the network resets with new timeshift and reassigns new ys depending on the current timeshift. Determines how many steps are performed at runtime (see time_shift_iter)
+                 shuffle_data=True, # if data is to be shuffled before assigning to training and testing (see shuffle-factor parameter)
+                 shuffle_factor=500, # shuffling occurs batch-wise (to minimize overlap if stride is lower than y_slice_size). Indicates how many samples are to be shuffled in a batch.
+                 time_shift_iter=500,# determines, how much the time is shifted after each time_shift_step
+                 initial_timeshift=0, # initial time_shift for position decoding. For well-decoding, I appropiated this parameter to determine if the previous or next well is to be decoded (sorry). +1 indicates next well, -1 previous well
+                 metric_iter=1, # after how many epochs the network performance is to be evaluated
+                 batch_size=50, # how many samples are to be given into the network at once (google batch_size)
+                 slice_size=1000, # how many [ms] of neural spike data are in each sample
+                 x_max=240, # determines shape of the track the rat is located on [cm]
+                 y_max=190,# determines shape of the track the rat is located on [cm]
+                 x_min=0,# determines shape of the track the rat is located on [cm]
+                 y_min=100,# determines shape of the track the rat is located on [cm]
+                 x_step=3,# determines, what shape the position bins for the samples are [cm] (3*3cm per bin default)
+                 y_step=3,# determines, what shape the position bins for the samples are [cm] (3*3cm per bin default)
+                 win_size=WIN_SIZE, # size of convolution window for filter function
+                 early_stopping=False, # if True, checks if network performance degrades after a certain amount of steps (see network) and stops training early if yes
+                 search_radius=SEARCH_RADIUS, # size of search radius for filter function
+                 naive_test=False, # if True, doesn't reassign y_values after each time_shift step. Necessary to determine what part of the network performance is due to similarities between different time_shift step neural data
+                 valid_ratio=0.1, # ratio between training and validation data
+                 testing_ratio=0.1, # ration between training and testing data
+                 k_cross_validation=1, # if more than 1, the data is split into k different sets and results are averaged over all set-performances
+                 load_model=False, # if True, the saved model is loaded for training instead of a new one. Is set to True if naive testing is True and time-shift is != 0
+                 train_model=True, # if True, the model is not trained during runtime. Is set to True if naive testing is True and time-shift is != 0
+                 keep_neuron=-1, # TODO not sure what this was supposed to do
+                 neurons_kept_factor=1.0, # if less than one, a corresponding fraction of neurons are randomly removed from session before training
+                 lw_classifications=None, # for well decoding: how many classes exist
+                 lw_normalize=False, # lickwell_data: if True, training and validation data is normalized (complex rules)
+                 lw_differentiate_false_licks=False, # Not used anymore due to too small sample sizes and should currently give an error if True. if True, the network specifically trains to distinguish between correct and false licks. Should work with minimal code editing if ever necessary to implement
+                 num_wells=5, # number of lickwells in data set. Really only in object because of lw_differentiate_false_licks, but there is no reason to remove it either
+                 metric="map", # with what metric the network is to be evaluated (depending on study)
+                 valid_licks=None, # List of licks which are valid for well-decoding study
+                 filter_tetrodes=None, # removes tetrodes from raw session data before creating slice object. Useful if some of the tetrodes are e.g. hippocampal and others for pfc
+                 phases=None,# contains list of training phases
+                 phase_change_ids=None # contains list of phase change lick_ids
                  ):
         self.session_from_raw = from_raw_data
         self.network_shape=network_shape
@@ -482,8 +493,7 @@ class Slice:
         self.filtered_spikes = np.zeros((len(self.spikes), n_bin_points))
         with ThreadPool(processes=1) as p:
             ret = p.starmap(_convolve_thread_func,
-                            zip(repeat(self._filter), repeat(n_bin_points), range(0, len(self.spikes)),
-                                repeat(len(self.spikes)), self.spikes))
+                            zip(repeat(self._filter), repeat(n_bin_points), self.spikes))
             for i, r in enumerate(ret):
                 self.filtered_spikes[i] = r
 
