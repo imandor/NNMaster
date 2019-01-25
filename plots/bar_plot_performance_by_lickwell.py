@@ -1,4 +1,5 @@
-from src.metrics import plot_metric_details_by_lickwell
+from src.plots import plot_metric_details_by_lickwell
+
 if __name__ == '__main__':
 
 

@@ -204,7 +204,7 @@ class Net_data:
         self.shuffle_factor = shuffle_factor
         self.time_shift_iter = time_shift_iter
         self.model_path = model_path
-        self.learning_rate = "placeholder"  # TODO
+        self.learning_rate = "placeholder"  # can be added if seen as necessary
         self.initial_timeshift = initial_timeshift
         self.metric_iter = metric_iter
         self.batch_size = batch_size
@@ -269,7 +269,6 @@ class Net_data:
 
     def get_all_valid_lick_ids(self, session, start_well=1, shift=1):
         """
-
         :param session: session object
         :param start_well: dominant well in training phase (usually well 1)
         :return: a list of lick_ids of licks corresponding to filter
@@ -282,17 +281,22 @@ class Net_data:
                 next_well = licks[i + 1].lickwell
                 if well == start_well and next_well != start_well:
                     filtered_licks.append(lick.lick_id)
-
         else:
             for i, lick in enumerate(licks[1:-1]):
                 well = lick.lickwell
                 next_well = licks[i - 1].lickwell
                 if well == start_well and next_well != start_well:
                     filtered_licks.append(lick.lick_id)
-
         self.valid_licks = filtered_licks
 
     def assign_training_testing(self, X, y, k):
+        """
+
+        :param X: network input
+        :param y: network output
+        :param k: cross validation factor
+        :return: None. Assigns X_train, y_train, x_valid, y_valid, X_test_, y_test for self
+        """
         if self.k_cross_validation == 1:
             valid_length = int(len(X) * self.valid_ratio)
             self.X_train = X[valid_length:]
@@ -320,8 +324,17 @@ class Net_data:
                         self.X_valid[i][j] = np.zeros(self.X_valid[i][j].shape)
 
     def assign_training_testing_lickwell(self, X, y, k, excluded_wells=[1], normalize=False):
+        """
+
+        :param X: network input
+        :param y: network output
+        :param k: cross validation factor
+        :param excluded_wells: excludes target wells from being considered when assigning
+        :param normalize: if True, normalizes data
+        :return: Splits data in to training and testing, supports cross validation
+        """
         """"
-        Splits data in to training and testing, supports cross validation
+
         """
         valid_ratio = self.valid_ratio
         if self.k_cross_validation == 1:
@@ -348,9 +361,6 @@ class Net_data:
                 self.X_valid = self.X_valid + self.X_test
                 self.y_valid = self.y_valid + self.y_test
 
-            # print(np.sum(self.y_train, axis=0))
-            # print(np.sum(self.y_valid, axis=0))
-
             if normalize is True:
                 self.X_train, self.y_train = self.normalize_discrete(self.X_train, self.y_train,
                                                                      excluded_wells=excluded_wells)
@@ -359,20 +369,16 @@ class Net_data:
                 for j in range(len(self.X_valid[0])):
                     if j != self.keep_neuron:
                         self.X_valid[i][j] = np.zeros(self.X_valid[i][j].shape)
-        # print(np.sum(self.y_train, axis=0))
-        # print(np.sum(self.y_valid, axis=0))
-        # print("fin")
+
 
     def normalize_discrete(self, x, y, excluded_wells=[]):
         """
-        :param x:
-        :param y:
-        :param nd:
-        :param excluded_wells: list of wells which aren't included in the normalization. Useful ie if well 1 licks are over/underrepresented
-        :return:
+        :param x: network input
+        :param y: network output
+        :param excluded_wells: list of wells which aren't included in the normalization. Useful ie if well 2 licks are over/underrepresented
+        :return: artificially increases the amount of underrepresented samples. Note that the samples are shuffled, so overlaps will also be mixed in randomly
         """
         seed(1)
-        """ artificially increases the amount of underrepresented samples. Note that the samples are shuffled, so overlaps will also be mixed in randomly"""
         x_return = x.copy()
         y_return = y.copy()
         x_new = x.copy()
@@ -391,6 +397,14 @@ class Net_data:
         return self.filter_overrepresentation_discrete(x_return, y_return, min(counts), excluded_wells)
 
     def filter_overrepresentation_discrete(self, x, y, max_occurrences, excluded_wells):
+        """
+
+        :param x: network input
+        :param y: network output
+        :param max_occurrences: maximum occurrences
+        :param excluded_wells: excludes wells from being considered
+        :return: randomly removes input and output samples exceeding the count of max_occurrences
+        """
         x_return = []
         y_return = []
         y = np.array(y)
@@ -404,7 +418,9 @@ class Net_data:
         return x_return, y_return
 
     def plot_validation_position_histogram(self,k):
-
+        """
+        creates and saves a 2d histogram which shows the positions in validation data set
+        """
         fig, ax = plt.subplots()
         pos_sum = np.sum(self.y_valid,axis=0)
         x = []
@@ -424,18 +440,21 @@ class Net_data:
         plt.savefig("C:/Users/NN/Desktop/Master/experiments/Histogram of positions/_"+str(k))
 
 class Slice:
+    """
+    Represents session object. Should not be changed at runtime aside from if convolving spike data. Should be saved to file to save execution time and can be loaded from file with setting from_raw_data command in Net_data object
+    """
     def __init__(self, spikes, licks, position_x, position_y, speed, trial_timestamp):
-        self.spikes = spikes
-        self.n_neurons = len(self.spikes)
-        self.licks = licks
+        self.spikes = spikes # contains neural spike data in [ms]
+        self.n_neurons = len(self.spikes) # number of neurons
+        self.licks = licks # list of lick objects signifying lick-events
         if len(position_x) != len(position_y):
             raise ValueError("position_x and position_y must have the same length")
-        self.position_x = position_x
-        self.position_y = position_y
-        self.speed = speed
-        self.trial_timestamp = trial_timestamp
-        self.end_time = self.position_x.shape[0]
-        self.absolute_time_offset = 0
+        self.position_x = position_x # x axis position of the rat in [ms]
+        self.position_y = position_y# y axis position of the rat in [ms]
+        self.speed = speed # list of speeds of the rat in [cm/s] at each [ms] of the data set
+        self.trial_timestamp = trial_timestamp # list of times at which trials occurred
+        self.end_time = self.position_x.shape[0] # timestamp of last event
+        self.absolute_time_offset = 0 # offset of Slice relative to beginning of recording in [ms]
 
     def __str__(self):
         return str(self.__dict__)
@@ -447,12 +466,20 @@ class Slice:
                and self.trial_timestamp == other.trial_timestamp
 
     def set_filter(self, filter):
+        """
+
+        :param filter: convolution filter for spike data
+        :return: sets filter
+        """
         self._filter = filter
         self._convolve()
 
     def add_lick_data_to_session_and_net_data(self, nd):
+        """
 
-        # add target data
+        :param nd: Net-data Object. Necessary to add metadata and is returned altered
+        :return: adds metadata about licks to self and a returned Net_data object. Specifically phases, next phase, last phase, phase
+        """
         licks = self.licks
         shift = 1
         for i, lick in enumerate(licks):
@@ -486,6 +513,7 @@ class Slice:
         return nd
 
     def _convolve(self):
+        # convolves spike data with the preset filter function
         search_radius, step_size = self._filter.search_radius, self._filter.step_size
         if step_size > 2 * search_radius:
             raise ValueError("step_size must be inferior to search_radius")
@@ -514,8 +542,10 @@ class Slice:
 
 
     def plot_positions(self):
+        """
+        :return: shows a binary 2d histogram of each visited location
+        """
         fig, ax = plt.subplots()
-
         ax.set_title('Normalized histogram of visited locations')
         ax.hist2d(self.position_x, self.position_y,norm=colors.LogNorm(vmin=1, vmax=5000), bins=50,cmap="binary")
         ax.set_xlabel("x [cm]")
@@ -525,6 +555,9 @@ class Slice:
 
 
     def print_details(self):
+        """
+        :return: prints session data
+        """
         average_spikes_per_second = np.mean([len(x) for x in self.spikes]) * 1000 / len(self.position_x)
         session_length_in_minutes = len(self.position_x) / (1000 * 60)
         average_speed = np.average(self.speed)
@@ -593,6 +626,11 @@ class Slice:
         self.plot_trial_timestamps(ax2)
 
     def slice_spikes(self, time_slice):
+        """
+
+        :param time_slice:
+        :return: help function for slicing session
+        """
         new_spikes = []
         start = 0 if time_slice.start is None else time_slice.start
         stop = self.end_time if time_slice.stop is None else time_slice.stop
@@ -603,6 +641,12 @@ class Slice:
         return new_spikes
 
     def slice_list_of_licks(self, licks, time_slice):
+        """
+
+        :param licks:
+        :param time_slice:
+        :return: help function for slicing session
+        """
         if licks == []:
             return []
         start = 0 if time_slice.start is None else time_slice.start
@@ -621,6 +665,12 @@ class Slice:
         return ret
 
     def slice_list_of_dict(self, ld, time_slice):
+        """
+
+        :param ld:
+        :param time_slice:
+        :return: help function for slicing session
+        """
         if ld == []:
             return []
         start = 0 if time_slice.start is None else time_slice.start
@@ -642,6 +692,11 @@ class Slice:
         return ret
 
     def __getitem__(self, time_slice):
+        """
+
+        :param time_slice: slice object
+        :return: returns slice of session object (e.g. session[20:40] returns a slice of the session between 20 and 40 [ms]
+        """
         if not isinstance(time_slice, slice):
             raise TypeError("Key must be a slice, got {}".format(type(time_slice)))
         start = 0 if time_slice.start is None else time_slice.start
@@ -677,9 +732,9 @@ class Slice:
     def from_raw_data(cls, path, filter_tetrodes=None):
         """
 
-        :param path:
+        :param path: file path
         :param filter_tetrodes: list or range of tetrodes to be removed from session
-        :return:
+        :return: loads session from raw data set
         """
         print("start loading session")
         foster_path = glob.glob(path + "/*_fostertask.dat")[0]
@@ -784,10 +839,12 @@ class Slice:
 
     @classmethod
     def from_pickle(cls, path):
+        """ saves session to file"""
         with open(path, 'rb') as f:
             data = pickle.load(f)
             return data
 
     def to_pickle(self, path):
+        """ loads session from file"""
         with open(path, 'wb') as f:
             pickle.dump(self, f)

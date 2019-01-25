@@ -1,4 +1,5 @@
-from src.metrics import plot_performance_comparison
+from src.plots import plot_performance_comparison
+
 if __name__ == '__main__':
     barcolor = "darkred"
     path = "C:/Users/NN/Desktop/Master/experiments/Lickwell_prediction/"

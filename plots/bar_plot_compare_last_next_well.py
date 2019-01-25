@@ -1,4 +1,5 @@
-from src.metrics import plot_accuracy_inside_phase,plot_performance_comparison
+from src.plots import plot_accuracy_inside_phase, plot_performance_comparison
+
 if __name__ == '__main__':
 
 

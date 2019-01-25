@@ -1,18 +1,22 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import matplotlib
+
 from src.preprocessing import position_as_map
 from src.database_api_beta import Evaluated_Lick
-from src.settings import save_as_pickle, load_pickle
+from src.settings import load_pickle
 
 
-def get_r2(y_predicted, y_target, step_size):
+def get_r2(y_predicted, y_target):
+    """
+    :param y_predicted: list of predicted outputs
+    :param y_target: list of target outputs
+    :return: R2 score, format [R2_x-axis,R2_y-axis]
+    """
     R2_list = []
-    y_predicted = y_predicted * step_size
-    y_target = y_target * step_size
+    y_predicted = y_predicted
+    y_target = y_target
     for i in range(y_target.shape[1]):
         y_mean = np.mean(y_target[:, i])
-
         R2 = 1 - np.sum((y_predicted[:, i] - y_target[:, i]) ** 2) / np.sum((y_target[:, i] - y_mean) ** 2)
         R2_list.append(R2)
     R2_array = np.array(R2_list)
@@ -20,22 +24,48 @@ def get_r2(y_predicted, y_target, step_size):
 
 
 def get_distances(y_predicted, y_target, step_size):
+    """
+
+    :param y_predicted: list of predicted outputs
+    :param y_target: list of target outputs
+    :param step_size: length of output bins, format [len_x-bins,len_y-bins]
+    :return: list of distances in bins between all target and prediction bins
+    """
     return np.sqrt(np.square(step_size[0] * (y_predicted[:, 0] - y_target[:, 0])) + np.square(
         step_size[1] * (y_predicted[:, 1] - y_target[:, 1])))
 
 
 def get_avg_distance(y_predicted, y_target, step_size):
+    """
+    :param y_predicted: list of predicted outputs
+    :param y_target: list of target outputs
+    :param step_size: length of output bins, format [len_x-bins,len_y-bins]
+    :return: list of distances in bins between all target and prediction bins
+    """
     distance_list = get_distances(y_predicted, y_target, step_size)
     return np.average(distance_list, axis=0)
 
 
 def get_radius_accuracy(y_predicted, y_target, step_size, absolute_margin=0):
-    """ returns percentage of valid vs predicted with absolute distance <= margin in cm"""
+    """
+    :param y_predicted: list of predicted outputs
+    :param y_target: list of target outputs
+    :param step_size: length of output bins, format [len_x-bins,len_y-bins]
+    :return: returns percentage of valid vs predicted with absolute distance <= margin in cm
+    """
     distance_list = get_radius_distance_list(y_predicted, y_target, step_size, absolute_margin)
     return np.average(distance_list, axis=0)
 
 
 def get_radius_distance_list(y_predicted, y_target, step_size, absolute_margin=0):
+    """
+
+    :param y_predicted: list of predicted outputs
+    :param y_target: list of target outputs
+    :param step_size: length of output bins, format [len_x-bins,len_y-bins]
+    :param absolute_margin:
+    :return:
+    """
     return np.sqrt(np.square(step_size[0] * (y_predicted[:, 0] - y_target[:, 0])) + np.square(
         step_size[1] * (y_predicted[:, 1] - y_target[:, 1]))) <= absolute_margin
 
@@ -332,7 +362,7 @@ class Metric:  # object containing evaluation metrics for all epochs
             a.append(y[0])
             b.append(y_predicted[i][0])
         print("average position:", np.average(a), np.average(b))
-        r2 = get_r2(y_predicted, y_target, [nd.x_step, nd.y_step])  # r2 score
+        r2 = get_r2(y_predicted, y_target)  # r2 score
         ape = get_avg_distance(y_predicted, y_target, [nd.x_step, nd.y_step])  # absolute position error
         acc20 = get_radius_accuracy(y_predicted, y_target, [nd.x_step, nd.y_step], 20)  # accuracy 20
         self.r2_by_epoch.append(r2)
@@ -526,7 +556,8 @@ def logits_to_abs(logits, shift=0):
 
 class Lick_id_details:
     """
-    help class to make print_metric_details more readable
+    help class to make lickwell data print and plot easier to read. Contains list of evaluated lick objects and binary
+    arrays which indicate if the named parameter applies to each lick in the list
     """
 
     def __init__(self, licks=None, licks_decoded=None, licks_not_decoded=None, licks_prior_to_switch=None,
@@ -534,27 +565,29 @@ class Lick_id_details:
                  next_well_licked_2=None, next_well_licked_3=None, next_well_licked_4=None, next_well_licked_5=None,
                  next_phase_decoded=None, last_phase_decoded=None, next_lick_decoded=None, last_lick_decoded=None,
                  current_phase_decoded=None, fraction_decoded=None, fraction_predicted=None):
-        self.licks = licks
-        self.target_lick_correct = target_lick_correct
-        self.target_lick_false = target_lick_false
-        self.next_well_licked_2 = next_well_licked_2
-        self.next_well_licked_3 = next_well_licked_3
-        self.next_well_licked_4 = next_well_licked_4
-        self.next_well_licked_5 = next_well_licked_5
-        self.licks_prior_to_switch = licks_prior_to_switch
-        self.licks_after_switch = licks_after_switch
-        self.licks_decoded = licks_decoded
-        self.licks_not_decoded = licks_not_decoded
-        self.next_phase_decoded = next_phase_decoded
-        self.last_phase_decoded = last_phase_decoded
-        self.next_lick_decoded = next_lick_decoded
-        self.last_lick_decoded = last_lick_decoded
-        self.current_phase_decoded = current_phase_decoded
-        self.filter = filter
-        self.fraction_decoded = fraction_decoded
-        self.fraction_predicted = fraction_predicted
+        self.licks = licks  # list (of evaluated) licks
+        self.target_lick_correct = target_lick_correct  # binary array, 1 if the rat licked correctly at target well of lick in list
+        self.target_lick_false = target_lick_false  # 1 if said lick was false
+        self.next_well_licked_2 = next_well_licked_2  # 1 if next lick was at well 2
+        self.next_well_licked_3 = next_well_licked_3  # 1 if next lick was at well 3
+        self.next_well_licked_4 = next_well_licked_4  # 1 if next lick was at well 4
+        self.next_well_licked_5 = next_well_licked_5  # 1 if next lick was at well 5
+        self.licks_prior_to_switch = licks_prior_to_switch  # 1 if next lick in list is in a different phase
+        self.licks_after_switch = licks_after_switch  # 1 if last lick is in a different phase
+        self.licks_decoded = licks_decoded  # 1 if lick was decoded correctly
+        self.licks_not_decoded = licks_not_decoded  # 1 if lick was not decoded correctly
+        self.next_phase_decoded = next_phase_decoded  # 1 if prediction is identical to next phase
+        self.last_phase_decoded = last_phase_decoded  # 1 if prediction is identical to last phase
+        self.next_lick_decoded = next_lick_decoded  # 1 if prediction is identical to well after (or before) next (or last) lick in future (past) decoding
+        self.last_lick_decoded = last_lick_decoded  # s.o.
+        self.current_phase_decoded = current_phase_decoded  # 1 if prediction is identical to current phase
+        self.filter = filter  # active filter function, is multiplied with the other arrays to filter their output (ie.
+        # active filter is target_lick_correct, so self.next_well_licked_2*self.filter gives all correct target licks at well 2 as a new binary array
+        self.fraction_decoded = fraction_decoded  # fractional array, indicates which confidence the network has in its guess (what fraction of samples of lick were decoded with active prediction)
+        self.fraction_predicted = fraction_predicted  # fractional array, indicates what fraction of samples were decoded as the correct target
 
     def print_details(self):
+        # prints object details filtered with active filter in the format used in the lickwell_prediction excel file
         correct_licks = self.licks_decoded * self.filter
         false_licks = self.licks_not_decoded * self.filter
         licks = []
@@ -569,18 +602,6 @@ class Lick_id_details:
         next_lick_correct = self.next_lick_decoded * self.filter
         fraction_decoded = self.fraction_decoded * self.filter
         fraction_predicted = self.fraction_predicted * self.filter
-
-        # print("Licks in filter:",licks.shape[0])
-        # print("Correctly decoded:", np.sum(correct_licks))
-        # print("falsely decoded", np.sum(false_licks))
-        # print("fraction decoded", np.sum(correct_licks) / (np.sum(false_licks) + np.sum(correct_licks)))
-        # print("correctly predicted next phase",np.sum(next_phase_correct))
-        # print("correctly predicted last phase",np.sum(last_phase_correct))
-        # print("correctly predicted current phase",np.sum(current_phase_correct))
-        # print("correctly predicted lick after next lick",np.sum(next_lick_correct))
-        # print("correctly predicted last lick",np.sum(last_lick_correct))
-        # print("average fraction of samples decoded",np.average(fraction_decoded))
-        # print("average fraction of samples with correct well",np.average(fraction_predicted))
         print(licks.shape[0])
         print(np.sum(correct_licks))
         print(np.sum(false_licks))
@@ -595,6 +616,13 @@ class Lick_id_details:
         print(np.sum(fraction_predicted) / np.sum(self.filter))
 
     def from_metrics(self, nd, metrics, timeshift, licks):
+        """
+        :param nd: Net_data
+        :param metrics:
+        :param timeshift:
+        :param licks:
+        :return:
+        """
         licks_decoded = np.zeros(len(metrics))
         licks_not_decoded = np.zeros(len(metrics))
         licks_prior_to_switch = np.zeros(len(metrics))
@@ -702,6 +730,9 @@ class Lick_id_details:
         self.next_well_licked_5 = next_well_licked_5
 
     def get_next_well_licked_n(self, next_well):
+        """"
+        return: currently not used. Gives correct filter back
+        """
         if next_well == 2:
             return self.next_well_licked_2
         if next_well == 3:
@@ -710,218 +741,6 @@ class Lick_id_details:
             return self.next_well_licked_4
         if next_well == 5:
             return self.next_well_licked_5
-
-
-def fraction_decoded_in_array(filter_func, array):
-    return np.sum(filter_func * array) / np.sum(filter_func)
-
-
-def return_guesses_by_lick_id(lick_id_details, all_guesses):
-    lick_ids = [lick.lick_id for lick in lick_id_details.licks]
-    all_guesses_by_id = []
-    all_guesses = [a for li in all_guesses for a in li]  # flatten all_guesses
-    for lick_id in lick_ids:
-        all_guesses_id = []
-        for guess in all_guesses:
-            if guess.lick_id == lick_id:
-                if guess.guess_is_correct is True:
-                    all_guesses_id.append(1)
-                else:
-                    all_guesses_id.append(0)
-        all_guesses_by_id.append(all_guesses_id)
-    return all_guesses_by_id
-
-
-def return_fraction_decoded_and_std(lick_id_details):
-    fraction_decoded = fraction_decoded_in_array(lick_id_details.filter,
-                                                 lick_id_details.fraction_decoded)  # TODO licks_decoded?
-
-    # calculate number of samples in range
-    n = 0
-    for i, lick in enumerate(lick_id_details.licks):
-        if lick_id_details.filter[i] == 1:
-            n += lick.total_decoded
-
-    # calculate bernoulli standard deviation
-
-    std = np.sqrt(fraction_decoded * (1 - fraction_decoded) / n)
-    return fraction_decoded, std, n
-
-
-def plot_accuracy_inside_phase(path, shift, title, save_path, color="darkviolet"):
-    # load accuracy data
-
-    metrics = load_pickle(path + "metrics_timeshift=" + str(shift) + ".pkl")
-
-    # plot chart
-    sample_counter = np.zeros(1000)
-    bin_values = []
-    accuracy_sum = np.zeros(1000)
-    position = 0
-    current_phase = metrics[0].phase
-    for i, lick in enumerate(metrics):
-        sample_counter[position] += 1
-        bin_values.append(position)
-        accuracy_sum[position] += lick.fraction_decoded
-        position += 1
-        if lick.phase != current_phase:  # new phase
-            current_phase = lick.phase
-            position = 0
-
-    # remove trailing zeros and normalize phase
-    sample_counter = np.trim_zeros(sample_counter, 'b')
-    accuracy_sum = np.trim_zeros(accuracy_sum, 'b')
-
-    y = np.divide(accuracy_sum, sample_counter)
-    fig, ax = plt.subplots()
-    fontsize = 12
-    x = np.arange(0, len(y))
-    ax.plot(x, y, label='average', color=color, marker='.', linestyle="None")  # ,linestyle="None"
-    ax.legend()
-    ax.grid(c='k', ls='-', alpha=0.3)
-    ax.set_xlabel("Number of visits of well 1 inside phase")
-    ax.set_ylabel("Average fraction of samples decoded correctly")
-    ax.set_title(title)
-    ax_b = ax.twinx()
-    ax_b.set_ylabel("Phases with number of visits")
-    z = np.arange(0, 12)
-    ax_b.hist(bin_values, bins=z, facecolor='g', alpha=0.2)
-    # plt.show()
-    plt.savefig(save_path)
-
-    pass
-
-
-def return_sample_count_by_lick_id(lick_id_details_k):
-    lick_ids = [[lick.lick_id for lick in detail.licks] for detail in lick_id_details_k]
-    total_decoded = [[lick.total_decoded for lick in detail.licks] for detail in lick_id_details_k]
-    unique, counts = np.unique(lick_ids, return_counts=True)
-
-    asd = np.sum(lick_id_details_k, axis=0)
-    pass
-
-
-def plot_performance_comparison(path_1, shift_1, path_2, shift_2, title_1, title_2, save_path, barcolor="darkviolet",
-                                add_trial_numbers=False):
-    # load fraction and std data
-
-    lick_id_details_1, lick_id_details_k_1 = get_metric_details(path_1, shift_1)
-    # return_sample_count_by_lick_id(lick_id_details_k_1)
-    x_1, std_1, n_1 = get_accuracy_for_comparison(lick_id_details_1, lick_id_details_k_1)
-    lick_id_details_2, lick_id_details_k_2 = get_metric_details(path_2, shift_2)
-    x_2, std_2, n_2 = get_accuracy_for_comparison(lick_id_details_2, lick_id_details_k_2)
-    std_lower_1, std_upper_1 = get_corrected_std(x_1, std_1)
-    std_lower_2, std_upper_2 = get_corrected_std(x_2, std_2)
-
-    # plot bar charts
-
-    width = 0.75
-    fontsize = 12
-    font = {'family': 'normal',
-            'size': 12}
-    matplotlib.rc('font', **font)
-    matplotlib.rc('xtick', labelsize=fontsize - 3)
-
-    ind = np.arange(5)  # the x locations for the groups
-    fig, (ax1, ax2) = plt.subplots(2)
-    ax_b1 = ax1.twinx()
-    ax_b2 = ax2.twinx()
-    error_kw = {'capsize': 5, 'capthick': 1, 'ecolor': 'black'}
-    ax1.bar(ind, x_1, color=barcolor, yerr=[std_lower_1, std_upper_1], error_kw=error_kw, align='center')
-    ax1.set_xticks(ind)
-    ax1.set_xticklabels(['all licks', 'target correct', 'target false', 'prior switch', 'after switch'])
-    ax_b1.set_ylim(0, 1.2)
-    ax1.set_title(title_1)
-    ax1.set_ylabel("fraction decoded correctly", fontsize=fontsize)
-    if add_trial_numbers is True:
-        for i, j in zip(ind, x_1):
-            if j < 0.2:
-                offset = 0.1
-            else:
-                offset = -0.1
-            ax1.annotate(int(n_1[i]), xy=(i - 0.1, j + offset))
-
-    ax2.bar(ind, x_2, color=barcolor, yerr=[std_lower_2, std_upper_2], error_kw=error_kw, align='center')
-    ax2.set_xticks(ind)
-    ax2.set_xticklabels(['all licks', 'target correct', 'target false', 'prior switch', 'after switch'])
-    ax_b2.set_ylim(0, 1.2)
-    ax2.set_title(title_2)
-    ax2.set_ylabel("fraction decoded correctly", fontsize=fontsize)
-    if add_trial_numbers is True:
-        for i, j in zip(ind, x_2):
-            if j < 0.2:
-                offset = 0.1
-            else:
-                offset = -0.1
-            ax2.annotate(int(n_2[i]), xy=(i - 0.1, j + offset))
-
-    plt.tight_layout(pad=0.1, w_pad=0.5, h_pad=0)
-    plt.savefig(save_path)
-    pass
-
-
-def get_accuracy_for_comparison(lick_id_details, lick_id_details_k):
-    # fraction decoded in all licks
-    fractions_decoded_all, std_all, n_all = return_fraction_decoded_and_std(lick_id_details=lick_id_details)
-
-    # fraction decoded if target lick is correct
-    lick_id_details.filter = lick_id_details.target_lick_correct
-    for i, li in enumerate(lick_id_details_k):
-        lick_id_details_k[i].filter = li.target_lick_correct
-    fractions_decoded_target_correct, std_target_correct, n_target_correct = return_fraction_decoded_and_std(
-        lick_id_details=lick_id_details)
-
-    # fraction decoded if target lick is false
-    lick_id_details.filter = lick_id_details.target_lick_false
-    for i, li in enumerate(lick_id_details_k):
-        lick_id_details_k[i].filter = li.target_lick_false
-    fractions_decoded_target_false, std_target_false, n_target_false = return_fraction_decoded_and_std(
-        lick_id_details=lick_id_details)
-
-    # fraction decoded in licks prior to a switch
-    lick_id_details.filter = lick_id_details.licks_prior_to_switch
-    for i, li in enumerate(lick_id_details_k):
-        lick_id_details_k[i].filter = li.licks_prior_to_switch
-    fractions_decoded_licks_prior_to_switch, std_licks_prior_to_switch, n_licks_prior_to_switch = return_fraction_decoded_and_std(
-        lick_id_details=lick_id_details)
-
-    # fraction decoded in licks after a switch
-    lick_id_details.filter = lick_id_details.licks_after_switch
-    for i, li in enumerate(lick_id_details_k):
-        lick_id_details_k[i].filter = li.licks_after_switch
-    fractions_decoded_licks_after_switch, std_licks_after_switch, n_licks_after_switch = return_fraction_decoded_and_std(
-        lick_id_details=lick_id_details)
-
-    fra_list = [fractions_decoded_all, fractions_decoded_target_correct, fractions_decoded_target_false,
-                fractions_decoded_licks_prior_to_switch, fractions_decoded_licks_after_switch]
-    std_list = [std_all, std_target_correct, std_target_false,
-                std_licks_prior_to_switch, std_licks_after_switch]
-    n_list = [n_all, n_target_correct, n_target_false,
-              n_licks_prior_to_switch, n_licks_after_switch]
-    return fra_list, std_list, n_list
-
-
-def get_corrected_std(bar_values, std_well):
-    """
-    :param bar_values: list of fractional values for bar charts
-    :param std_well: list of corresponding standard deviations
-    :return: two standard deviation lists corrected for lower and upper limits 0 and 1 of bar values (so error bars don't go below 0 and above 1
-    """
-    std_lower = []
-    std_upper = []
-    for i, std in enumerate(std_well):
-        if std + bar_values[i] <= 1:
-            std_upper.append(std)
-        else:
-            std_upper.append(1 - bar_values[i])
-        if bar_values[i] - std >= 0:
-            std_lower.append(std)
-        else:
-            std_lower.append(bar_values[i])
-    return std_lower, std_upper
-
-
-
 
 
 def get_metric_details(path, timeshift):
@@ -939,52 +758,6 @@ def get_metric_details(path, timeshift):
         lick_id_details_k.append(obj)
     # all_guesses_by_id = return_guesses_by_lick_id(lick_id_details,all_guesses_k)
     return lick_id_details, lick_id_details_k
-
-
-def plot_metric_details_by_lickwell(path, timeshift, savepath,add_trial_numbers=False):
-    lick_id_details, lick_id_details_k = get_metric_details(path, timeshift)
-    lick_id_details.filter = lick_id_details.next_well_licked_2
-    fractions_decoded_2, std_2, n_2 = return_fraction_decoded_and_std(lick_id_details=lick_id_details)
-    lick_id_details.filter = lick_id_details.next_well_licked_3
-    fractions_decoded_3, std_3, n_3 = return_fraction_decoded_and_std(lick_id_details=lick_id_details)
-    lick_id_details.filter = lick_id_details.next_well_licked_4
-    fractions_decoded_4, std_4, n_4 = return_fraction_decoded_and_std(lick_id_details=lick_id_details)
-    lick_id_details.filter = lick_id_details.next_well_licked_5
-    fractions_decoded_5, std_5, n_5 = return_fraction_decoded_and_std(lick_id_details=lick_id_details)
-
-    bar_values = [fractions_decoded_2, fractions_decoded_3, fractions_decoded_4, fractions_decoded_5]
-    std_well = [std_2, std_3, std_4, std_5]
-    n_well = [n_2,n_3,n_4,n_5]
-    # so error bars show up correctly
-    std_lower, std_upper = get_corrected_std(bar_values, std_well)
-
-    # plot bars
-
-    fontsize = 12
-    font = {'family': 'normal',
-            'size': 12}
-    matplotlib.rc('font', **font)
-    matplotlib.rc('xtick', labelsize=fontsize - 3)
-
-    ind = np.arange(4)  # the x locations for the groups
-
-    fig, ax = plt.subplots()
-    ax_b = ax.twinx()
-    error_kw = {'capsize': 5, 'capthick': 1, 'ecolor': 'black'}
-    ax.bar(ind, bar_values, color='lightblue', yerr=[std_lower, std_upper], error_kw=error_kw, align='center')
-    ax.set_xticks(ind)
-    ax.set_xticklabels(['well 2', 'well 3', 'well 4', 'well 5'])
-    ax_b.set_ylim(0, 1)
-    ax.set_title("Decoding accuracy by well")
-    ax.set_ylabel("fraction of labels decoded correctly", fontsize=fontsize)
-    if add_trial_numbers is True:
-        for i, j in zip(ind, bar_values):
-            if j < 0.2:
-                offset = 0.1
-            else:
-                offset = -0.1
-            ax.annotate(int(n_well[i]), xy=(i - 0.1, j + offset))
-    plt.savefig(savepath)
 
 
 def print_metric_details(path, timeshift):
@@ -1026,10 +799,9 @@ def print_metric_details(path, timeshift):
 
 def print_lickwell_metrics(metrics_i, nd, session):
     """
-
-    :param metrics_i:
-    :param nd:
-    :return:
+    :param metrics_i: # list of evaluated licks
+    :param nd: Net_data object
+    :return: prints all data regarding the lick events in the format given in the lickwell prediction excel file
     """
     licks = session.licks
     print(

@@ -1,501 +1,237 @@
-import matplotlib.pyplot as plt
-from matplotlib.ticker import MaxNLocator
-from matplotlib.colors import BoundaryNorm
-from src.settings import save_as_pickle, load_pickle
-import glob
+import matplotlib
 import numpy as np
-from scipy.interpolate import interp1d
-from matplotlib.patches import Patch
+from matplotlib import pyplot as plt
+
+from src.metrics import get_metric_details
+from src.settings import load_pickle
 
 
-def load_trained_network(path):
-    dict_files = glob.glob(path + "output/" + "*.pkl")
-    if len(dict_files) == 0:
-        raise OSError("Warning: network Directory is empty")
-    r2_scores_valid_list = []
-    r2_scores_train_list = []
-    acc_scores_valid_list = []
-    acc_scores_train_list = []
-    avg_scores_valid_list = []
-    avg_scores_train_list = []
-    time_shift_list = []
-    sorted_list = []
-    for i, file_path in enumerate(dict_files):
-        net_dict_i = load_pickle(file_path)
-        sorted_list.append([file_path, net_dict_i.net_data.time_shift])
-    sorted_list = sorted(sorted_list, key=lambda x: x[1])
-    dict_files = [i[0] for i in sorted_list]
-    for file_path in dict_files:
-        print("processing", file_path)
-        net_dict_i = load_pickle(file_path)
-        r2_scores_train_list.append(net_dict_i.r2_scores_train)
-        r2_scores_valid_list.append(net_dict_i.r2_scores_valid)
-        acc_scores_train_list.append(net_dict_i.acc_scores_train)
-        acc_scores_valid_list.append(net_dict_i.acc_scores_valid)
-        avg_scores_train_list.append(net_dict_i.avg_scores_train)
-        avg_scores_valid_list.append(net_dict_i.avg_scores_valid)
-        time_shift_list.append(net_dict_i["TIME_SHIFT"])
-    # if len(dict_files) == 1:
-    #     r2_scores_train_list = [r2_scores_train_list]
-    #     r2_scores_valid_list = [r2_scores_valid_list]
-    #     acc_scores_train_list = [acc_scores_train_list]
-    #     acc_scores_valid_list = [acc_scores_valid_list]
-    #     avg_scores_train_list = [avg_scores_train_list]
-    #     avg_scores_valid_list = [avg_scores_valid_list]
+def plot_accuracy_inside_phase(path, shift, title, save_path, color="darkviolet"):
+    # load accuracy data
 
-    return r2_scores_valid_list, r2_scores_train_list, acc_scores_valid_list, acc_scores_train_list, avg_scores_valid_list, avg_scores_train_list, net_dict_i, time_shift_list
+    metrics = load_pickle(path + "metrics_timeshift=" + str(shift) + ".pkl")
 
-# PATH_2 = "G:/master_datafiles/trained_networks/MLP_HC_2018-11-11_1000_200_100_dmf/"
-# PATH = "G:/master_datafiles/trained_networks/MLP_PFC_2018-11-06_1000_200_100_dmf/"
-PATH = "C:/Users/NN/Desktop/Master/experiments/decode memory future/MLP_HC_2018-11-13_dmf/" #"G:/master_datafiles/trained_networks/test_MLP_HC_2018-11-13_1000_200_100_dmf/"#
-PATH_2 = "G:/master_datafiles/trained_networks/MLP_PFC_2018-12-03_1000_200_200_dmf/"#"G:/master_datafiles/trained_networks/test_MLP_HC_2018-11-13_1000_200_100_dmf/"
-SINGLE_ACCURACY = True
-SINGLE_AVERAGE = True
-SINGLE_R2 = True
-COMPARE_ACCURACY = False
-COMPARE_DISTANCE = False
-COMPARE_R2 = False
-PAIRED_T_TEST = True
-FILTER_NEURON_TEST = False
-COMPARE_DISCRETE = False
+    # plot chart
+    sample_counter = np.zeros(1000)
+    bin_values = []
+    accuracy_sum = np.zeros(1000)
+    position = 0
+    current_phase = metrics[0].phase
+    for i, lick in enumerate(metrics):
+        sample_counter[position] += 1
+        bin_values.append(position)
+        accuracy_sum[position] += lick.fraction_decoded
+        position += 1
+        if lick.phase != current_phase:  # new phase
+            current_phase = lick.phase
+            position = 0
 
-r2_scores_valid_list, r2_scores_train_list, acc_scores_valid_list, acc_scores_train_list, avg_scores_valid_list, avg_scores_train_list, net_dict, time_shift_list = load_trained_network(
-    PATH)
+    # remove trailing zeros and normalize phase
+    sample_counter = np.trim_zeros(sample_counter, 'b')
+    accuracy_sum = np.trim_zeros(accuracy_sum, 'b')
 
-training_step_list = [net_dict["METRIC_ITER"]]
-for i in range(0, len(r2_scores_valid_list[0]) - 1):
-    training_step_list.append(training_step_list[-1] + net_dict["METRIC_ITER"])
-
-# ----------------------------------------------------
-
-
-r2_scores_valid = [x[-1] for x in r2_scores_valid_list] # TODO uncomment
-# r2_scores_train = [x[-1] for x in r2_scores_train_list]
-acc_scores_valid = list(map(list, zip(*[e[-1] for e in acc_scores_valid_list]))) # TODO uncomment
-# acc_scores_train = list(map(list, zip(*[e[-1] for e in acc_scores_train_list])))
-distance_scores_valid = [x[-1] for x in avg_scores_valid_list]  # takes the latest trained value for each time shift
-# distance_scores_train = [x[-1] for x in avg_scores_train_list]
-plt.ion()
-#
-#     # Get data for current amount of training steps
-#
-#     r2_scores_valid = [x[-i] for x in r2_scores_valid_list]
-#     r2_scores_train = [x[-i] for x in r2_scores_train_list]
-#     acc_scores_valid = list(map(list, zip(*[e[-i] for e in acc_scores_valid_list])))
-#     acc_scores_train = list(map(list, zip(*[e[-i] for e in acc_scores_train_list])))
-#     distance_scores_valid = [x[-i] for x in avg_scores_valid_list] # takes the latest trained value for each time shift
-#     distance_scores_train = [x[-i] for x in avg_scores_train_list]
-#
-#     # acc_scores_valid_list =np.array(acc_scores_valid_list).T.tolist()
-#     # acc_scores_train_list = np.array(acc_scores_train_list).T.tolist()
-#     # distance_scores_valid_list = np.array(distance_scores_valid_list).T.tolist()
-#     # distance_scores_valid_list = np.array(distance_scores_valid_list).T.tolist()
-
-
-# cf = ax0.contourf(time_shift_list,distance_list,acc_scores_train, levels=levels, cmap=cmap)
-# fig.colorbar(cf, ax=ax0)
-# # ax0.grid(c='k', ls='-', alpha=0.3)
-# ax0.set_title('Portion of training predictions in radius wrt time-shift')
-# ax0.set_xlabel("time shift [ms]")
-# ax0.set_ylabel("distance to actual position(cm)")
-# # ax0.set_xticklabels(time_shift_list)
-
-# ax0.set_xticks(time_shift_list)
-if SINGLE_AVERAGE is True:
-    distance_list = np.linspace(0, 20, 20)
-    levels = MaxNLocator(nbins=20).tick_values(np.min(acc_scores_valid), np.max(acc_scores_valid))
-    cmap = plt.get_cmap('inferno')
-    norm = BoundaryNorm(levels, ncolors=cmap.N, clip=True)
-    # fig, (ax0, ax1) = plt.subplots(nrows=2)
-    fig, (ax1) = plt.subplots()
-    levels = MaxNLocator(nbins=20).tick_values(np.min(acc_scores_valid), np.max(acc_scores_valid))
-    cf = ax1.contourf(time_shift_list, distance_list, acc_scores_valid, levels=levels, cmap=cmap)
-    cbar = plt.colorbar(cf, ax=ax1)
-    cbar.set_label('fraction of instances in range', rotation=270, labelpad=20)
-    # ax1.set_title('Portion of predictions inside given radius wrt time-shift')
-    ax1.set_xlabel("time shift [ms]")
-    ax1.set_ylabel("absolute position error [cm]")
-    # ax1.set_xticks(time_shift_list)
-    fig.tight_layout()
-    plt.show()
-    # plt.savefig(PATH + "images/acc_score" + "_epoch=" + str(training_step_list[-i]) + ".pdf")
-    plt.close()
-if SINGLE_ACCURACY is True:
+    y = np.divide(accuracy_sum, sample_counter)
     fig, ax = plt.subplots()
-    # ax.plot(time_shift_list,distance_scores_train,label='Training set',color='r')
-    ax.plot(time_shift_list, distance_scores_valid, label='validation set', color='r')
+    fontsize = 12
+    x = np.arange(0, len(y))
+    ax.plot(x, y, label='average', color=color, marker='.', linestyle="None")  # ,linestyle="None"
     ax.legend()
     ax.grid(c='k', ls='-', alpha=0.3)
-    # ax.set_title(r'$\varnothing$distance of validation wrt time-shift')
-    ax.set_xlabel("Time shift [ms]")
-    ax.set_ylabel(r'$\varnothing$ absolute position error [cm]')
-    fig.tight_layout()
-    plt.show()
-    # plt.savefig(PATH + "images/avg_dist" + "_epoch=" + str(training_step_list[-i]) + ".pdf")
-    plt.close()
-if SINGLE_R2 is True:
-    # fig, (ax0, ax1) = plt.subplots(nrows=2,sharey=True)
-    fig, ax1 = plt.subplots()
-    # ax0.grid(c='k', ls='-', alpha=0.3)
-    # ax0.plot(time_shift_list,r2_scores_train)
-    # ax0.set_title('r2 of training wrt time-shift')
-    # ax0.set_xlabel("Time shift (s)")
-    # ax0.set_ylabel("r2 score")
-    ax1.plot(time_shift_list, r2_scores_valid)
-    ax1.grid(c='k', ls='-', alpha=0.3)
-    # ax1.set_title('R2 of validation wrt time-shift')
-    ax1.set_xlabel("Time shift [ms]")
-    ax1.set_ylabel("R2 score")
-    ax1.set_ylim([-1, 0.6])
-    fig.tight_layout()
-    plt.show()
-    # plt.savefig(PATH + "images/r2_score" + "_epoch=" + str(training_step_list[-i]) + ".pdf")
-    plt.close()
-# ---------------------------------------------------------------
+    ax.set_xlabel("Number of visits of well 1 inside phase")
+    ax.set_ylabel("Average fraction of samples decoded correctly")
+    ax.set_title(title)
+    ax_b = ax.twinx()
+    ax_b.set_ylabel("Phases with number of visits")
+    z = np.arange(0, 12)
+    ax_b.hist(bin_values, bins=z, facecolor='g', alpha=0.2)
+    # plt.show()
+    plt.savefig(save_path)
 
-# Comparisons
+    pass
 
 
-r2_scores_valid_list_2, r2_scores_train_list_2, acc_scores_valid_list_2, acc_scores_train_list_2, avg_scores_valid_list_2, avg_scores_train_list_2, net_dict_2, time_shift_list_2 = load_trained_network(
-    PATH_2)
-acc_scores_valid = list(map(list, zip(*[e[-1] for e in acc_scores_valid_list]))) # TODO uncomment
-acc_scores_valid_2 = list(map(list, zip(*[e[-1] for e in acc_scores_valid_list_2])))
-r2_scores_valid = [x[-1][0] for x in r2_scores_valid_list]
-r2_scores_valid_2 = [x[-1][0] for x in r2_scores_valid_list_2]
-distance_scores_valid = [x[-1] for x in avg_scores_valid_list]  # takes the latest trained value for each time shift
-distance_scores_valid_2 = [x[-1] for x in avg_scores_valid_list_2]  # takes the latest trained value for each time shift
+def plot_performance_comparison(path_1, shift_1, path_2, shift_2, title_1, title_2, save_path, barcolor="darkviolet",
+                                add_trial_numbers=False):
+    # load fraction and std data
 
-acc_scores_middle = np.ndarray.tolist(np.array(acc_scores_valid) - np.array(acc_scores_valid_2))
-r2_scores_middle = np.ndarray.tolist(np.array(r2_scores_valid) - np.array(r2_scores_valid_2))
-distance_scores_middle = np.ndarray.tolist(np.array(distance_scores_valid) - np.array(distance_scores_valid_2))
+    lick_id_details_1, lick_id_details_k_1 = get_metric_details(path_1, shift_1)
+    # return_sample_count_by_lick_id(lick_id_details_k_1)
+    x_1, std_1, n_1 = get_accuracy_for_comparison(lick_id_details_1, lick_id_details_k_1)
+    lick_id_details_2, lick_id_details_k_2 = get_metric_details(path_2, shift_2)
+    x_2, std_2, n_2 = get_accuracy_for_comparison(lick_id_details_2, lick_id_details_k_2)
+    std_lower_1, std_upper_1 = get_corrected_std(x_1, std_1)
+    std_lower_2, std_upper_2 = get_corrected_std(x_2, std_2)
 
-# Compare accuracy plot
-if COMPARE_ACCURACY is True:
-    cmap = plt.get_cmap('PiYG')
-    fig, ax1 = plt.subplots()
-    distance_list = np.linspace(0, 20, 20)
-    levels = MaxNLocator(nbins=20).tick_values(np.min(acc_scores_middle), np.max(acc_scores_middle))
-    cf = ax1.contourf(time_shift_list, distance_list, acc_scores_middle, levels=levels, cmap=cmap)
-    cbar = plt.colorbar(cf, ax=ax1)
-    cbar.set_label(r'$\Delta$ fraction of instances in range', rotation=270, labelpad=20)
-    custom_lines = [Patch(facecolor='mediumvioletred', edgecolor='b',
-                          label='acc_1'),
-                    Patch(facecolor='green', edgecolor='b',
-                          label='acc_2')
-                    ]
-    ax1.legend(custom_lines, ['PFC underperformance', 'PFC overperformance'], bbox_to_anchor=(1, 1),
-               bbox_transform=plt.gcf().transFigure)
-    # ax1.set_title('Portion of predictions inside given radius wrt time-shift')
-    ax1.set_xlabel("time shift [ms]")
-    ax1.set_ylabel(r'$\Delta$ absolute position error [cm]')
-    # ax1.set_xticks(time_shift_list)
-    fig.tight_layout()
-    plt.ion()
-    # plt.savefig(PATH + "images/acc_score_middle" + "_epoch=" + str(training_step_list[-i]) + ".pdf")
-    plt.show()
-    plt.close()
-# Compare distances plot
+    # plot bar charts
 
-if COMPARE_DISTANCE is True:
+    width = 0.75
+    fontsize = 12
+    font = {'family': 'normal',
+            'size': 12}
+    matplotlib.rc('font', **font)
+    matplotlib.rc('xtick', labelsize=fontsize - 3)
+
+    ind = np.arange(5)  # the x locations for the groups
+    fig, (ax1, ax2) = plt.subplots(2)
+    ax_b1 = ax1.twinx()
+    ax_b2 = ax2.twinx()
+    error_kw = {'capsize': 5, 'capthick': 1, 'ecolor': 'black'}
+    ax1.bar(ind, x_1, color=barcolor, yerr=[std_lower_1, std_upper_1], error_kw=error_kw, align='center')
+    ax1.set_xticks(ind)
+    ax1.set_xticklabels(['all licks', 'target correct', 'target false', 'prior switch', 'after switch'])
+    ax_b1.set_ylim(0, 1.2)
+    ax1.set_title(title_1)
+    ax1.set_ylabel("fraction decoded correctly", fontsize=fontsize)
+    if add_trial_numbers is True:
+        for i, j in zip(ind, x_1):
+            if j < 0.2:
+                offset = 0.1
+            else:
+                offset = -0.1
+            ax1.annotate(int(n_1[i]), xy=(i - 0.1, j + offset))
+
+    ax2.bar(ind, x_2, color=barcolor, yerr=[std_lower_2, std_upper_2], error_kw=error_kw, align='center')
+    ax2.set_xticks(ind)
+    ax2.set_xticklabels(['all licks', 'target correct', 'target false', 'prior switch', 'after switch'])
+    ax_b2.set_ylim(0, 1.2)
+    ax2.set_title(title_2)
+    ax2.set_ylabel("fraction decoded correctly", fontsize=fontsize)
+    if add_trial_numbers is True:
+        for i, j in zip(ind, x_2):
+            if j < 0.2:
+                offset = 0.1
+            else:
+                offset = -0.1
+            ax2.annotate(int(n_2[i]), xy=(i - 0.1, j + offset))
+
+    plt.tight_layout(pad=0.1, w_pad=0.5, h_pad=0)
+    plt.savefig(save_path)
+    pass
+
+
+def get_accuracy_for_comparison(lick_id_details, lick_id_details_k):
+    # fraction decoded in all licks
+    fractions_decoded_all, std_all, n_all = return_fraction_decoded_and_std(lick_id_details=lick_id_details)
+
+    # fraction decoded if target lick is correct
+    lick_id_details.filter = lick_id_details.target_lick_correct
+    for i, li in enumerate(lick_id_details_k):
+        lick_id_details_k[i].filter = li.target_lick_correct
+    fractions_decoded_target_correct, std_target_correct, n_target_correct = return_fraction_decoded_and_std(
+        lick_id_details=lick_id_details)
+
+    # fraction decoded if target lick is false
+    lick_id_details.filter = lick_id_details.target_lick_false
+    for i, li in enumerate(lick_id_details_k):
+        lick_id_details_k[i].filter = li.target_lick_false
+    fractions_decoded_target_false, std_target_false, n_target_false = return_fraction_decoded_and_std(
+        lick_id_details=lick_id_details)
+
+    # fraction decoded in licks prior to a switch
+    lick_id_details.filter = lick_id_details.licks_prior_to_switch
+    for i, li in enumerate(lick_id_details_k):
+        lick_id_details_k[i].filter = li.licks_prior_to_switch
+    fractions_decoded_licks_prior_to_switch, std_licks_prior_to_switch, n_licks_prior_to_switch = return_fraction_decoded_and_std(
+        lick_id_details=lick_id_details)
+
+    # fraction decoded in licks after a switch
+    lick_id_details.filter = lick_id_details.licks_after_switch
+    for i, li in enumerate(lick_id_details_k):
+        lick_id_details_k[i].filter = li.licks_after_switch
+    fractions_decoded_licks_after_switch, std_licks_after_switch, n_licks_after_switch = return_fraction_decoded_and_std(
+        lick_id_details=lick_id_details)
+
+    fra_list = [fractions_decoded_all, fractions_decoded_target_correct, fractions_decoded_target_false,
+                fractions_decoded_licks_prior_to_switch, fractions_decoded_licks_after_switch]
+    std_list = [std_all, std_target_correct, std_target_false,
+                std_licks_prior_to_switch, std_licks_after_switch]
+    n_list = [n_all, n_target_correct, n_target_false,
+              n_licks_prior_to_switch, n_licks_after_switch]
+    return fra_list, std_list, n_list
+
+
+def get_corrected_std(bar_values, std_well):
+    """
+    :param bar_values: list of fractional values for bar charts
+    :param std_well: list of corresponding standard deviations
+    :return: two standard deviation lists corrected for lower and upper limits 0 and 1 of bar values (so error bars don't go below 0 and above 1
+    """
+    std_lower = []
+    std_upper = []
+    for i, std in enumerate(std_well):
+        if std + bar_values[i] <= 1:
+            std_upper.append(std)
+        else:
+            std_upper.append(1 - bar_values[i])
+        if bar_values[i] - std >= 0:
+            std_lower.append(std)
+        else:
+            std_lower.append(bar_values[i])
+    return std_lower, std_upper
+
+
+def return_fraction_decoded_and_std(lick_id_details):
+    confidence = 1.96
+    fraction_decoded = fraction_decoded_in_array(lick_id_details.filter,
+                                                 lick_id_details.fraction_decoded)  # TODO licks_decoded?
+
+    # calculate number of samples in range
+    n = 0
+    for i, lick in enumerate(lick_id_details.licks):
+        if lick_id_details.filter[i] == 1:
+            n += lick.total_decoded
+
+    # calculate bernoulli standard deviation
+
+    std = confidence*np.sqrt(fraction_decoded * (1 - fraction_decoded) / n)
+    return fraction_decoded, std, n
+
+
+def plot_metric_details_by_lickwell(path, timeshift, savepath,add_trial_numbers=False):
+    lick_id_details, lick_id_details_k = get_metric_details(path, timeshift)
+    lick_id_details.filter = lick_id_details.next_well_licked_2
+    fractions_decoded_2, std_2, n_2 = return_fraction_decoded_and_std(lick_id_details=lick_id_details)
+    lick_id_details.filter = lick_id_details.next_well_licked_3
+    fractions_decoded_3, std_3, n_3 = return_fraction_decoded_and_std(lick_id_details=lick_id_details)
+    lick_id_details.filter = lick_id_details.next_well_licked_4
+    fractions_decoded_4, std_4, n_4 = return_fraction_decoded_and_std(lick_id_details=lick_id_details)
+    lick_id_details.filter = lick_id_details.next_well_licked_5
+    fractions_decoded_5, std_5, n_5 = return_fraction_decoded_and_std(lick_id_details=lick_id_details)
+
+    bar_values = [fractions_decoded_2, fractions_decoded_3, fractions_decoded_4, fractions_decoded_5]
+    std_well = [std_2, std_3, std_4, std_5]
+    n_well = [n_2,n_3,n_4,n_5]
+    # so error bars show up correctly
+    std_lower, std_upper = get_corrected_std(bar_values, std_well)
+
+    # plot bars
+
+    fontsize = 12
+    font = {'family': 'normal',
+            'size': 12}
+    matplotlib.rc('font', **font)
+    matplotlib.rc('xtick', labelsize=fontsize - 3)
+
+    ind = np.arange(4)  # the x locations for the groups
+
     fig, ax = plt.subplots()
-    # ax.plot(time_shift_list,distance_scores_train,label='Training set',color='r')
-    ax.plot(time_shift_list, distance_scores_middle, color='k')
-    ax.plot(time_shift_list, distance_scores_valid, color='darkgreen')
-    ax.plot(time_shift_list, distance_scores_valid_2, color='maroon')
-    # ax.legend()
-    custom_lines = [Patch(facecolor='green', edgecolor='b',
-                          label='d_1'),
-                    Patch(facecolor='red', edgecolor='b',
-                          label='d_2')
-                    ]
-    ax.legend(custom_lines, [r'$\varnothing$ absolute position error PFC', r'$\varnothing$ absolute position error HC'])
-    ax.grid(c='k', ls='-', alpha=0.3)
-    # ax.set_title(r'$\varnothing$ distance of validation wrt time-shift')
-    ax.set_xlabel("time shift [ms]")
-    ax.set_ylabel('absolute position error [cm]')
-    f = interp1d(time_shift_list, distance_scores_middle)
-    x = np.linspace(time_shift_list[0], time_shift_list[-1], 1000)
-    ax.fill_between(x, 0, f(x), where=(np.array(f(x))) < 0, color='green')
-    ax.fill_between(x, 0, f(x), where=(np.array(f(x))) > 0, color='red')
-    fig.tight_layout()
-    # plt.savefig(PATH + "images/avg_dist_middle" + "_epoch=" + str(training_step_list[-i]) + ".pdf")
-    plt.close()
-if COMPARE_R2 is True:
-    # fig, (ax0, ax1) = plt.subplots(nrows=2,sharey=True)
-    fig, ax1 = plt.subplots()
-    # ax0.grid(c='k', ls='-', alpha=0.3)
-    # ax0.plot(time_shift_list,r2_scores_train)
-    # ax0.set_title('r2 of training wrt time-shift')
-    # ax0.set_xlabel("time shift [ms]")
-    # ax0.set_ylabel("r2 score")
-    custom_lines = [Patch(facecolor='green', edgecolor='b',
-                          label='R2_1'),
-                    Patch(facecolor='red', edgecolor='b',
-                          label='R2_2')
-                    ]
-    ax1.legend(custom_lines, ['R2 Prefrontal Cortex', 'R2 Hippocampus'])
-    f = interp1d(time_shift_list, r2_scores_middle)
-    x = np.linspace(time_shift_list[0], time_shift_list[-1], 1000)
-    ax1.fill_between(x, 0, f(x), where=(np.array(f(x))) < 0, color='maroon')
-    ax1.fill_between(x, 0, f(x), where=(np.array(f(x))) > 0, color='darkgreen')
-    ax1.plot(time_shift_list, r2_scores_middle)
-    ax1.plot(time_shift_list, r2_scores_valid, color="g")
-    ax1.plot(time_shift_list, r2_scores_valid_2, color="r")
-    ax1.plot(time_shift_list, r2_scores_middle)
-    ax1.grid(c='k', ls='-', alpha=0.3)
-    # ax1.set_title('R2 of validation wrt time-shift')
-    ax1.set_xlabel("time shift [ms]")
-    ax1.set_ylabel('R2')
-    ax1.set_ylim([-1, 0.6])
-    fig.tight_layout()
-    plt.savefig(PATH + "images/r2_score_middle" + "_epoch=" + str(training_step_list[-i]) + ".pdf")
-    plt.close()
-# paired t test
-
-if PAIRED_T_TEST is True:
-    test_samples = (len(acc_scores_valid[0]) - 1) // 2
-    positive_range = range(test_samples , len(acc_scores_valid[0]))
-    negative_range = range(test_samples , -1, -1)
-    time_shift_list_t_test = time_shift_list[test_samples:]
-    positive_acc_score = [[a[i] for i in positive_range] for a in acc_scores_valid]
-    negative_acc_score = [[a[i] for i in negative_range] for a in acc_scores_valid]
-    t_score_list_acc = np.ndarray.tolist(np.array(positive_acc_score) - np.array(negative_acc_score))
-    positive_avg_score = distance_scores_valid[test_samples:]
-    negative_avg_score = distance_scores_valid[test_samples::-1]
-    t_score_list_avg = np.ndarray.tolist(np.array(positive_avg_score) - np.array(negative_avg_score))
-    cmap = plt.get_cmap('PRGn')
-    fig, ax1 = plt.subplots()
-    distance_list = np.linspace(0, 20, 20)
-    level_range = max(np.abs(np.min(t_score_list_acc)),np.abs(np.max(t_score_list_acc)))
-    levels = MaxNLocator(nbins=20).tick_values(-level_range, level_range)
-    cf = ax1.contourf(time_shift_list_t_test, distance_list, t_score_list_acc, levels=levels, cmap=cmap)
-    cbar = plt.colorbar(cf, ax=ax1)
-    cbar.set_label(r'$\Delta$ fraction of instances in range', rotation=270, labelpad=20)
-    custom_lines = [Patch(facecolor='green', edgecolor='b',
-                          label='acc_1'),
-                    Patch(facecolor='mediumvioletred', edgecolor='b',
-                          label='acc_2')
-                    ]
-    ax1.legend(custom_lines, ['positive time shift overperforms', 'negative time shift overperforms'], bbox_to_anchor=(1, 1),
-               bbox_transform=plt.gcf().transFigure)
-    # ax1.set_title('Portion of predictions inside given radius wrt time-shift')
-    ax1.set_xlabel("absolute time shift [ms]")
-    ax1.set_ylabel(r'$\Delta$ absolute position error [cm]')
-    # ax1.set_xticks(time_shift_list)
-    fig.tight_layout()
-    plt.savefig(PATH + "images/t-test_acc" + "_epoch=" + str(training_step_list[-i]) + ".pdf")
-    fig, ax = plt.subplots()
-    # ax.plot(time_shift_list,distance_scores_train,label='Training set',color='r')
-
-    # t test distance compare
-    ax.plot(time_shift_list_t_test, t_score_list_avg, color='k')
-    ax.plot(time_shift_list_t_test, positive_avg_score, color='darkgreen')
-    ax.plot(time_shift_list_t_test, negative_avg_score, color='maroon')
-    ax.axhline(y=0)
-    # ax.legend()
-    custom_lines = [Patch(facecolor='green', edgecolor='b',
-                          label='d_1'),
-                    Patch(facecolor='red', edgecolor='b',
-                          label='d_2')
-                    ]
-    ax.legend(custom_lines, ['positive time shifts', 'negative time shifts'])
-    ax.grid(c='k', ls='-', alpha=0.3)
-    # ax.set_title(r'$\varnothing$ distance of validation wrt time-shift')
-    ax.set_xlabel("absolute time shift [ms]")
-    ax.set_ylabel('absolute position error [cm]')
-    f = interp1d(time_shift_list_t_test, t_score_list_avg)
-    x = np.linspace(time_shift_list_t_test[0], time_shift_list_t_test[-1], 1000)
-    ax.fill_between(x, 0, f(x), where=(np.array(f(x))) < 0, color='green')
-    ax.fill_between(x, 0, f(x), where=(np.array(f(x))) > 0, color='red')
-    fig.tight_layout()
-    plt.show()
-    plt.savefig(PATH + "images/t_score_avg" + "_epoch=" + str(training_step_list[-i]) + ".pdf")
+    ax_b = ax.twinx()
+    error_kw = {'capsize': 5, 'capthick': 1, 'ecolor': 'black'}
+    ax.bar(ind, bar_values, color='lightblue', yerr=[std_lower, std_upper], error_kw=error_kw, align='center')
+    ax.set_xticks(ind)
+    ax.set_xticklabels(['well 2', 'well 3', 'well 4', 'well 5'])
+    ax_b.set_ylim(0, 1)
+    ax.set_title("Decoding accuracy by well")
+    ax.set_ylabel("fraction of labels decoded correctly", fontsize=fontsize)
+    if add_trial_numbers is True:
+        for i, j in zip(ind, bar_values):
+            if j < 0.2:
+                offset = 0.1
+            else:
+                offset = -0.1
+            ax.annotate(int(n_well[i]), xy=(i - 0.1, j + offset))
+    plt.savefig(savepath)
 
 
-if FILTER_NEURON_TEST is True:
-    PATH_100 = "G:/master_datafiles/trained_networks/MLP_HC_2018-11-08_1000_200_100_neuron_filter=100/"
-    # # PATH_90 = "G:/master_datafiles/trained_networks/MLP_HC_2018-11-08_1000_200_100_neuron_filter=90/"
-    PATH_80 = "G:/master_datafiles/trained_networks/MLP_HC_2018-11-08_1000_200_100_neuron_filter=80/"
-    # # PATH_70 = "G:/master_datafiles/trained_networks/MLP_HC_2018-11-08_1000_200_100_neuron_filter=70/"
-    PATH_60 = "G:/master_datafiles/trained_networks/MLP_HC_2018-11-08_1000_200_100_neuron_filter=60/"
-    # # PATH_50 = "G:/master_datafiles/trained_networks/MLP_HC_2018-11-08_1000_200_100_neuron_filter=50/"
-    PATH_40 = "G:/master_datafiles/trained_networks/MLP_HC_2018-11-08_1000_200_100_neuron_filter=40/"
-    # # PATH_30 = "G:/master_datafiles/trained_networks/MLP_HC_2018-11-08_1000_200_100_neuron_filter=30/"
-    PATH_20 = "G:/master_datafiles/trained_networks/MLP_HC_2018-11-08_1000_200_100_neuron_filter=20/"
-    # PATH_10 = "G:/master_datafiles/trained_networks/MLP_HC_2018-11-08_1000_200_100_neuron_filter=10/"
-    # PATH_100 = "G:/master_datafiles/trained_networks/MLP_PFC_2018-11-08_1000_200_100_neuron_filter=100/"
-    # # PATH_90 = "G:/master_datafiles/trained_networks/MLP_PFC_2018-11-08_1000_200_100_neuron_filter=90/"
-    # PATH_80 = "G:/master_datafiles/trained_networks/MLP_PFC_2018-11-08_1000_200_100_neuron_filter=80/"
-    # # PATH_70 = "G:/master_datafiles/trained_networks/MLP_PFC_2018-11-08_1000_200_100_neuron_filter=70/"
-    # PATH_60 = "G:/master_datafiles/trained_networks/MLP_PFC_2018-11-08_1000_200_100_neuron_filter=60/"
-    # # PATH_50 = "G:/master_datafiles/trained_networks/MLP_PFC_2018-11-08_1000_200_100_neuron_filter=50/"
-    # PATH_40 = "G:/master_datafiles/trained_networks/MLP_PFC_2018-11-08_1000_200_100_neuron_filter=40/"
-    # # PATH_30 = "G:/master_datafiles/trained_networks/MLP_PFC_2018-11-08_1000_200_100_neuron_filter=30/"
-    # PATH_20 = "G:/master_datafiles/trained_networks/MLP_PFC_2018-11-08_1000_200_100_neuron_filter=20/"
-    # # PATH_10 = "G:/master_datafiles/trained_networks/MLP_PFC_2018-11-08_1000_200_100_neuron_filter=10/"
-    r2_scores_valid_list_100, r2_scores_train_list_100, acc_scores_valid_list_100, acc_scores_train_list_100, avg_scores_valid_list_100, avg_scores_train_list_100, net_dict_100, time_shift_list_100 = load_trained_network(
-        PATH_100)
-    # r2_scores_valid_list_90, r2_scores_train_list_90, acc_scores_valid_list_90, acc_scores_train_list_90, avg_scores_valid_list_90, avg_scores_train_list_90, net_dict_90, time_shift_list_90 = load_trained_network(
-    #     PATH_90)
-    r2_scores_valid_list_80, r2_scores_train_list_80, acc_scores_valid_list_80, acc_scores_train_list_80, avg_scores_valid_list_80, avg_scores_train_list_80, net_dict_80, time_shift_list_80 = load_trained_network(
-        PATH_80)
-    # r2_scores_valid_list_70, r2_scores_train_list_70, acc_scores_valid_list_70, acc_scores_train_list_70, avg_scores_valid_list_70, avg_scores_train_list_70, net_dict_70, time_shift_list_70 = load_trained_network(
-    #     PATH_70)
-    r2_scores_valid_list_60, r2_scores_train_list_60, acc_scores_valid_list_60, acc_scores_train_list_60, avg_scores_valid_list_60, avg_scores_train_list_60, net_dict_60, time_shift_list_60 = load_trained_network(
-        PATH_60)
-    # r2_scores_valid_list_50, r2_scores_train_list_50, acc_scores_valid_list_50, acc_scores_train_list_50, avg_scores_valid_list_50, avg_scores_train_list_50, net_dict_50, time_shift_list_50 = load_trained_network(
-    #     PATH_50 )
-    r2_scores_valid_list_40, r2_scores_train_list_40, acc_scores_valid_list_40, acc_scores_train_list_40, avg_scores_valid_list_40, avg_scores_train_list_40, net_dict_40, time_shift_list_40 = load_trained_network(
-        PATH_40 )
-    # r2_scores_valid_list_30, r2_scores_train_list_30, acc_scores_valid_list_30, acc_scores_train_list_30, avg_scores_valid_list_30, avg_scores_train_list_30, net_dict_30, time_shift_list_30 = load_trained_network(
-    #     PATH_30)
-    r2_scores_valid_list_20, r2_scores_train_list_20, acc_scores_valid_list_20, acc_scores_train_list_20, avg_scores_valid_list_20, avg_scores_train_list_20, net_dict_20, time_shift_list_20 = load_trained_network(
-        PATH_20)
-    # r2_scores_valid_list_10, r2_scores_train_list_10, acc_scores_valid_list_10, acc_scores_train_list_10, avg_scores_valid_list_10, avg_scores_train_list_10, net_dict_10, time_shift_list_10 = load_trained_network(
-    #     PATH_10)
-
-    r2_scores_100 = r2_scores_valid_list_100[0]
-    distance_scores_100 = avg_scores_valid_list_100[0]
-    # r2_scores_90 = r2_scores_valid_list_90[0]
-    # distance_scores_90 = avg_scores_valid_list_90[0]
-    r2_scores_80 = r2_scores_valid_list_80[0]
-    distance_scores_80 = avg_scores_valid_list_80[0]
-    # r2_scores_70 = r2_scores_valid_list_70[0]
-    # distance_scores_70 = avg_scores_valid_list_70[0]
-    r2_scores_60 = r2_scores_valid_list_60[0]
-    distance_scores_60 = avg_scores_valid_list_60[0]
-    # r2_scores_50 = r2_scores_valid_list_50[0]
-    # distance_scores_50 = avg_scores_valid_list_50[0]
-    r2_scores_40 = r2_scores_valid_list_40[0]
-    distance_scores_40 = avg_scores_valid_list_40[0]
-    # r2_scores_30 = r2_scores_valid_list_30[0]
-    # distance_scores_30 = avg_scores_valid_list_30[0]
-    r2_scores_20 = r2_scores_valid_list_20[0]
-    distance_scores_20 = avg_scores_valid_list_20[0]
-    # r2_scores_10 = r2_scores_valid_list_10[0]
-    # distance_scores_10 = avg_scores_valid_list_10[0]
-    acc_scores_100 = [a[19] for a in acc_scores_valid_list_100[0]]
-    # acc_scores_90 = [a[19] for a in acc_scores_valid_list_90[0]]
-    acc_scores_80 = [a[19] for a in acc_scores_valid_list_80[0]]
-    # acc_scores_70 = [a[19] for a in acc_scores_valid_list_70[0]]
-    acc_scores_60 = [a[19] for a in acc_scores_valid_list_60[0]]
-    # acc_scores_50 = [a[19] for a in acc_scores_valid_list_50[0]]
-    acc_scores_40 = [a[19] for a in acc_scores_valid_list_40[0]]
-    # acc_scores_30 = [a[19] for a in acc_scores_valid_list_30[0]]
-    acc_scores_20 = [a[19] for a in acc_scores_valid_list_20[0]]
-    # acc_scores_10 = [a[19] for a in acc_scores_valid_list_10[0]]
-
-    #     # Get data for current amount of training steps
-    #
-    no_neurons_list = [56, 51, 45, 40, 34, 28, 23, 17, 12, 6]
-    # no_neurons_list = [147, 133, 118, 103, 89, 74, 59, 45, 30, 15]
-
-    training_step_list_filter = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18,
-                                 19, 20]
-    fig, ax = plt.subplots()
-    # ax.plot(training_step_list_filter, distance_scores_100, color='b',label="56 (1.0)")
-    # # # ax.plot(training_step_list_filter, distance_scores_90, color='g',label="51 (0.9)")
-    # ax.plot(training_step_list_filter, distance_scores_80, color='r',label="45 (0.8)")
-    # # # ax.plot(training_step_list_filter, distance_scores_70, color='c',label="40 (0.7)")
-    # ax.plot(training_step_list_filter, distance_scores_60, color='m',label="34 (0.6)")
-    # # # ax.plot(training_step_list_filter, distance_scores_50, color='y',label="28 (0.5)")
-    # ax.plot(training_step_list_filter, distance_scores_40, color='k',label="23 (0.4)")
-    # # # ax.plot(training_step_list_filter, distance_scores_30, color='w',label="17 (0.3)")
-    # ax.plot(training_step_list_filter, distance_scores_20, color='maroon',label="12 (0.2)")
-    # # ax.plot(training_step_list_filter, distance_scores_10, color='darkgreen',label=" 6 (0.1)")
-
-
-    ax.plot(training_step_list_filter, distance_scores_100, color='b',label="147 (1.0)")
-    # ax.plot(training_step_list_filter, distance_scores_90, color='g',label="133 (0.9)")
-    ax.plot(training_step_list_filter, distance_scores_80, color='r',label="118 (0.8)")
-    # # ax.plot(training_step_list_filter, distance_scores_70, color='c',label="103 (0.7)")
-    ax.plot(training_step_list_filter, distance_scores_60, color='m',label=" 89 (0.6)")
-    # # ax.plot(training_step_list_filter, distance_scores_50, color='y',label=" 74 (0.5)")
-    ax.plot(training_step_list_filter, distance_scores_40, color='k',label=" 59 (0.4)")
-    # # ax.plot(training_step_list_filter, distance_scores_30, color='w',label=" 45 (0.3)")
-    ax.plot(training_step_list_filter, distance_scores_20, color='maroon',label=" 30 (0.2)")
-    # ax.plot(training_step_list_filter, distance_scores_10, color='darkgreen',label=" 15 (0.1)")
-    ax.legend()
-    ax.grid(c='k', ls='-', alpha=0.3)
-    # ax.set_title(r'$\varnothing$ distance of validation wrt time-shift')
-    ax.set_xlabel("epoch")
-    ax.set_ylabel('absolute position error [cm]')
-    f = interp1d(time_shift_list, distance_scores_middle)
-    x = np.linspace(time_shift_list[0], time_shift_list[-1], 1000)
-    ax.fill_between(x, 0, f(x), where=(np.array(f(x))) < 0, color='green')
-    ax.fill_between(x, 0, f(x), where=(np.array(f(x))) > 0, color='red')
-    fig.tight_layout()
-    plt.savefig(PATH + "images/avg_dist_middle" + "_epoch=" + str(training_step_list[-i]) + ".pdf")
-    plt.close()
-    fig, ax = plt.subplots()
-    # ax.plot(time_shift_list,distance_scores_train,label='Training set',color='r')
-    ax.plot(training_step_list_filter, acc_scores_100, color='b',label="56 (1.0)")
-    # # ax.plot(training_step_list_filter, acc_scores_90, color='g',label="51 (0.9)")
-    ax.plot(training_step_list_filter, acc_scores_80, color='r',label="45 (0.8)")
-    # # ax.plot(training_step_list_filter, acc_scores_70, color='c',label="40 (0.7)")
-    ax.plot(training_step_list_filter, acc_scores_60, color='m',label="34 (0.6)")
-    # # ax.plot(training_step_list_filter, acc_scores_50, color='y',label="28 (0.5)")
-    ax.plot(training_step_list_filter, acc_scores_40, color='k',label="23 (0.4)")
-    # # ax.plot(training_step_list_filter, acc_scores_30, color='w',label="17 (0.3)")
-    ax.plot(training_step_list_filter, acc_scores_20, color='maroon',label="12 (0.2)")
-    # ax.plot(training_step_list_filter, acc_scores_10, color='darkgreen',label=" 6 (0.1)")
-    # ax.plot(training_step_list_filter, acc_scores_100, color='b',label="147 (1.0)")
-    # # ax.plot(training_step_list_filter, acc_scores_90, color='g',label="133 (0.9)")
-    # ax.plot(training_step_list_filter, acc_scores_80, color='r',label="118 (0.8)")
-    # # ax.plot(training_step_list_filter, acc_scores_70, color='c',label="103 (0.7)")
-    # ax.plot(training_step_list_filter, acc_scores_60, color='m',label=" 89 (0.6)")
-    # # ax.plot(training_step_list_filter, acc_scores_50, color='y',label=" 74 (0.5)")
-    # ax.plot(training_step_list_filter, acc_scores_40, color='k',label=" 59 (0.4)")
-    # # ax.plot(training_step_list_filter, acc_scores_30, color='w',label=" 45 (0.3)")
-    # ax.plot(training_step_list_filter, acc_scores_20, color='maroon',label=" 30 (0.2)")
-    # # ax.plot(training_step_list_filter, acc_scores_10, color='darkgreen',label=" 15 (0.1)")
-
-    ax.legend()
-    custom_lines = [Patch(facecolor='green', edgecolor='b',
-                          label='d_1'),
-                    Patch(facecolor='red', edgecolor='b',
-                          label='d_2')
-                    ]
-    # ax.legend(custom_lines,
-    #           [r'$\varnothing$ absolute position error PFC', r'$\varnothing$ absolute position error HC'])
-    ax.grid(c='k', ls='-', alpha=0.3)
-    ax.set_title(r'$\varnothing$ distance of validation wrt time-shift')
-    ax.set_xlabel("epoch")
-    ax.set_ylabel('fraction of instances in range')
-    # f = interp1d(time_shift_list, distance_scores_middle)
-    # x = np.linspace(time_shift_list[0], time_shift_list[-1], 1000)
-    # ax.fill_between(x, 0, f(x), where=(np.array(f(x))) < 0, color='green')
-    # ax.fill_between(x, 0, f(x), where=(np.array(f(x))) > 0, color='red')
-    fig.tight_layout()
-    plt.savefig(PATH + "images/avg_dist_middle" + "_epoch=" + str(training_step_list[-i]) + ".pdf")
-
-
-if COMPARE_DISCRETE is True:
-    # Get data for current amount of training steps
-
-
-    acc_scores_valid_list_ts =np.array(acc_scores_valid_list).T.tolist()
-    acc_scores_valid_list_ts_2 =np.array(acc_scores_valid_list_2).T.tolist()
-    acc_scores_ts_middle = np.ndarray.tolist(np.array(acc_scores_valid_list_ts) - np.array(acc_scores_valid_list_ts_2))
-    fig, ax = plt.subplots()
-    # ax.plot(time_shift_list,distance_scores_train,label='Training set',color='r')
-    ax.plot(time_shift_list, acc_scores_ts_middle, color='k')
-    ax.plot(time_shift_list, acc_scores_valid_list_ts, color='darkgreen')
-    ax.plot(time_shift_list, acc_scores_valid_list_ts_2, color='maroon')
-    # ax.legend()
-    custom_lines = [Patch(facecolor='green', edgecolor='b',
-                          label='d_1'),
-                    Patch(facecolor='red', edgecolor='b',
-                          label='d_2')
-                    ]
-    ax.legend(custom_lines, [r'$\varnothing$ absolute position error PFC', r'$\varnothing$ absolute position error HC'])
-    ax.grid(c='k', ls='-', alpha=0.3)
-    # ax.set_title(r'$\varnothing$ distance of validation wrt time-shift')
-    ax.set_xlabel("time shift [ms]")
-    ax.set_ylabel('absolute position error [cm]')
-    f = interp1d(time_shift_list, distance_scores_middle)
-    x = np.linspace(time_shift_list[0], time_shift_list[-1], 1000)
-    ax.fill_between(x, 0, f(x), where=(np.array(f(x))) < 0, color='green')
-    ax.fill_between(x, 0, f(x), where=(np.array(f(x))) > 0, color='red')
-    fig.tight_layout()
-    # plt.savefig(PATH + "images/avg_dist_middle" + "_epoch=" + str(training_step_list[-i]) + ".pdf")
+def fraction_decoded_in_array(filter_func, array):
+    return np.sum(filter_func * array) / np.sum(filter_func)

@@ -1,18 +1,18 @@
 from src.database_api_beta import  Net_data
 import numpy as np
 from src.preprocessing import lickwells_io
-from src.network_functions import run_network_process, initiate_lickwell_network, run_network
+from src.network_functions import  initiate_lickwell_network
 import seaborn as sn
 import pandas as pd
 import matplotlib.pyplot as plt
-# Combination data set
+
+
 if __name__ == '__main__':
 
     RAW_DATA_PATH = "G:/master_datafiles/raw_data/C"
     MODEL_PATH = "G:/master_datafiles/trained_networks/no_shuffle_test_3_different_dataset/"
     FILTERED_DATA_PATH = "slice_C.pkl"
     filter_tetrodes=None
-
 
     nd = Net_data(
         initial_timeshift=0,
@@ -28,6 +28,7 @@ if __name__ == '__main__':
     )
 
     session = initiate_lickwell_network(nd)  # Initialize session
+
     # x and y are switched for this session and are restored to their original order to make them identical to the other sessions
     copy_pos_x = session.position_x
     session.position_x = session.position_y
