@@ -287,7 +287,20 @@ class Net_data:
                 next_well = licks[i - 1].lickwell
                 if well == start_well and next_well != start_well:
                     filtered_licks.append(lick.lick_id)
-        self.valid_licks = filtered_licks
+        # TODO additional filter function just added here
+        new_filtered_licks = []
+        for lick_id in filtered_licks:
+            lick = get_lick_from_id(lick_id,session.licks)
+            timestart = lick.time
+            timestop = lick.time + 5000
+            slice = session[int(timestart):int(timestop)]
+            position = slice.position_x[0]
+            # std_lower.append(np.min(slice.position_x))
+            # std_upper.append(np.max(slice.position_x))
+            if position - slice.position_x[4999] < 20:
+                new_filtered_licks.append(lick.lick_id)
+
+        self.valid_licks = new_filtered_licks
 
     def assign_training_testing(self, X, y, k):
         """
@@ -848,3 +861,18 @@ class Slice:
         """ loads session from file"""
         with open(path, 'wb') as f:
             pickle.dump(self, f)
+
+
+def get_lick_from_id(id, licks, shift=0):
+    """
+
+    :param id: id of lick being searched
+    :param licks: list of lick objects
+    :param shift: if set, gets lick before or after id'd lick
+    :return: corresponding lick
+    """
+    lick_id_list = [lick.lick_id for lick in licks]
+    try:
+        return [licks[i + shift] for i, lick in enumerate(licks) if lick.lick_id == id][0]
+    except IndexError:
+        return None

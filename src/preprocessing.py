@@ -204,7 +204,7 @@ def abs_to_logits(y_abs, num_wells):
 
 
 def lickwells_io(session, nd, excluded_wells=[1], shift=1, normalize=False, differentiate_false_licks=False,
-                 valid_licks=[]):
+                 valid_licks=[],lickstart=0,lickend=5000):
     # get all slices within n milliseconds around lick_well
 
     # Filter licks and spread them as evenly as possible
@@ -256,10 +256,10 @@ def lickwells_io(session, nd, excluded_wells=[1], shift=1, normalize=False, diff
     metadata = []
     # Generate input and output
     for i, lick in enumerate(licks):
-        lick_start = int(lick.time - 5000)
-        lick_end = int(lick.time + 5000)
+        lick_start = int(lick.time + lickstart)
+        lick_end = int(lick.time + lickend)
         slice = session[lick_start:lick_end]
-        for j in range(0, 10000 // nd.win_size - 11):
+        for j in range(0, (lickend-lickstart) // nd.win_size - 11):
             bins_to_x = [c[j:j + 11] for c in slice.filtered_spikes]
             bins_to_x = np.reshape(bins_to_x, [len(bins_to_x), len(bins_to_x[0])])
             X.append(bins_to_x)

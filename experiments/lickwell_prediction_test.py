@@ -10,28 +10,27 @@ if __name__ == '__main__':
 
     # Data set 1 Prefrontal Cortex
 
-    # MODEL_PATH = "G:/master_datafiles/trained_networks/MLP_PFC_2019-01-18_lickwell/"
-    # RAW_DATA_PATH = "G:/master_datafiles/raw_data/PFC/"
-    # FILTERED_DATA_PATH = "session_pfc_lw.pkl"
+    MODEL_PATH = "G:/master_datafiles/trained_networks/MLP_PFC_2019-01-29_lickwell/"
+    RAW_DATA_PATH = "G:/master_datafiles/raw_data/PFC/"
+    FILTERED_DATA_PATH = "session_pfc_lw.pkl"
 
     # Data set 2 Hippocampus
 
-    MODEL_PATH = "G:/master_datafiles/trained_networks/MLP_HC_2019-01-17_lickwell_phasetarget/"
-    RAW_DATA_PATH = "G:/master_datafiles/raw_data/HC/"
-    FILTERED_DATA_PATH = "session_hc_lw_phasetarget.pkl"
+    # MODEL_PATH = "G:/master_datafiles/trained_networks/MLP_HC_2019-01-17_lickwell_tester/"
+    # RAW_DATA_PATH = "G:/master_datafiles/raw_data/HC/"
+    # FILTERED_DATA_PATH = "session_hc_lw.pkl"
 
     nd = Net_data(
-
         # Program execution settings
-        epochs=10,
+        epochs=20,
         evaluate_training=False,
-        slice_size=200,
-        stride=200,
-        y_step=200,
-        win_size=200,
-        search_radius=200,
+        slice_size=100,
+        stride=100,
+        y_step=100,
+        win_size=100,
+        search_radius=100,
         k_cross_validation=10,
-        session_filter=Filter(func=hann, search_radius=200, step_size=200),
+        session_filter=Filter(func=hann, search_radius=100, step_size=100),
         valid_ratio=0.1,
         testing_ratio=0,
         time_shift_steps=1,
@@ -46,11 +45,10 @@ if __name__ == '__main__':
         lw_normalize=True,
         lw_differentiate_false_licks=False,
         num_wells=5,
-        initial_timeshift=1,
+        initial_timeshift=-1,
         from_raw_data=False
     )
 
-    seed(0)
     print_metric_details(MODEL_PATH,nd.initial_timeshift)
     session = initiate_lickwell_network(nd)  # Initialize session
     X, y, metadata,nd,session = lickwells_io(session, nd, excluded_wells=[1], shift=nd.initial_timeshift,

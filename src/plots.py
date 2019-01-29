@@ -110,6 +110,12 @@ def plot_performance_comparison(path_1, shift_1, path_2, shift_2, title_1, title
 
 
 def get_accuracy_for_comparison(lick_id_details, lick_id_details_k):
+    """fra_list, std_list, n_list
+
+    :param lick_id_details: lick_id_details_object
+    :param lick_id_details_k: list of lick_id_detail objects, one for each k-cross-validation step in first parameter
+    :return: list of accuracies by filtered lickwell,list of bernoulli standard deviations, list of absolute count of samples for each list entry
+    """
     # fraction decoded in all licks
     fractions_decoded_all, std_all, n_all = return_fraction_decoded_and_std(lick_id_details=lick_id_details)
 
@@ -235,3 +241,89 @@ def plot_metric_details_by_lickwell(path, timeshift, savepath,add_trial_numbers=
 
 def fraction_decoded_in_array(filter_func, array):
     return np.sum(filter_func * array) / np.sum(filter_func)
+
+def plot_performance_by_licktime(path, shift, title, save_path, plotrange,color="darkviolet",
+                                add_trial_numbers=False):
+    # get lickwell for each path data and average
+    y_list = []
+    n_list = []
+    for i in plotrange:
+        lick_id_details, lick_id_details_k = get_metric_details(path, shift,pathname_metadata="_"+str(i))
+        y, std, n = get_accuracy_for_comparison(lick_id_details, lick_id_details_k)
+        y_list.append(np.average(y))
+        n_list.append(np.sum(n))
+
+    # plot chart
+
+    fontsize = 12
+    font = {'family': 'normal',
+            'size': 12}
+    matplotlib.rc('font', **font)
+    matplotlib.rc('xtick', labelsize=fontsize - 3)
+    ind = np.arange(plotrange.start,plotrange.stop)  # the x locations for the groups
+    fig, ax = plt.subplots()
+    corrected_ind = ind*(5.0/39.0)
+    ax.plot(corrected_ind,y_list , color=color, label="",linestyle="None",marker="X")  # label="cv "+str(i+1)+"/10",
+    # ax.set_xticklabels(corrected_ind)
+    # ax1.set_xticklabels(['all licks', 'target correct', 'target false', 'prior switch', 'after switch'])
+    ax.set_title(title)
+    ax.set_ylabel("fraction decoded correctly", fontsize=fontsize)
+    ax.set_xlabel("Time since start of lick [s]",fontsize=fontsize)
+    plt.tight_layout(pad=0.1, w_pad=0.5, h_pad=0)
+    plt.show()
+    plt.savefig(save_path)
+
+
+def plot_position_by_licktime(session,y,metadata,plotrange,title,save_path,color="darkviolet"):
+
+
+    positions = []
+    speeds = []
+    std_lower_speed = []
+    std_upper_speed = []
+    std_lower = []
+    std_upper = []
+    lick_ids = []
+    for lick in session.licks:
+        if lick.lickwell == 1 and lick.lick_id != 1:
+            lick_ids.append(lick.lick_id)
+            timestart = lick.time
+            timestop = lick.time + 5000
+            slice = session[int(timestart):int(timestop)]
+            positions.append(slice.position_x[0])
+            # std_lower.append(np.min(slice.position_x))
+            # std_upper.append(np.max(slice.position_x))
+            std_lower.append(slice.position_x[2500])
+            std_upper.append(slice.position_x[4999])
+            speeds.append(slice.speed[2500])
+            std_lower_speed.append(np.min(slice.speed))
+            std_upper_speed.append(np.max(slice.speed))
+
+
+    # plot
+    fontsize = 12
+    font = {'family': 'normal',
+            'size': 12}
+    matplotlib.rc('font', **font)
+    matplotlib.rc('xtick', labelsize=fontsize - 3)
+    ind = np.arange(len(positions))  # the x locations for the groups
+    fig, ax = plt.subplots()
+    # ax_b = ax.twinx()
+    # ax.plot( , color=color, label="",linestyle="None",marker="X",)  # label="cv "+str(i+1)+"/10",
+    error_kw = {'capsize': 5, 'capthick': 1, 'ecolor': 'black'}
+    ax.plot(lick_ids,positions,color="g",linestyle="None",marker="X",label="During lick")
+    ax.plot(lick_ids,std_lower,color="b",linestyle="None",marker=".",label="+2.5 seconds")
+    ax.plot(lick_ids,std_upper,color="c",linestyle="None",marker=".",label="+5 seconds")
+    ax.legend()
+    # ax.set_xticklabels(corrected_ind)
+    # ax1.set_xticklabels(['all licks', 'target correct', 'target false', 'prior switch', 'after switch'])
+    ax.set_title(title)
+    ax.set_ylabel("X axis position [cm]", fontsize=fontsize)
+    ax.set_xlabel("Lick - id",fontsize=fontsize)
+    error_kw_speed = {'capsize': 5, 'capthick': 1, 'ecolor': 'black'}
+
+    # ax_b.errorbar(lick_ids,speeds, color="b", linestyle = "None",marker=".",yerr=[std_lower_speed, std_upper_speed])
+    # ax_b.set_ylabel("Speed [cm/s]")
+    plt.tight_layout(pad=0.1, w_pad=0.5, h_pad=0)
+    plt.show()
+    plt.savefig(save_path)

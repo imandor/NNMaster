@@ -1,6 +1,6 @@
 import tensorflow as tf
 from src.nets import MultiLayerPerceptron
-from src.metrics import  plot_histogram, Metric, Network_output
+from src.metrics import  plot_histogram, Metric, Network_output,print_metric_details
 from src.conf import mlp, mlp_discrete
 from src.database_api_beta import Slice, Filter, hann
 from src.metrics import print_Net_data, cross_validate_lickwell_data, Lick_Metric_By_Epoch,print_lickwell_metrics
@@ -49,21 +49,16 @@ def licks_to_logits(licks, num_wells):
 
 def run_lickwell_network_process(nd):
     # Initialize session, parameters and network
-
+    ns = mlp_discrete
+    ns.fc1.weights = tf.truncated_normal(shape=(11*nd.n_neurons,100), stddev=0.01) # 36, 56, 75, 111, 147
+    S = MultiLayerPerceptron([None, nd.n_neurons, 11, 1], ns)
     sess = tf.Session()
     acc_scores_valid = []
     avg_acc_valid = []
-    early_stop_max = -np.inf
     X_train = nd.X_train
     logits_train = licks_to_logits(nd.y_train, nd.num_wells)
     X_valid = nd.X_valid
     logits_valid = licks_to_logits(nd.y_valid, nd.num_wells)
-    X_test = nd.X_test
-    logits_test = licks_to_logits(nd.y_test, nd.num_wells)
-    ns = mlp_discrete
-    ns.fc1.weights = tf.truncated_normal(shape=(11*nd.n_neurons,100), stddev=0.01) # 36, 56, 75, 111, 147
-
-    S = MultiLayerPerceptron([None, nd.n_neurons, 11, 1], ns)
     nd.x_shape = [nd.batch_size] + list(X_train[0].shape) + [1]
     nd.y_shape = [nd.batch_size] + [nd.num_wells]
     if nd.load_model is True:
@@ -71,10 +66,10 @@ def run_lickwell_network_process(nd):
         saver.restore(sess, nd.model_path)
     else:
         S.initialize(sess)
-    saver = tf.train.Saver()
+    # saver = tf.train.Saver()
     sess.run(tf.local_variables_initializer())
     print("Training model...")
-    metric_counter = 0  # net_dict["metric_iter"]
+    metric_counter = 0
     metric_step_counter = []
     for i in range(0, nd.epochs + 1):
         X_train, logits_train = shuffle_io(X_train, logits_train, nd, seed_no=i + 1)
@@ -85,11 +80,7 @@ def run_lickwell_network_process(nd):
             # Evaluate
 
             print("Epoch", i, "of",nd.epochs)
-            # print("Training results:")
-            # total, avg_acc, acc_valid = test_accuracy(sess=sess, S=S, nd=nd, X=nd.X_train, y=nd.y_train, epoch=i,
-            #                                       print_distance=True)
-
-            if nd.evaluate_training is True:
+            if nd.evaluate_training is True: # print training performance
                 epoch_metric = Lick_Metric_By_Epoch.test_accuracy(sess=sess, S=S, nd=nd, X=X_train, y=logits_train,
                                                                   metadata=nd.y_train, epoch=i)
 
@@ -301,7 +292,7 @@ def run_network(nd, session):
     print("fin")
 
 
-def run_lickwell_network(nd, session, X, y, metadata):
+def run_lickwell_network(nd, session, X, y, metadata,pathname_metadata=""):
     nd.time_shift = nd.initial_timeshift  # set current shift
 
     # Shift input and output
@@ -313,10 +304,14 @@ def run_lickwell_network(nd, session, X, y, metadata):
 
     for k in range(0, nd.k_cross_validation):
         print("cross validation step", str(k + 1), "of", nd.k_cross_validation)
-        nd.network_shape = mlp_discrete
         nd.assign_training_testing_lickwell(X, metadata, k, excluded_wells=[1], normalize=nd.lw_normalize)
-        save_nd = run_lickwell_network_process(nd)
+        # save_nd = run_lickwell_network_process(nd)
+        with multiprocessing.Pool(
+                1) as p:  # keeping network inside process prevents memory issues when restarting session
+            save_nd = p.map(run_lickwell_network_process, [nd])[0]
+            p.close()
         metrics_k.append(save_nd)
+
 
     metrics,all_guesses = cross_validate_lickwell_data(metrics=metrics_k,licks=session.licks,epoch=-1,nd=nd)
     metrics_k_obj = []
@@ -324,10 +319,11 @@ def run_lickwell_network(nd, session, X, y, metadata):
         metrics_k_obj.append(cross_validate_lickwell_data(metrics=[metric],licks=session.licks,epoch=-1,nd=nd)[0])
     nd.clear_io()
     session.to_pickle(nd.filtered_data_path) # TODO remove after test
-    save_as_pickle(nd.model_path + "output/all_guesses_timeshift="+ str(nd.time_shift) + ".pkl", all_guesses)
-    save_as_pickle(nd.model_path + "output/metrics_timeshift=" + str(nd.time_shift) + ".pkl", metrics)
-    save_as_pickle(nd.model_path + "output/nd_timeshift="+str(nd.time_shift)+".pkl",nd)
-    save_as_pickle(nd.model_path + "output/licks_timeshift="+str(nd.time_shift)+".pkl",session.licks)
-    save_as_pickle(nd.model_path + "output/metrics_k_timeshift="+str(nd.time_shift)+".pkl",metrics_k_obj)
-    print_lickwell_metrics(metrics, nd,session)
-    print("fin")
+    save_as_pickle(nd.model_path + "output/all_guesses_timeshift="+ str(nd.time_shift) + pathname_metadata + ".pkl", all_guesses)
+    save_as_pickle(nd.model_path + "output/metrics_timeshift=" + str(nd.time_shift) + pathname_metadata+ ".pkl", metrics)
+    save_as_pickle(nd.model_path + "output/nd_timeshift="+str(nd.time_shift)+ pathname_metadata +".pkl",nd)
+    save_as_pickle(nd.model_path + "output/licks_timeshift="+str(nd.time_shift)+ pathname_metadata +".pkl",session.licks)
+    save_as_pickle(nd.model_path + "output/metrics_k_timeshift="+str(nd.time_shift)+ pathname_metadata +".pkl",metrics_k_obj)
+    print_metric_details(nd.model_path,nd.initial_timeshift,pathname_metadata=pathname_metadata)
+    print_lickwell_metrics(metrics, nd,session.licks)
+

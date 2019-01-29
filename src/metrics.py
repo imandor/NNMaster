@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from src.preprocessing import position_as_map
-from src.database_api_beta import Evaluated_Lick
+from src.database_api_beta import Evaluated_Lick, get_lick_from_id
 from src.settings import load_pickle
 
 
@@ -75,9 +75,11 @@ def sigmoid(x):
 
 
 def average_position(mapping):
-    # mapping = np.reshape(mapping,[mapping.shape[0],mapping.shape[1]])
-    # sum_0 = np.dot(mapping,np.arange(mapping.shape[1]))
-    # sum_1 = np.dot(mapping.T,np.arange(mapping.shape[0]))
+    """
+
+    :param mapping: list of positions in map format
+    :return: averaged position over [x-coordinate,y-coordinate]
+    """
 
     sum_0 = np.sum(mapping, axis=0)
     sum_0 = np.sum(np.sum(sum_0 * np.arange(mapping.shape[1]))) / np.sum(np.sum(sum_0))
@@ -91,32 +93,29 @@ def average_position(mapping):
 
 
 def plot_histogram(sess, S, nd, X, y):
+    """
+    :return: plots binary histogram of positions
+    """
     y_predicted, y_target = predict_map(S, sess, X, y)
     distances = get_distances(y_predicted, y_target, [nd.x_step, nd.y_step])
     fig, ax = plt.subplots()
     x_axis_labels = np.linspace(0, 150, 15)
-    # ax.plot(time_shift_list,distance_scores_train,label='Training set',color='r')
     ax.hist(distances, x_axis_labels, density=True, cumulative=True, rwidth=0.9, color='b')
     ax.grid(c='k', ls='-', alpha=0.3)
-    # ax.set_title(r'$\varnothing$distance of validation wrt time-shift')
     ax.set_xlabel("Prediction error [cm]")
     ax.set_ylabel('Fraction of instances with prediction error')
     fig.tight_layout()
-
     x_axis_labels = np.linspace(0, 150, 150)
     fig2, ax2 = plt.subplots()
-    # ax.plot(time_shift_list,distance_scores_train,label='Training set',color='r')
     ax2.hist(distances, x_axis_labels, density=False, rwidth=0.9, color='r')
     ax2.grid(c='k', ls='-', alpha=0.3)
-    # ax.set_title(r'$\varnothing$distance of validation wrt time-shift')
     ax2.set_xlabel('Prediction error [cm]')
     ax2.set_ylabel("Instances with given prediction error")
     ax2.set_ylim([0, 31])
     fig.tight_layout()
     plt.show()
-    print("plotted histograms")
-
     # plt.savefig(PATH + "images/avg_dist" + "_epoch=" + str(training_step_list[-i]) + ".pdf")
+    pass
 
 
 def predict_map(S, sess, X, Y):
@@ -134,7 +133,7 @@ def predict_map(S, sess, X, Y):
         prediction_a = sigmoid(prediction)
         y = y[0, :, :, 0]
         # bin_1 = average_position(a)
-        bin_1 = np.unravel_index(prediction_a.argmax(), prediction_a.shape)
+        bin_1 = np.unravel_index(prediction_a.argmax(), prediction_a.shape) # returns the position in bin format
         bin_2 = average_position(y)
         y_predicted[j][0] = bin_1[0]
         y_predicted[j][1] = bin_1[1]
@@ -519,21 +518,6 @@ def plot_plane(y, nd, path):
     # plt.close()
 
 
-def get_lick_from_id(id, licks, shift=0):
-    """
-
-    :param id: id of lick being searched
-    :param licks: list of lick objects
-    :param shift: if set, gets lick before or after id'd lick
-    :return: corresponding lick
-    """
-    lick_id_list = [lick.lick_id for lick in licks]
-    try:
-        return [licks[i + shift] for i, lick in enumerate(licks) if lick.lick_id == id][0]
-    except IndexError:
-        return None
-
-
 def convert_index_list_to_binary_array(list_length, index_list):
     return_list = np.zeros(list_length)
     for li in index_list:
@@ -743,11 +727,11 @@ class Lick_id_details:
             return self.next_well_licked_5
 
 
-def get_metric_details(path, timeshift):
-    metrics = load_pickle(path + "metrics_timeshift=" + str(timeshift) + ".pkl")
-    metrics_k = load_pickle(path + "metrics_k_timeshift=" + str(timeshift) + ".pkl")
-    nd = load_pickle(path + "nd_timeshift=" + str(timeshift) + ".pkl")
-    licks = load_pickle(path + "licks_timeshift=" + str(timeshift) + ".pkl")
+def get_metric_details(path, timeshift,pathname_metadata=""):
+    metrics = load_pickle(path + "metrics_timeshift=" + str(timeshift) + pathname_metadata + ".pkl")
+    metrics_k = load_pickle(path + "metrics_k_timeshift=" + str(timeshift) + pathname_metadata + ".pkl")
+    nd = load_pickle(path + "nd_timeshift=" + str(timeshift) + pathname_metadata + ".pkl")
+    licks = load_pickle(path + "licks_timeshift=" + str(timeshift) + pathname_metadata +".pkl")
     # all_guesses_k = load_pickle(path + "all_guesses_timeshift=" + str(timeshift) + ".pkl")
     lick_id_details = Lick_id_details()
     lick_id_details.from_metrics(nd=nd, metrics=metrics, timeshift=timeshift, licks=licks)
@@ -760,12 +744,19 @@ def get_metric_details(path, timeshift):
     return lick_id_details, lick_id_details_k
 
 
-def print_metric_details(path, timeshift):
+def print_metric_details(path, timeshift, pathname_metadata=""):
+    """
+
+    :param path: directory of network files, should be filled
+    :param timeshift: +1 or - 1 for future or past decoding files
+    :param pathname_metadata: if there were multiple experiments in one directory, this can be used to distinguish this by appending to the end of the searched file names
+    :return: prints metric details and details by lick
+    """
     path = path + "output/"
     # Create binary arrays for licks corresponding to each inspected filter
-    metrics = load_pickle(path + "metrics_timeshift=" + str(timeshift) + ".pkl")
-    nd = load_pickle(path + "nd_timeshift=" + str(timeshift) + ".pkl")
-    licks = load_pickle(path + "licks_timeshift=" + str(timeshift) + ".pkl")
+    metrics = load_pickle(path + "metrics_timeshift=" + str(timeshift) + pathname_metadata +".pkl")
+    nd = load_pickle(path + "nd_timeshift=" + str(timeshift)+ pathname_metadata  + ".pkl")
+    licks = load_pickle(path + "licks_timeshift=" + str(timeshift) + pathname_metadata + ".pkl")
     lick_id_details = Lick_id_details()
     lick_id_details.from_metrics(nd=nd, metrics=metrics, timeshift=timeshift, licks=licks)
     print("Filter: all licks")
@@ -794,16 +785,16 @@ def print_metric_details(path, timeshift):
     print("Filter: next well licked is 5")
     lick_id_details.filter = lick_id_details.next_well_licked_5
     lick_id_details.print_details()
+    print_lickwell_metrics(metrics, nd,licks)
     print("fin")
 
 
-def print_lickwell_metrics(metrics_i, nd, session):
+def print_lickwell_metrics(metrics_i, nd, licks):
     """
     :param metrics_i: # list of evaluated licks
     :param nd: Net_data object
     :return: prints all data regarding the lick events in the format given in the lickwell prediction excel file
     """
-    licks = session.licks
     print(
         "lick_id: well_1->well_ 2, fraction decoded | most frequently predicted , fraction predicted, lick_was_correct")
     metrics = []
