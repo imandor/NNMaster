@@ -277,31 +277,33 @@ class Net_data:
         filtered_licks = []
         if shift == 1:
             for i, lick in enumerate(licks[0:-2]):
+
                 well = lick.lickwell
                 next_well = licks[i + 1].lickwell
                 if well == start_well and next_well != start_well:
                     filtered_licks.append(lick.lick_id)
         else:
-            for i, lick in enumerate(licks[1:-1]):
+            licklist = licks[1:-1]
+            for i, lick in enumerate(licklist):
                 well = lick.lickwell
-                next_well = licks[i - 1].lickwell
+                next_well = licklist[i - 1].lickwell
                 if well == start_well and next_well != start_well:
                     filtered_licks.append(lick.lick_id)
         # TODO additional filter function just added here
         new_filtered_licks = []
-        for lick_id in filtered_licks:
-            lick = get_lick_from_id(lick_id,session.licks)
-            timestart = lick.time
-            timestop = lick.time + 5000
-            slice = session[int(timestart):int(timestop)]
-            position = slice.position_x[0]
-            # std_lower.append(np.min(slice.position_x))
-            # std_upper.append(np.max(slice.position_x))
-            if position - slice.position_x[4999] < 20:
-                new_filtered_licks.append(lick.lick_id)
-
-        self.valid_licks = new_filtered_licks
-
+        # for lick_id in filtered_licks:
+        #     lick = get_lick_from_id(lick_id,session.licks)
+        #     timestart = lick.time
+        #     timestop = lick.time + 5000
+        #     slice = session[int(timestart):int(timestop)]
+        #     min = np.min(slice.position_x)
+        #     max = np.max(slice.position_x)
+        #     # std_lower.append(np.min(slice.position_x))
+        #     # std_upper.append(np.max(slice.position_x))
+        #     if max-min < 30:
+        #         new_filtered_licks.append(lick.lick_id)
+        # self.valid_licks = new_filtered_licks
+        self.valid_licks = filtered_licks
     def assign_training_testing(self, X, y, k):
         """
 
@@ -493,8 +495,9 @@ class Slice:
         :param nd: Net-data Object. Necessary to add metadata and is returned altered
         :return: adds metadata about licks to self and a returned Net_data object. Specifically phases, next phase, last phase, phase
         """
+        # set targets for licks
         licks = self.licks
-        shift = 1
+        shift = nd.initial_timeshift
         for i, lick in enumerate(licks):
             if i + shift < len(licks) and i + shift >= 0:
                 self.licks[i].target = licks[i + shift].lickwell

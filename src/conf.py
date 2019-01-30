@@ -40,10 +40,10 @@ mlp_discrete.fc1 = Map()
 mlp_discrete.fc1.weights = tf.truncated_normal(shape=(11*147,100), stddev=0.01) # 36, 56, 75, 111, 147
 mlp_discrete.fc1.activation = tf.nn.relu
 mlp_discrete.fc2 = Map()
-mlp_discrete.fc2.weights = tf.truncated_normal(shape=(100, 100), stddev=0.01)
+mlp_discrete.fc2.weights = tf.truncated_normal(shape=(100, 400), stddev=0.01)
 mlp_discrete.fc2.activation = tf.nn.relu
 mlp_discrete.fc3 = Map()
-mlp_discrete.fc3.weights = tf.truncated_normal(shape=(100, 5), stddev=0.01)
+mlp_discrete.fc3.weights = tf.truncated_normal(shape=(400, 5), stddev=0.01)
 mlp_discrete.fc3.activation = tf.identity
 mlp_discrete.reshape = Map()
 mlp_discrete.reshape.shape = [None, 5]

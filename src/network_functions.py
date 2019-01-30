@@ -325,5 +325,5 @@ def run_lickwell_network(nd, session, X, y, metadata,pathname_metadata=""):
     save_as_pickle(nd.model_path + "output/licks_timeshift="+str(nd.time_shift)+ pathname_metadata +".pkl",session.licks)
     save_as_pickle(nd.model_path + "output/metrics_k_timeshift="+str(nd.time_shift)+ pathname_metadata +".pkl",metrics_k_obj)
     print_metric_details(nd.model_path,nd.initial_timeshift,pathname_metadata=pathname_metadata)
-    print_lickwell_metrics(metrics, nd,session.licks)
+    # print_lickwell_metrics(metrics, nd,session.licks)
 
