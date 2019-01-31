@@ -97,7 +97,7 @@ def run_lickwell_network_process(nd):
             x = np.reshape(x, nd.x_shape)
             y = np.reshape(y, nd.y_shape)
             if nd.naive_test is False or nd.time_shift == 0:
-                t = np.max(S.train(sess, x, y, dropout=0.65))
+                t = np.max(S.train(sess, x, y, dropout=0.3))
 
         metric_counter = metric_counter + 1
         nd.epochs_trained = i
@@ -305,11 +305,11 @@ def run_lickwell_network(nd, session, X, y, metadata,pathname_metadata=""):
     for k in range(0, nd.k_cross_validation):
         print("cross validation step", str(k + 1), "of", nd.k_cross_validation)
         nd.assign_training_testing_lickwell(X, metadata, k, excluded_wells=[1], normalize=nd.lw_normalize)
-        # save_nd = run_lickwell_network_process(nd)
-        with multiprocessing.Pool(
-                1) as p:  # keeping network inside process prevents memory issues when restarting session
-            save_nd = p.map(run_lickwell_network_process, [nd])[0]
-            p.close()
+        save_nd = run_lickwell_network_process(nd)
+        # with multiprocessing.Pool(
+        #         1) as p:  # keeping network inside process prevents memory issues when restarting session
+        #     save_nd = p.map(run_lickwell_network_process, [nd])[0]
+        #     p.close()
         metrics_k.append(save_nd)
 
 
@@ -318,12 +318,10 @@ def run_lickwell_network(nd, session, X, y, metadata,pathname_metadata=""):
     for metric in metrics_k:
         metrics_k_obj.append(cross_validate_lickwell_data(metrics=[metric],licks=session.licks,epoch=-1,nd=nd)[0])
     nd.clear_io()
-    session.to_pickle(nd.filtered_data_path) # TODO remove after test
     save_as_pickle(nd.model_path + "output/all_guesses_timeshift="+ str(nd.time_shift) + pathname_metadata + ".pkl", all_guesses)
     save_as_pickle(nd.model_path + "output/metrics_timeshift=" + str(nd.time_shift) + pathname_metadata+ ".pkl", metrics)
     save_as_pickle(nd.model_path + "output/nd_timeshift="+str(nd.time_shift)+ pathname_metadata +".pkl",nd)
     save_as_pickle(nd.model_path + "output/licks_timeshift="+str(nd.time_shift)+ pathname_metadata +".pkl",session.licks)
     save_as_pickle(nd.model_path + "output/metrics_k_timeshift="+str(nd.time_shift)+ pathname_metadata +".pkl",metrics_k_obj)
     print_metric_details(nd.model_path,nd.initial_timeshift,pathname_metadata=pathname_metadata)
-    # print_lickwell_metrics(metrics, nd,session.licks)
 

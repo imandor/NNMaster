@@ -267,7 +267,7 @@ class Net_data:
         self.valid_licks = None
         self.filter_tetrodes = None
 
-    def get_all_valid_lick_ids(self, session, start_well=1, shift=1):
+    def get_all_valid_lick_ids(self, session, lickstart, lickstop, start_well=1, shift=1):
         """
         :param session: session object
         :param start_well: dominant well in training phase (usually well 1)
@@ -277,33 +277,36 @@ class Net_data:
         filtered_licks = []
         if shift == 1:
             for i, lick in enumerate(licks[0:-2]):
-
                 well = lick.lickwell
                 next_well = licks[i + 1].lickwell
+                print(well,next_well,end="")
                 if well == start_well and next_well != start_well:
                     filtered_licks.append(lick.lick_id)
+                    print("ding!")
+                else:
+                    print("")
         else:
-            licklist = licks[1:-1]
-            for i, lick in enumerate(licklist):
+            for i, lick in enumerate(licks[1:-1]):
                 well = lick.lickwell
-                next_well = licklist[i - 1].lickwell
+                next_well = licks[i - 1].lickwell
                 if well == start_well and next_well != start_well:
                     filtered_licks.append(lick.lick_id)
         # TODO additional filter function just added here
-        new_filtered_licks = []
+        # new_filtered_licks = []
         # for lick_id in filtered_licks:
         #     lick = get_lick_from_id(lick_id,session.licks)
-        #     timestart = lick.time
-        #     timestop = lick.time + 5000
-        #     slice = session[int(timestart):int(timestop)]
-        #     min = np.min(slice.position_x)
-        #     max = np.max(slice.position_x)
+        #     time_start = lick.time + lickstart
+        #     time_stop = lick.time + lickstop
+        #     slice = session[int(time_start):int(time_stop)]
+        #     min = slice.position_x[0]
+        #     max = slice.position_x[lickstop-lickstart-1]
         #     # std_lower.append(np.min(slice.position_x))
         #     # std_upper.append(np.max(slice.position_x))
+        #     print(lick.lick_id,min,max)
         #     if max-min < 30:
         #         new_filtered_licks.append(lick.lick_id)
-        # self.valid_licks = new_filtered_licks
         self.valid_licks = filtered_licks
+
     def assign_training_testing(self, X, y, k):
         """
 
@@ -495,9 +498,8 @@ class Slice:
         :param nd: Net-data Object. Necessary to add metadata and is returned altered
         :return: adds metadata about licks to self and a returned Net_data object. Specifically phases, next phase, last phase, phase
         """
-        # set targets for licks
         licks = self.licks
-        shift = nd.initial_timeshift
+        shift = 1
         for i, lick in enumerate(licks):
             if i + shift < len(licks) and i + shift >= 0:
                 self.licks[i].target = licks[i + shift].lickwell
@@ -832,6 +834,7 @@ class Slice:
         return cls(spikes, licks, position_x, position_y, speed, trial_timestamp)
 
     def filter_neurons_randomly(self, factor):
+        seed(0)
         neurons_removed = int(len(self.spikes) * (1 - factor))
         for i in range(neurons_removed):
             neuron_index = np.random.randint(0, len(self.spikes))

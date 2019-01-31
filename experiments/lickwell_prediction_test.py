@@ -10,13 +10,13 @@ if __name__ == '__main__':
 
     # Data set 1 Prefrontal Cortex
 
-    # MODEL_PATH = "G:/master_datafiles/trained_networks/MLP_PFC_2019-01-29_lickwell_filter/"
+    # MODEL_PATH = "G:/master_datafiles/trained_networks/MLP_PFC_2019-01-29_lickwell/"
     # RAW_DATA_PATH = "G:/master_datafiles/raw_data/PFC/"
     # FILTERED_DATA_PATH = "session_pfc_lw.pkl"
 
     # Data set 2 Hippocampus
 
-    MODEL_PATH = "G:/master_datafiles/trained_networks/MLP_HC_2019-01-30_lickwell"
+    MODEL_PATH = "G:/master_datafiles/trained_networks/MLP_HC_2019-01-17_lickwell_tester/"
     RAW_DATA_PATH = "G:/master_datafiles/raw_data/HC/"
     FILTERED_DATA_PATH = "session_hc_lw.pkl"
 
@@ -49,13 +49,14 @@ if __name__ == '__main__':
         from_raw_data=False
     )
 
-    # print_metric_details(MODEL_PATH,nd.initial_timeshift) # Uncomment to read output without having to rerun the program
+    print_metric_details(MODEL_PATH,nd.initial_timeshift)
     session = initiate_lickwell_network(nd)  # Initialize session
     X, y, metadata,nd,session = lickwells_io(session, nd, excluded_wells=[1], shift=nd.initial_timeshift,
                                   normalize=nd.lw_normalize,
-                                  differentiate_false_licks=nd.lw_differentiate_false_licks,phase_test=False)
-    for i,lick in enumerate(session.licks):
-        if lick.lickwell==1:
-            print(lick.lick_id,session.licks[i+nd.initial_timeshift].lickwell,lick.target)
+                                  differentiate_false_licks=nd.lw_differentiate_false_licks,target_is_phase=False)
+    # for i, lick in session.licks: # only uncomment during phase test
+    #     if lick.target!=1:
+    #         lick.target = lick.phase
+
     run_lickwell_network(nd, session, X, y, metadata)
     print("fin")

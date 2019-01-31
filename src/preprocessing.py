@@ -204,17 +204,17 @@ def abs_to_logits(y_abs, num_wells):
 
 
 def lickwells_io(session, nd, excluded_wells=[1], shift=1, normalize=False, differentiate_false_licks=False,
-                 valid_licks=[],lickstart=0,lickend=5000,phase_test=False):
+                 valid_licks=[], lickstart=0, lickstop=5000, target_is_phase=False):
     # get all slices within n milliseconds around lick_well
 
     # Filter licks and spread them as evenly as possible
 
-    if valid_licks ==[]:
-        nd.get_all_valid_lick_ids(session, start_well=1,shift=shift)
-        valid_licks = nd.valid_licks
+    nd.get_all_valid_lick_ids(session, start_well=1, lickstart = lickstart, lickstop=lickstop, shift=shift)
+    asd = len(nd.valid_licks)
+    print(asd)
     nd = session.add_lick_data_to_session_and_net_data(nd=nd)
     licks = session.licks
-    # for i, lick in enumerate(licks): # random values null hypothesis experiment, doesn't need to be uncommented
+    # for i, lick in enumerate(licks):
     #     if lick.lickwell!=1:
     #         pass
     #         # lick.lickwell = random.randint(2,5)
@@ -223,16 +223,15 @@ def lickwells_io(session, nd, excluded_wells=[1], shift=1, normalize=False, diff
     #             print(licks[i].lick_id,",",licks[i-2].lickwell)
     filtered_licks = []
     filtered_next_wells = []
+
     # create list of valid licks
     for i, lick in enumerate(licks):
-        if i > - shift and i < len(licks) - shift and lick.lickwell in excluded_wells and (
-                normalize is False or licks[i + shift].lickwell not in excluded_wells) and (
-                valid_licks == [] or licks[i].lick_id in valid_licks):
+        if  lick.lick_id in nd.valid_licks:
             # exclude trailing samples to stay inside shift range
-            if phase_test is True:
-                lick.target = lick.phase
             filtered_licks.append(lick)
             next_well = int(licks[i + shift].lickwell)
+            if target_is_phase is True:
+                next_well = lick.phase
             filtered_next_wells.append(next_well)
 
     # distribute list of licks as evenly over well type as possible
@@ -255,19 +254,20 @@ def lickwells_io(session, nd, excluded_wells=[1], shift=1, normalize=False, diff
         if e != None:
             licks.append(e)
             next_well.append(int(distributed_next_well[i]))
-    y_abs = [] # labels
-    X = [] # neural data
-    metadata = [] # current licks
+    y_abs = []
+    X = []
+    metadata = []
     # Generate input and output
     for i, lick in enumerate(licks):
         lick_start = int(lick.time + lickstart)
-        lick_end = int(lick.time + lickend)
+        lick_end = int(lick.time + lickstop)
         slice = session[lick_start:lick_end]
-        for j in range(0, (lickend-lickstart) // nd.win_size - 11):
+        for j in range(0, (lickstop - lickstart) // nd.win_size - 11):
             bins_to_x = [c[j:j + 11] for c in slice.filtered_spikes]
             bins_to_x = np.reshape(bins_to_x, [len(bins_to_x), len(bins_to_x[0])])
             X.append(bins_to_x)
-            y_abs.append(lick.target)
+            y_abs.append(next_well[i])
+            lick.target = next_well[i]
             metadata.append(lick)
 
     print("Lickwell count:")
@@ -279,7 +279,6 @@ def lickwells_io(session, nd, excluded_wells=[1], shift=1, normalize=False, diff
         if y in excluded_wells:
             y_abs.pop(i)
             X.pop(i)
-            metadata.pop(i)
 
     # Convert y to logits format
 
