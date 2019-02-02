@@ -47,7 +47,7 @@ if __name__ == '__main__':
         num_wells=5,
         initial_timeshift=1,
         from_raw_data=False,
-        dropout=0.4
+        dropout=0.2
     )
 
     print_metric_details(MODEL_PATH,nd.initial_timeshift)

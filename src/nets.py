@@ -94,7 +94,7 @@ class MultiLayerPerceptron(Network):
             layer = conf["fc{}".format(layer_number)]
             self.weights.append(tf.Variable(layer.weights, dtype=DTYPE))
             self.layers.append(layer.activation(tf.matmul(self.layers[-1], self.weights[-1])))
-        self.layers.append(tf.nn.dropout(x=self.layers[-1], keep_prob=self.dropout))  # TODO
+        self.layers.append(tf.nn.dropout(x=self.layers[-1], keep_prob=self.dropout,seed=0))  # TODO
 
         shape = conf.reshape.shape
         shape[0] = batch_size
