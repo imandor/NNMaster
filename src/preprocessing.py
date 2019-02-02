@@ -63,6 +63,22 @@ def count_occurrences(y, net_dict, axis=0):
     return pos_counter
 
 
+def shuffle_list_key(length,shuffle_batch_size=1,seed_no=1):
+    """
+
+    :param length:
+    :param shuffle_batch_size:
+    :param seed_no:
+    :return: helpfunction: list of indizes so multiple lists can be shuffled together
+    """
+    seed(seed_no)
+    r = np.arange(length)
+    r = r.reshape(-1, shuffle_batch_size)
+    s = np.arange(len(r))  # shuffling r directly doesnt work
+    shuffle(s)
+    r = r[s]
+    r = r.reshape(-1)
+    return r
 def shuffle_io(X, y, nd, seed_no=None, shuffle_batch_size=None):
     # Shuffle data
     if nd.shuffle_data is False:
@@ -81,13 +97,7 @@ def shuffle_io(X, y, nd, seed_no=None, shuffle_batch_size=None):
 
     # Shuffle index of data
 
-    r = np.arange(len(X))
-    r = r.reshape(-1, shuffle_batch_size)
-    s = np.arange(len(r))  # shuffling r directly doesnt work
-    shuffle(s)
-    r = r[s]
-    r = r.reshape(-1)
-
+    r = shuffle_list_key(len(X),shuffle_batch_size,seed_no)
     # shuffle data
 
     X = [X[j] for j in r]
@@ -191,15 +201,16 @@ def normalize_well(well, num_wells, excluded_wells):
     return int((well - 1 - len(excluded_wells)) % (num_wells - len(excluded_wells)))
 
 
-def abs_to_logits(y_abs, num_wells):
+def abs_to_logits(y_abs, num_classifiers, max_well_no):
     """
 
     :param y_abs:
     :param num_wells:
     :return: cast of well_id to logit format
     """
-    y_i = np.zeros(num_wells)
-    y_i[int(y_abs) - 1] = 1
+    y_i = np.zeros(num_classifiers)
+    shift = num_classifiers-max_well_no-1
+    y_i[int(y_abs)+shift] = 1
     return y_i
 
 
@@ -234,6 +245,13 @@ def lickwells_io(session, nd, excluded_wells=[1], shift=1, normalize=False, diff
                 next_well = lick.phase
             filtered_next_wells.append(next_well)
 
+    # shuffle
+
+    r = shuffle_list_key(length=len(filtered_next_wells),shuffle_batch_size=1,seed_no=0)
+    filtered_next_wells = [filtered_next_wells[j] for j in r]
+    filtered_licks = [filtered_licks[j] for j in r]
+
+
     # distribute list of licks as evenly over well type as possible
 
     counter = generate_counter(nd.num_wells, excluded_wells)
@@ -254,9 +272,8 @@ def lickwells_io(session, nd, excluded_wells=[1], shift=1, normalize=False, diff
         if e != None:
             licks.append(e)
             next_well.append(int(distributed_next_well[i]))
-    y_abs = []
     X = []
-    metadata = []
+    y = []
     # Generate input and output
     for i, lick in enumerate(licks):
         lick_start = int(lick.time + lickstart)
@@ -266,25 +283,7 @@ def lickwells_io(session, nd, excluded_wells=[1], shift=1, normalize=False, diff
             bins_to_x = [c[j:j + 11] for c in slice.filtered_spikes]
             bins_to_x = np.reshape(bins_to_x, [len(bins_to_x), len(bins_to_x[0])])
             X.append(bins_to_x)
-            y_abs.append(next_well[i])
             lick.target = next_well[i]
-            metadata.append(lick)
+            y.append(lick)
 
-    print("Lickwell count:")
-    unique, counts = np.unique(y_abs, return_counts=True)
-    print(unique, counts)
-
-    # remove instances of double licks at lick_well
-    for i, y in enumerate(y_abs):
-        if y in excluded_wells:
-            y_abs.pop(i)
-            X.pop(i)
-
-    # Convert y to logits format
-
-    y = []
-    for val in y_abs:
-        y_i = np.zeros(nd.num_wells)
-        y_i[int(val) - 1] = 1
-        y.append(y_i)
-    return X, y, metadata,nd,session
+    return X, y,nd,session

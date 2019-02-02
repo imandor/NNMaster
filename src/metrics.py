@@ -168,19 +168,18 @@ def predict_lickwell(S, sess, X, Y, nd):
         x = np.reshape(x, [1] + [nd.x_shape[1]] + [nd.x_shape[2]] + [nd.x_shape[3]])
         prediction = S.valid(sess, x)[0]
         y_predicted[j] = np.where(prediction == np.max(prediction), 1, 0)  # int(np.argmax(S.valid(sess, x)[0]))
-        if np.max(prediction) == 0:  # TODO
-            y_predicted[j] = np.array([1, 0, 0, 0, 0])
         y_target[j] = y
     return y_predicted, y_target
 
 
-def return_guesses(y_predicted, y_target, metadata):
+def return_guesses(y_predicted, y_target, metadata,nd):
     guesses = []
     for i, e in enumerate(metadata):
-        prediction = np.argmax(y_predicted[i])
-        guess_is_correct = True if prediction == np.argmax(y_target[i]) else False
+        prediction_index = np.argmax(y_predicted[i])
+        guess_is_correct = True if prediction_index == np.argmax(y_target[i]) else False
         lick_id = e.lick_id
         lickwell = e.lickwell
+        prediction = prediction_index + 1 + nd.num_wells-nd.lw_classifications
         guess = Lick_Metric(guess_is_correct=guess_is_correct, lick_id=lick_id, lickwell=lickwell,
                             prediction=prediction)
         guesses.append(guess)
@@ -195,7 +194,7 @@ class Lick_Metric_By_Epoch:
     @classmethod
     def test_accuracy(cls, sess, S, nd, X, y, metadata, epoch):
         y_predicted, y_target = predict_lickwell(S=S, sess=sess, X=X, Y=y, nd=nd)
-        guesses = return_guesses(y_predicted, y_target, metadata)
+        guesses = return_guesses(y_predicted, y_target, metadata,nd=nd)
         return cls(epoch=epoch, guesses=guesses)
 
 
@@ -216,10 +215,10 @@ def get_main_prediction(guesses, nd):
     """
     lick_ids = [a.lick_id for a in guesses]
     sorted_lick_ids = np.unique(lick_ids, return_counts=False)
-    counter_by_id = np.zeros((len(sorted_lick_ids), nd.num_wells))
+    counter_by_id = np.zeros((len(sorted_lick_ids), nd.lw_classifications))
     # find most frequent prediction by lick_id
     for guess in guesses:
-        counter_by_id[np.where(sorted_lick_ids == guess.lick_id)[0][0]][guess.prediction - 1] += 1
+        counter_by_id[np.where(sorted_lick_ids == guess.lick_id)[0][0]][guess.prediction - nd.num_wells+nd.lw_classifications-1] += 1 # converts the guesses back to
     most_frequent_guess = [np.argmax(a) + 2 for a in
                            counter_by_id]  # TODO the + 2 refers to + 1: well id starts at 1 instead of zero, + 1: one well is excluded. No excluded wells parameter in nd yet
 
@@ -250,10 +249,11 @@ def cross_validate_lickwell_data(metrics, epoch, licks, nd):
     all_guesses = [a for li in all_guesses for a in li]  # flatten all_guesses
 
     # find the most frequently predicted well sorted by id
+    fraction_decoded_by_id = np.divide(correct_guesses_by_id, guesses_by_id)
+    fraction_decoded_by_id = [f for f in fraction_decoded_by_id if not np.isnan(f)]
 
     sorted_lick_ids, most_frequent_guess_by_id, fraction_predicted_by_id = get_main_prediction(all_guesses, nd)
 
-    fraction_decoded_by_id = np.divide(correct_guesses_by_id, guesses_by_id)
 
     # Create list of evaluated licks containing all relevant information
     return_list = []
@@ -271,15 +271,19 @@ def cross_validate_lickwell_data(metrics, epoch, licks, nd):
                 next_lick_id = None
             prediction = most_frequent_guess_by_id[np.where(lick.lick_id == sorted_lick_ids)[0][0]]
             fraction_predicted = fraction_predicted_by_id[np.where(lick.lick_id == sorted_lick_ids)[0][0]]
+            fraction_decoded = fraction_decoded_by_id[np.where(lick.lick_id == sorted_lick_ids)[0][0]]
 
             evaluated_lick = Evaluated_Lick(lick_id=lick.lick_id, rewarded=lick.rewarded, time=lick.time,
                                             lickwell=lick.lickwell, prediction=prediction, target=lick.target,
                                             next_lick_id=next_lick_id, last_lick_id=last_lick_id,
                                             fraction_predicted=fraction_predicted,
-                                            fraction_decoded=fraction_decoded_by_id[lick.lick_id - 1],
-                                            total_decoded=guesses_by_id[lick.lick_id - 1], phase=lick.phase,
+                                            fraction_decoded=fraction_decoded,
+                                            total_decoded=guesses_by_id[lick_id-1], phase=lick.phase,
                                             next_phase=lick.next_phase, last_phase=lick.last_phase)
             return_list.append(evaluated_lick)
+
+    # for lick in return_list:
+    #     print(lick.fraction_decoded)
     return return_list, all_guesses_c
 
 
@@ -524,18 +528,6 @@ def convert_index_list_to_binary_array(list_length, index_list):
         return_list[li] = 1
     return return_list
 
-
-def logits_to_abs(logits, shift=0):
-    """
-
-    :param logits: binary list
-    :param shift: added to final value
-    :return: cast of binary list to index list. Shifts values by default since lick_id and well_no start at 1
-    """
-    return_list = []
-    for i, li in enumerate(logits):
-        if li == 1:
-            return_list.append(i + shift)
 
 
 class Lick_id_details:
@@ -786,8 +778,8 @@ def print_metric_details(path, timeshift, pathname_metadata=""):
     lick_id_details.filter = lick_id_details.next_well_licked_5
     lick_id_details.print_details()
     print_lickwell_metrics(metrics, nd,licks)
-    print("fin")
-
+    print("Accuracy:", np.sum(lick_id_details.licks_decoded) / (np.sum(lick_id_details.licks_not_decoded) + np.sum(lick_id_details.licks_decoded))
+)
 
 def print_lickwell_metrics(metrics_i, nd, licks):
     """

@@ -41,22 +41,20 @@ if __name__ == '__main__':
         metric="discrete",
         shuffle_data=True,
         shuffle_factor=1,
-        lw_classifications=5,
+        lw_classifications=4,
         lw_normalize=True,
         lw_differentiate_false_licks=False,
         num_wells=5,
         initial_timeshift=1,
-        from_raw_data=False
+        from_raw_data=False,
+        dropout=0.4
     )
 
     print_metric_details(MODEL_PATH,nd.initial_timeshift)
     session = initiate_lickwell_network(nd)  # Initialize session
-    X, y, metadata,nd,session = lickwells_io(session, nd, excluded_wells=[1], shift=nd.initial_timeshift,
+    X, y,nd,session = lickwells_io(session, nd, excluded_wells=[1], shift=nd.initial_timeshift,
                                   normalize=nd.lw_normalize,
-                                  differentiate_false_licks=nd.lw_differentiate_false_licks,target_is_phase=False)
-    # for i, lick in session.licks: # only uncomment during phase test
-    #     if lick.target!=1:
-    #         lick.target = lick.phase
-
-    run_lickwell_network(nd, session, X, y, metadata)
+                                  differentiate_false_licks=nd.lw_differentiate_false_licks,target_is_phase=False,
+                                   lickstart=0,lickstop=5000)
+    run_lickwell_network(nd, session, X, y)
     print("fin")

@@ -40,10 +40,10 @@ def time_shift_data(X, y, n):
     return X, y
 
 
-def licks_to_logits(licks, num_wells):
+def licks_to_logits(licks, num_classifiers,max_well_no):
     return_list = []
     for lick in licks:
-        return_list.append(abs_to_logits(lick.target, num_wells))
+        return_list.append(abs_to_logits(lick.target, num_classifiers,max_well_no))
     return return_list
 
 
@@ -56,11 +56,11 @@ def run_lickwell_network_process(nd):
     acc_scores_valid = []
     avg_acc_valid = []
     X_train = nd.X_train
-    logits_train = licks_to_logits(nd.y_train, nd.num_wells)
+    logits_train = licks_to_logits(nd.y_train, nd.lw_classifications,nd.num_wells)
     X_valid = nd.X_valid
-    logits_valid = licks_to_logits(nd.y_valid, nd.num_wells)
+    logits_valid = licks_to_logits(nd.y_valid, nd.lw_classifications,nd.num_wells)
     nd.x_shape = [nd.batch_size] + list(X_train[0].shape) + [1]
-    nd.y_shape = [nd.batch_size] + [nd.num_wells]
+    nd.y_shape = [nd.batch_size] + [nd.lw_classifications]
     if nd.load_model is True:
         saver = tf.train.import_meta_graph(nd.model_path + ".meta")
         saver.restore(sess, nd.model_path)
@@ -97,7 +97,7 @@ def run_lickwell_network_process(nd):
             x = np.reshape(x, nd.x_shape)
             y = np.reshape(y, nd.y_shape)
             if nd.naive_test is False or nd.time_shift == 0:
-                t = np.max(S.train(sess, x, y, dropout=0.3))
+                t = np.max(S.train(sess, x, y, dropout=nd.dropout))
 
         metric_counter = metric_counter + 1
         nd.epochs_trained = i
@@ -115,7 +115,7 @@ def run_lickwell_network_process(nd):
 def run_network_process(nd):
     # S = ConvolutionalNeuralNetwork1([None, 56, 10, 1], cnn1)
     ns = mlp
-    ns.fc1.weights = tf.truncated_normal(shape=(10*nd.n_neurons,400), stddev=0.01) # 36, 56, 75, 111, 147
+    ns.fc1.weights = tf.truncated_normal(shape=(10*nd.n_neurons,100), stddev=0.01) # 36, 56, 75, 111, 147
     S = MultiLayerPerceptron([None, nd.n_neurons, 10, 1], ns)  # 56 147
     sess = tf.Session()
     metric_eval = Metric(r2_by_epoch=[], ape_by_epoch=[], acc20_by_epoch=[], r2_best=None,
@@ -292,7 +292,7 @@ def run_network(nd, session):
     print("fin")
 
 
-def run_lickwell_network(nd, session, X, y, metadata,pathname_metadata=""):
+def run_lickwell_network(nd, session, X, y,pathname_metadata=""):
     nd.time_shift = nd.initial_timeshift  # set current shift
 
     # Shift input and output
@@ -304,7 +304,7 @@ def run_lickwell_network(nd, session, X, y, metadata,pathname_metadata=""):
 
     for k in range(0, nd.k_cross_validation):
         print("cross validation step", str(k + 1), "of", nd.k_cross_validation)
-        nd.assign_training_testing_lickwell(X, metadata, k, excluded_wells=[1], normalize=nd.lw_normalize)
+        nd.assign_training_testing_lickwell(X, y, k, excluded_wells=[1], normalize=nd.lw_normalize)
         save_nd = run_lickwell_network_process(nd)
         # with multiprocessing.Pool(
         #         1) as p:  # keeping network inside process prevents memory issues when restarting session
@@ -317,11 +317,13 @@ def run_lickwell_network(nd, session, X, y, metadata,pathname_metadata=""):
     metrics_k_obj = []
     for metric in metrics_k:
         metrics_k_obj.append(cross_validate_lickwell_data(metrics=[metric],licks=session.licks,epoch=-1,nd=nd)[0])
+
     nd.clear_io()
     save_as_pickle(nd.model_path + "output/all_guesses_timeshift="+ str(nd.time_shift) + pathname_metadata + ".pkl", all_guesses)
     save_as_pickle(nd.model_path + "output/metrics_timeshift=" + str(nd.time_shift) + pathname_metadata+ ".pkl", metrics)
     save_as_pickle(nd.model_path + "output/nd_timeshift="+str(nd.time_shift)+ pathname_metadata +".pkl",nd)
     save_as_pickle(nd.model_path + "output/licks_timeshift="+str(nd.time_shift)+ pathname_metadata +".pkl",session.licks)
     save_as_pickle(nd.model_path + "output/metrics_k_timeshift="+str(nd.time_shift)+ pathname_metadata +".pkl",metrics_k_obj)
-    print_metric_details(nd.model_path,nd.initial_timeshift,pathname_metadata=pathname_metadata)
+    print_metric_details(nd.model_path, nd.initial_timeshift, pathname_metadata=pathname_metadata)
+    pass
 

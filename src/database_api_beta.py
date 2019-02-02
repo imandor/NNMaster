@@ -6,13 +6,14 @@ import bisect
 import glob
 import pickle
 from random import seed, randint
-from src.preprocessing import generate_counter, fill_counter, normalize_well
+from src.preprocessing import generate_counter, fill_counter, normalize_well, shuffle_list_key
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 import numpy as np
 from numpy.random import multivariate_normal
 import matplotlib.colors as colors
 import random
+
 well_to_color = {0: "#ff0000", 1: "#669900", 2: "#0066cc", 3: "#cc33ff", 4: "#003300", 5: "#996633"}
 
 
@@ -100,7 +101,7 @@ def _convolve_thread_func(filter_func, n_bin_points, neuron_spikes):
             lambda x: filter_func((x - index * filter_func.step_size) / filter_func.search_radius),
             curr_spikes_in_search_window))
         for spike_index, spike in enumerate(neuron_spikes[
-index_first_spike_in_window:index_first_spike_in_window + curr_search_window_max_bound]):
+                                            index_first_spike_in_window:index_first_spike_in_window + curr_search_window_max_bound]):
             # upper bound because a maximum of 1 spike per ms can occurr and runtime of slice operation is O(i2-i1)
             if spike >= curr_search_window_min_bound:
                 index_first_spike_in_window = index_first_spike_in_window + spike_index
@@ -143,55 +144,77 @@ class Net_data:
     # and usually only needs to be created once while the neural network specifics often change depending on the study
     WIN_SIZE = 100
     SEARCH_RADIUS = WIN_SIZE * 2
+
     def __init__(self,
-                 model_path, # where trained network is saved to
-                 raw_data_path, # where session data set(for Slice object) is saved
-                 filtered_data_path=None, # where slice object for session is saved
-                 stride=100, # stride [ms]with which output samples are generated (making it smaller than y_slice_size creates overlapping samples)
-                 y_slice_size=100, # size of each output sample in [ms]
-                 network_type="MLP", # originally multiple network types were tested. This is a descriptor for easier recognition of network type in file data
-                 epochs=20, # how many epochs the network is trained
-                 network_shape = 10, # currently not used, originally showed how many samples are in each batch
-                 from_raw_data=True,# if True, loads session from raw data path, if False loads session from filtered data path (which is much faster)
-                 evaluate_training=False, # if set to True, the network evaluates training performance at runtime (slows down training)
-                 session_filter=Filter(func=hann, search_radius=SEARCH_RADIUS, step_size=WIN_SIZE), # filter function with which to convolve raw data
-                 time_shift_steps=1,# after each step, the network resets with new timeshift and reassigns new ys depending on the current timeshift. Determines how many steps are performed at runtime (see time_shift_iter)
-                 shuffle_data=True, # if data is to be shuffled before assigning to training and testing (see shuffle-factor parameter)
-                 shuffle_factor=500, # shuffling occurs batch-wise (to minimize overlap if stride is lower than y_slice_size). Indicates how many samples are to be shuffled in a batch.
-                 time_shift_iter=500,# determines, how much the time is shifted after each time_shift_step
-                 initial_timeshift=0, # initial time_shift for position decoding. For well-decoding, I appropiated this parameter to determine if the previous or next well is to be decoded (sorry). +1 indicates next well, -1 previous well
-                 metric_iter=1, # after how many epochs the network performance is to be evaluated
-                 batch_size=50, # how many samples are to be given into the network at once (google batch_size)
-                 slice_size=1000, # how many [ms] of neural spike data are in each sample
-                 x_max=240, # determines shape of the track the rat is located on [cm]
-                 y_max=190,# determines shape of the track the rat is located on [cm]
-                 x_min=0,# determines shape of the track the rat is located on [cm]
-                 y_min=100,# determines shape of the track the rat is located on [cm]
-                 x_step=3,# determines, what shape the position bins for the samples are [cm] (3*3cm per bin default)
-                 y_step=3,# determines, what shape the position bins for the samples are [cm] (3*3cm per bin default)
-                 win_size=WIN_SIZE, # size of convolution window for filter function
-                 early_stopping=False, # if True, checks if network performance degrades after a certain amount of steps (see network) and stops training early if yes
-                 search_radius=SEARCH_RADIUS, # size of search radius for filter function
-                 naive_test=False, # if True, doesn't reassign y_values after each time_shift step. Necessary to determine what part of the network performance is due to similarities between different time_shift step neural data
-                 valid_ratio=0.1, # ratio between training and validation data
-                 testing_ratio=0.1, # ration between training and testing data
-                 k_cross_validation=1, # if more than 1, the data is split into k different sets and results are averaged over all set-performances
-                 load_model=False, # if True, the saved model is loaded for training instead of a new one. Is set to True if naive testing is True and time-shift is != 0
-                 train_model=True, # if True, the model is not trained during runtime. Is set to True if naive testing is True and time-shift is != 0
-                 keep_neuron=-1, # TODO not sure what this was supposed to do
-                 neurons_kept_factor=1.0, # if less than one, a corresponding fraction of neurons are randomly removed from session before training
-                 lw_classifications=None, # for well decoding: how many classes exist
-                 lw_normalize=False, # lickwell_data: if True, training and validation data is normalized (complex rules)
-                 lw_differentiate_false_licks=False, # Not used anymore due to too small sample sizes and should currently give an error if True. if True, the network specifically trains to distinguish between correct and false licks. Should work with minimal code editing if ever necessary to implement
-                 num_wells=5, # number of lickwells in data set. Really only in object because of lw_differentiate_false_licks, but there is no reason to remove it either
-                 metric="map", # with what metric the network is to be evaluated (depending on study)
-                 valid_licks=None, # List of licks which are valid for well-decoding study
-                 filter_tetrodes=None, # removes tetrodes from raw session data before creating slice object. Useful if some of the tetrodes are e.g. hippocampal and others for pfc
-                 phases=None,# contains list of training phases
-                 phase_change_ids=None # contains list of phase change lick_ids
+                 model_path,  # where trained network is saved to
+                 raw_data_path,  # where session data set(for Slice object) is saved
+                 dropout,  # where slice object for session is saved
+                 filtered_data_path=None,
+                 stride=100,
+                 # stride [ms]with which output samples are generated (making it smaller than y_slice_size creates overlapping samples)
+                 y_slice_size=100,  # size of each output sample in [ms]
+                 network_type="MLP",
+                 # originally multiple network types were tested. This is a descriptor for easier recognition of network type in file data
+                 epochs=20,  # how many epochs the network is trained
+                 network_shape=10,  # currently not used, originally showed how many samples are in each batch
+                 from_raw_data=True,
+                 # if True, loads session from raw data path, if False loads session from filtered data path (which is much faster)
+                 evaluate_training=False,
+                 # if set to True, the network evaluates training performance at runtime (slows down training)
+                 session_filter=Filter(func=hann, search_radius=SEARCH_RADIUS, step_size=WIN_SIZE),
+                 # filter function with which to convolve raw data
+                 time_shift_steps=1,
+                 # after each step, the network resets with new timeshift and reassigns new ys depending on the current timeshift. Determines how many steps are performed at runtime (see time_shift_iter)
+                 shuffle_data=True,
+                 # if data is to be shuffled before assigning to training and testing (see shuffle-factor parameter)
+                 shuffle_factor=500,
+                 # shuffling occurs batch-wise (to minimize overlap if stride is lower than y_slice_size). Indicates how many samples are to be shuffled in a batch.
+                 time_shift_iter=500,  # determines, how much the time is shifted after each time_shift_step
+                 initial_timeshift=0,
+                 # initial time_shift for position decoding. For well-decoding, I appropiated this parameter to determine if the previous or next well is to be decoded (sorry). +1 indicates next well, -1 previous well
+                 metric_iter=1,  # after how many epochs the network performance is to be evaluated
+                 batch_size=50,  # how many samples are to be given into the network at once (google batch_size)
+                 slice_size=1000,  # how many [ms] of neural spike data are in each sample
+                 x_max=240,  # determines shape of the track the rat is located on [cm]
+                 y_max=190,  # determines shape of the track the rat is located on [cm]
+                 x_min=0,  # determines shape of the track the rat is located on [cm]
+                 y_min=100,  # determines shape of the track the rat is located on [cm]
+                 x_step=3,  # determines, what shape the position bins for the samples are [cm] (3*3cm per bin default)
+                 y_step=3,  # determines, what shape the position bins for the samples are [cm] (3*3cm per bin default)
+                 win_size=WIN_SIZE,  # size of convolution window for filter function
+                 early_stopping=False,
+                 # if True, checks if network performance degrades after a certain amount of steps (see network) and stops training early if yes
+                 search_radius=SEARCH_RADIUS,  # size of search radius for filter function
+                 naive_test=False,
+                 # if True, doesn't reassign y_values after each time_shift step. Necessary to determine what part of the network performance is due to similarities between different time_shift step neural data
+                 valid_ratio=0.1,  # ratio between training and validation data
+                 testing_ratio=0.1,  # ration between training and testing data
+                 k_cross_validation=1,
+                 # if more than 1, the data is split into k different sets and results are averaged over all set-performances
+                 load_model=False,
+                 # if True, the saved model is loaded for training instead of a new one. Is set to True if naive testing is True and time-shift is != 0
+                 train_model=True,
+                 # if True, the model is not trained during runtime. Is set to True if naive testing is True and time-shift is != 0
+                 keep_neuron=-1,  # TODO not sure what this was supposed to do
+                 neurons_kept_factor=1.0,
+                 # if less than one, a corresponding fraction of neurons are randomly removed from session before training
+                 lw_classifications=None,  # for well decoding: how many classes exist
+                 lw_normalize=False,
+                 # lickwell_data: if True, training and validation data is normalized (complex rules)
+                 lw_differentiate_false_licks=False,
+                 # Not used anymore due to too small sample sizes and should currently give an error if True. if True, the network specifically trains to distinguish between correct and false licks. Should work with minimal code editing if ever necessary to implement
+                 num_wells=5,
+                 # number of lickwells in data set. Really only in object because of lw_differentiate_false_licks, but there is no reason to remove it either
+                 metric="map",  # with what metric the network is to be evaluated (depending on study)
+                 valid_licks=None,  # List of licks which are valid for well-decoding study
+                 filter_tetrodes=None,
+                 # removes tetrodes from raw session data before creating slice object. Useful if some of the tetrodes are e.g. hippocampal and others for pfc
+                 phases=None,  # contains list of training phases
+                 phase_change_ids=None  # contains list of phase change lick_ids
                  ):
+        self.dropout = dropout
         self.session_from_raw = from_raw_data
-        self.network_shape=network_shape
+        self.network_shape = network_shape
         self.evaluate_training = evaluate_training
         self.stride = stride
         self.train_model = train_model
@@ -279,19 +302,19 @@ class Net_data:
             for i, lick in enumerate(licks[0:-2]):
                 well = lick.lickwell
                 next_well = licks[i + 1].lickwell
-                print(well,next_well,end="")
+                # print(well,next_well,end="")
                 if well == start_well and next_well != start_well:
                     filtered_licks.append(lick.lick_id)
-                    print("ding!")
-                else:
-                    print("")
+                    # print("ding!")
+                # else:
+                # print("")
         else:
             for i, lick in enumerate(licks[1:-1]):
                 well = lick.lickwell
                 next_well = licks[i - 1].lickwell
                 if well == start_well and next_well != start_well:
                     filtered_licks.append(lick.lick_id)
-        # TODO additional filter function just added here
+        # TODO additional filter function to exclude instances when rat moves around too much
         # new_filtered_licks = []
         # for lick_id in filtered_licks:
         #     lick = get_lick_from_id(lick_id,session.licks)
@@ -343,7 +366,6 @@ class Net_data:
 
     def assign_training_testing_lickwell(self, X, y, k, excluded_wells=[1], normalize=False):
         """
-
         :param X: network input
         :param y: network output
         :param k: cross validation factor
@@ -352,33 +374,23 @@ class Net_data:
         :return: Splits data in to training and testing, supports cross validation
         """
         """"
-
         """
         valid_ratio = self.valid_ratio
         if self.k_cross_validation == 1:
             valid_length = int(len(X) * valid_ratio)
             self.X_train = X[valid_length:]
             self.y_train = y[valid_length:]
-            self.X_valid = X[:valid_length // 2]
-            self.y_valid = y[:valid_length // 2]
-            self.X_test = X[valid_length // 2:valid_length]
-            self.y_test = y[valid_length // 2:valid_length]
+            self.X_valid = X[:valid_length]
+            self.y_valid = y[:valid_length]
         else:
             k_len = int(len(X) * valid_ratio)
-            k_slice_test = slice(k_len * k, int(k_len * (k + 0.5)))
-            k_slice_valid = slice(int(k_len * (k + 0.5)), k_len * (k + 1))
+            k_slice_valid = slice(k_len * k, k_len * (k + 1))
             not_k_slice_1 = slice(0, k_len * k)
             not_k_slice_2 = slice(k_len * (k + 1), len(X))
             self.X_train = X[not_k_slice_1] + X[not_k_slice_2]
             self.y_train = y[not_k_slice_1] + y[not_k_slice_2]
-            self.X_test = X[k_slice_test]
-            self.y_test = y[k_slice_test]
             self.X_valid = X[k_slice_valid]
             self.y_valid = y[k_slice_valid]
-            if self.early_stopping is False:
-                self.X_valid = self.X_valid + self.X_test
-                self.y_valid = self.y_valid + self.y_test
-
             if normalize is True:
                 self.X_train, self.y_train = self.normalize_discrete(self.X_train, self.y_train,
                                                                      excluded_wells=excluded_wells)
@@ -388,91 +400,71 @@ class Net_data:
                     if j != self.keep_neuron:
                         self.X_valid[i][j] = np.zeros(self.X_valid[i][j].shape)
 
-
     def normalize_discrete(self, x, y, excluded_wells=[]):
         """
         :param x: network input
         :param y: network output
-        :param excluded_wells: list of wells which aren't included in the normalization. Useful ie if well 2 licks are over/underrepresented
-        :return: artificially increases the amount of underrepresented samples. Note that the samples are shuffled, so overlaps will also be mixed in randomly
+        :param excluded_wells: list of wells which aren't included in the normalization. Useful ie if well 2 licks are extremely over/underrepresented
+        :return: artificially increases the amount of underrepresented samples and removes overrepresented samples afterwards.
+        Note that the samples are shuffled, so overlaps will also be mixed in randomly
         """
-        seed(1)
+        seed(0)
+        counts = fill_counter(self.num_wells, excluded_wells, y)  # total number of licks by well
+        # shuffle values so they are picked randomly
+        r = shuffle_list_key(length=len(y), shuffle_batch_size=1, seed_no=1)
+        x = [x[j] for j in r]
+        y = [y[j] for j in r]
         x_return = x.copy()
         y_return = y.copy()
-        x_new = x.copy()
-        y_new = y.copy()  # [y[i] for i in range(0, len(y), lick_batch_size)]
-        counts = fill_counter(self.num_wells, excluded_wells, y)  # total number of licks by well
-        while len(y_new) > 0:  # if endless loop occurs here, check if number of wells in net_data object is correct
-            i = randint(0, len(y_new) - 1)
-            well = normalize_well(well=y_new[i].target, num_wells=self.num_wells, excluded_wells=excluded_wells)
-            if counts[well] < max(counts):  # if count at well position smaller than max
-                x_return.append(x_new[i])
-                y_return.append(y_new[i])
-                counts[well] += 1
-            else:
-                y_new.pop(i)
-                x_new.pop(i)
-        return self.filter_overrepresentation_discrete(x_return, y_return, min(counts), excluded_wells)
 
-    def filter_overrepresentation_discrete(self, x, y, max_occurrences, excluded_wells):
-        """
-
-        :param x: network input
-        :param y: network output
-        :param max_occurrences: maximum occurrences
-        :param excluded_wells: excludes wells from being considered
-        :return: randomly removes input and output samples exceeding the count of max_occurrences
-        """
-        x_return = []
-        y_return = []
-        y = np.array(y)
-        counts = generate_counter(self.num_wells, excluded_wells)
         for i, e in enumerate(y):
-            y_pos = normalize_well(e.target, self.num_wells, excluded_wells)
-            if counts[y_pos] < max_occurrences:
+            well_index = normalize_well(well=e.target, num_wells=self.num_wells, excluded_wells=excluded_wells)
+            if counts[well_index] < max(counts):  # if count at well position smaller than max
                 x_return.append(x[i])
-                counts[y_pos] += 1
-                y_return.append(e)
+                y_return.append(y[i])
+                counts[well_index] += 1
         return x_return, y_return
 
-    def plot_validation_position_histogram(self,k):
+    def plot_validation_position_histogram(self, k):
         """
         creates and saves a 2d histogram which shows the positions in validation data set
         """
         fig, ax = plt.subplots()
-        pos_sum = np.sum(self.y_valid,axis=0)
+        pos_sum = np.sum(self.y_valid, axis=0)
         x = []
         y = []
         w = []
-        for i,row in enumerate(pos_sum):
-            for j,value in enumerate(row):
+        for i, row in enumerate(pos_sum):
+            for j, value in enumerate(row):
                 if value != 0:
                     w.append(value)
                     x.append(i)
                     y.append(j)
         ax.set_title('Histogram of coordinates in validation set')
-        ax.hist2d(x, y,weights=w, norm=colors.LogNorm(vmin=1, vmax=5000), bins=50, cmap="binary")
+        ax.hist2d(x, y, weights=w, norm=colors.LogNorm(vmin=1, vmax=5000), bins=50, cmap="binary")
         ax.set_xlabel("x [cm]")
         ax.set_ylabel("y [cm]")
         fig.tight_layout()
-        plt.savefig("C:/Users/NN/Desktop/Master/experiments/Histogram of positions/_"+str(k))
+        plt.savefig("C:/Users/NN/Desktop/Master/experiments/Histogram of positions/_" + str(k))
+
 
 class Slice:
     """
     Represents session object. Should not be changed at runtime aside from if convolving spike data. Should be saved to file to save execution time and can be loaded from file with setting from_raw_data command in Net_data object
     """
+
     def __init__(self, spikes, licks, position_x, position_y, speed, trial_timestamp):
-        self.spikes = spikes # contains neural spike data in [ms]
-        self.n_neurons = len(self.spikes) # number of neurons
-        self.licks = licks # list of lick objects signifying lick-events
+        self.spikes = spikes  # contains neural spike data in [ms]
+        self.n_neurons = len(self.spikes)  # number of neurons
+        self.licks = licks  # list of lick objects signifying lick-events
         if len(position_x) != len(position_y):
             raise ValueError("position_x and position_y must have the same length")
-        self.position_x = position_x # x axis position of the rat in [ms]
-        self.position_y = position_y# y axis position of the rat in [ms]
-        self.speed = speed # list of speeds of the rat in [cm/s] at each [ms] of the data set
-        self.trial_timestamp = trial_timestamp # list of times at which trials occurred
-        self.end_time = self.position_x.shape[0] # timestamp of last event
-        self.absolute_time_offset = 0 # offset of Slice relative to beginning of recording in [ms]
+        self.position_x = position_x  # x axis position of the rat in [ms]
+        self.position_y = position_y  # y axis position of the rat in [ms]
+        self.speed = speed  # list of speeds of the rat in [cm/s] at each [ms] of the data set
+        self.trial_timestamp = trial_timestamp  # list of times at which trials occurred
+        self.end_time = self.position_x.shape[0]  # timestamp of last event
+        self.absolute_time_offset = 0  # offset of Slice relative to beginning of recording in [ms]
 
     def __str__(self):
         return str(self.__dict__)
@@ -506,20 +498,25 @@ class Slice:
 
         # get ids of phase changes and corresponding phases as respectively filtered_lick_ids and filtered_lickwells
 
-        filtered_lickwells = [lick.target for i, lick in enumerate(self.licks[0:-2]) if licks[i+1].rewarded == 1 and lick.lickwell == 1]
-        filtered_lickwell_ids = [lick.lick_id for i, lick in enumerate(self.licks[0:-2]) if licks[i+1].rewarded == 1 and lick.lickwell == 1]
-        filtered_lickwell_phasechange_ids = [filtered_lickwell_ids[i] for i,lickwell in enumerate(filtered_lickwells[0:-2]) if filtered_lickwells[i]!=filtered_lickwells[i+1]] + [licks[-1].lick_id]
-        filtered_lickwells = [lickwell for i,lickwell in enumerate(filtered_lickwells[0:-2]) if filtered_lickwells[i]!=filtered_lickwells[i+1]] + [filtered_lickwells[-1]]
+        filtered_lickwells = [lick.target for i, lick in enumerate(self.licks[0:-2]) if
+                              licks[i + 1].rewarded == 1 and lick.lickwell == 1]
+        filtered_lickwell_ids = [lick.lick_id for i, lick in enumerate(self.licks[0:-2]) if
+                                 licks[i + 1].rewarded == 1 and lick.lickwell == 1]
+        filtered_lickwell_phasechange_ids = [filtered_lickwell_ids[i] for i, lickwell in
+                                             enumerate(filtered_lickwells[0:-2]) if
+                                             filtered_lickwells[i] != filtered_lickwells[i + 1]] + [licks[-1].lick_id]
+        filtered_lickwells = [lickwell for i, lickwell in enumerate(filtered_lickwells[0:-2]) if
+                              filtered_lickwells[i] != filtered_lickwells[i + 1]] + [filtered_lickwells[-1]]
         filtered_lickwells = np.array(filtered_lickwells)
 
         # set phases for each lick
 
         current_phase_counter = 0
-        for i,lick in enumerate(self.licks):
+        for i, lick in enumerate(self.licks):
             lick.phase = filtered_lickwells[current_phase_counter]
             if current_phase_counter != 0:
-                lick.last_phase = filtered_lickwells[current_phase_counter-1]
-            if current_phase_counter != len(filtered_lickwells)-1:
+                lick.last_phase = filtered_lickwells[current_phase_counter - 1]
+            if current_phase_counter != len(filtered_lickwells) - 1:
                 lick.next_phase = filtered_lickwells[current_phase_counter + 1]
             if lick.lick_id in filtered_lickwell_phasechange_ids:
                 current_phase_counter += 1
@@ -558,19 +555,17 @@ class Slice:
                 ax.vlines(s, i, i + 0.8)
         print("")
 
-
     def plot_positions(self):
         """
         :return: shows a binary 2d histogram of each visited location
         """
         fig, ax = plt.subplots()
         ax.set_title('Normalized histogram of visited locations')
-        ax.hist2d(self.position_x, self.position_y,norm=colors.LogNorm(vmin=1, vmax=5000), bins=50,cmap="binary")
+        ax.hist2d(self.position_x, self.position_y, norm=colors.LogNorm(vmin=1, vmax=5000), bins=50, cmap="binary")
         ax.set_xlabel("x [cm]")
         ax.set_ylabel("y [cm]")
         fig.tight_layout()
         plt.show()
-
 
     def print_details(self):
         """
