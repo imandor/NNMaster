@@ -10,15 +10,15 @@ if __name__ == '__main__':
 
     # Data set 1 Prefrontal Cortex
 
-    # MODEL_PATH = "G:/master_datafiles/trained_networks/MLP_PFC_2019-01-29_lickwell/"
-    # RAW_DATA_PATH = "G:/master_datafiles/raw_data/PFC/"
-    # FILTERED_DATA_PATH = "session_pfc_lw.pkl"
+    MODEL_PATH = "G:/master_datafiles/trained_networks/MLP_PFC_2019-01-29_lickwell/"
+    RAW_DATA_PATH = "G:/master_datafiles/raw_data/PFC/"
+    FILTERED_DATA_PATH = "session_pfc_lw.pkl"
 
     # Data set 2 Hippocampus
 
-    MODEL_PATH = "G:/master_datafiles/trained_networks/MLP_HC_2019-01-17_lickwell_tester/"
-    RAW_DATA_PATH = "G:/master_datafiles/raw_data/HC/"
-    FILTERED_DATA_PATH = "session_hc_lw.pkl"
+    # MODEL_PATH = "G:/master_datafiles/trained_networks/MLP_HC_2019-01-17_lickwell_tester/"
+    # RAW_DATA_PATH = "G:/master_datafiles/raw_data/HC/"
+    # FILTERED_DATA_PATH = "session_hc_lw.pkl"
 
     nd = Net_data(
         # Program execution settings
@@ -46,7 +46,7 @@ if __name__ == '__main__':
         lw_differentiate_false_licks=False,
         num_wells=5,
         initial_timeshift=1,
-        from_raw_data=False,
+        from_raw_data=True,
         dropout=0.2
     )
 

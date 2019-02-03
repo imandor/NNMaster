@@ -296,10 +296,10 @@ class Net_data:
         :param start_well: dominant well in training phase (usually well 1)
         :return: a list of lick_ids of licks corresponding to filter
         """
-        licks = session.licks
         filtered_licks = []
         if shift == 1:
-            for i, lick in enumerate(licks[0:-2]):
+            licks = session.licks
+            for i, lick in enumerate(licks[0:-1]):
                 well = lick.lickwell
                 next_well = licks[i + 1].lickwell
                 # print(well,next_well,end="")
@@ -309,7 +309,8 @@ class Net_data:
                 # else:
                 # print("")
         else:
-            for i, lick in enumerate(licks[1:-1]):
+            licks = session.licks[1:-1]
+            for i, lick in enumerate(licks):
                 well = lick.lickwell
                 next_well = licks[i - 1].lickwell
                 if well == start_well and next_well != start_well:
@@ -326,8 +327,8 @@ class Net_data:
         #     # std_lower.append(np.min(slice.position_x))
         #     # std_upper.append(np.max(slice.position_x))
         #     print(lick.lick_id,min,max)
-        #     if max-min < 30:
-        #         new_filtered_licks.append(lick.lick_id)
+            # if max-min < 30:
+            #     new_filtered_licks.append(lick.lick_id)
         self.valid_licks = filtered_licks
 
     def assign_training_testing(self, X, y, k):
