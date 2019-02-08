@@ -73,13 +73,15 @@ def plot_performance_comparison(path_1, shift_1, path_2, shift_2, title_1, title
 
     ind = np.arange(5)  # the x locations for the groups
     fig, (ax1, ax2) = plt.subplots(2)
+    ax1.set_ylim(0,1.0)
+    ax2.set_ylim(0,1.0)
     ax_b1 = ax1.twinx()
     ax_b2 = ax2.twinx()
     error_kw = {'capsize': 5, 'capthick': 1, 'ecolor': 'black'}
     ax1.bar(ind, x_1, color=barcolor, yerr=[std_lower_1, std_upper_1], error_kw=error_kw, align='center')
     ax1.set_xticks(ind)
     ax1.set_xticklabels(['all licks', 'target correct', 'target false', 'prior switch', 'after switch'])
-    ax_b1.set_ylim(0, 1.2)
+    ax_b1.set_ylim(0, 1.0)
     ax1.set_title(title_1)
     ax1.set_ylabel("fraction decoded correctly", fontsize=fontsize)
     if add_trial_numbers is True:
@@ -93,7 +95,7 @@ def plot_performance_comparison(path_1, shift_1, path_2, shift_2, title_1, title
     ax2.bar(ind, x_2, color=barcolor, yerr=[std_lower_2, std_upper_2], error_kw=error_kw, align='center')
     ax2.set_xticks(ind)
     ax2.set_xticklabels(['all licks', 'target correct', 'target false', 'prior switch', 'after switch'])
-    ax_b2.set_ylim(0, 1.2)
+    ax_b2.set_ylim(0, 1.0)
     ax2.set_title(title_2)
     ax2.set_ylabel("fraction decoded correctly", fontsize=fontsize)
     if add_trial_numbers is True:
@@ -270,7 +272,7 @@ def plot_performance_by_licktime(path, shift, title, save_path, plotrange,color=
     ax.set_ylabel("fraction decoded correctly", fontsize=fontsize)
     ax.set_xlabel("Time since start of lick [s]",fontsize=fontsize)
     plt.tight_layout(pad=0.1, w_pad=0.5, h_pad=0)
-    plt.show()
+    # plt.show()
     plt.savefig(save_path)
 
 
@@ -325,5 +327,5 @@ def plot_position_by_licktime(session,y,metadata,plotrange,title,save_path,color
     # ax_b.errorbar(lick_ids,speeds, color="b", linestyle = "None",marker=".",yerr=[std_lower_speed, std_upper_speed])
     # ax_b.set_ylabel("Speed [cm/s]")
     plt.tight_layout(pad=0.1, w_pad=0.5, h_pad=0)
-    plt.show()
+    # plt.show()
     plt.savefig(save_path)

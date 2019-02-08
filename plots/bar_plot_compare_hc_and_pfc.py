@@ -3,8 +3,8 @@ from src.plots import plot_performance_comparison
 if __name__ == '__main__':
     barcolor = "darkred"
     path = "C:/Users/NN/Desktop/Master/experiments/Lickwell_prediction/"
-    model_path_list = [path + "MLP_PFC_lickwell_phasetarget/",
-                       path + "MLP_HC_lickwell_phasetarget/",
+    model_path_list = [path + "MLP_PFC_phasetarget/",
+                       path + "MLP_HC_phasetarget/",
                        path + "MLP_PFC_lickwell/",
                        path + "MLP_HC_lickwell/"]
     # phase data set

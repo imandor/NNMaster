@@ -102,7 +102,7 @@ def _convolve_thread_func(filter_func, n_bin_points, neuron_spikes):
             curr_spikes_in_search_window))
         for spike_index, spike in enumerate(neuron_spikes[
                                             index_first_spike_in_window:index_first_spike_in_window + curr_search_window_max_bound]):
-            # upper bound because a maximum of 1 spike per ms can occurr and runtime of slice operation is O(i2-i1)
+            # upper bound because a maximum of 1 spike per ms can occur and runtime of slice operation is O(i2-i1)
             if spike >= curr_search_window_min_bound:
                 index_first_spike_in_window = index_first_spike_in_window + spike_index
                 break
@@ -136,7 +136,6 @@ class Evaluated_Lick(Lick):
         self.total_decoded = total_decoded
         self.prediction = prediction
         self.fraction_predicted = fraction_predicted
-
 
 class Net_data:
     # contains all data necessary for training the network. Unlike session data, this data is mutable during runtime

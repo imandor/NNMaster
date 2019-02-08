@@ -303,14 +303,15 @@ def run_lickwell_network(nd, session, X, y,pathname_metadata=""):
     metrics_k = []
 
     for k in range(0, nd.k_cross_validation):
-        print("cross validation step", str(k + 1), "of", nd.k_cross_validation)
-        nd.assign_training_testing_lickwell(X, y, k, excluded_wells=[1], normalize=nd.lw_normalize)
-        save_nd = run_lickwell_network_process(nd)
-        # with multiprocessing.Pool(
-        #         1) as p:  # keeping network inside process prevents memory issues when restarting session
-        #     save_nd = p.map(run_lickwell_network_process, [nd])[0]
-        #     p.close()
-        metrics_k.append(save_nd)
+        for j in range(0,int(1/nd.valid_ratio)):
+            print("cross validation step", str(k + 1), "of", nd.k_cross_validation)
+            nd.assign_training_testing_lickwell(X, y, j, excluded_wells=[1], normalize=nd.lw_normalize)
+            save_nd = run_lickwell_network_process(nd)
+            # with multiprocessing.Pool(
+            #         1) as p:  # keeping network inside process prevents memory issues when restarting session
+            #     save_nd = p.map(run_lickwell_network_process, [nd])[0]
+            #     p.close()
+            metrics_k.append(save_nd)
 
 
     metrics,all_guesses = cross_validate_lickwell_data(metrics=metrics_k,licks=session.licks,epoch=-1,nd=nd)

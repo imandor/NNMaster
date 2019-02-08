@@ -3,8 +3,8 @@ from src.plots import plot_accuracy_inside_phase
 if __name__ == '__main__':
 
 
-    model_path_list = ["C:/Users/NN/Desktop/Master/experiments/Lickwell_prediction/MLP_PFC_lickwell_phasetarget/",
-                       "C:/Users/NN/Desktop/Master/experiments/Lickwell_prediction/MLP_HC_lickwell_phasetarget/",
+    model_path_list = ["C:/Users/NN/Desktop/Master/experiments/Lickwell_prediction/MLP_PFC_phasetarget/",
+                       "C:/Users/NN/Desktop/Master/experiments/Lickwell_prediction/MLP_HC_phasetarget/",
                        "C:/Users/NN/Desktop/Master/experiments/Lickwell_prediction/MLP_PFC_lickwell/",
                        "C:/Users/NN/Desktop/Master/experiments/Lickwell_prediction/MLP_HC_lickwell/"]
     image_title_list = ["pfc_phase","hc_phase","pfc","hc"]

@@ -807,7 +807,8 @@ def print_lickwell_metrics(metrics_i, nd, licks):
             print(m.target, ",", end=" ")
             before_predicted_lick = get_lick_from_id(m.last_lick_id, licks, shift=0)
             if before_predicted_lick is not None:
-                print(get_lick_from_id(before_predicted_lick.lick_id - 1, licks).lickwell, ",", end=" ")
+                if before_predicted_lick.lick_id - 1 != 0:
+                    print(get_lick_from_id(before_predicted_lick.lick_id - 1, licks).lickwell, ",", end=" ")
         print(np.round(m.fraction_decoded, 2), ",", m.prediction, ",", np.round(m.fraction_predicted, 2), ",", end=" ")
         if i != len(metrics) - 1:
             print(target_lick.rewarded)
