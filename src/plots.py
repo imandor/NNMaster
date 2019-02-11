@@ -110,6 +110,77 @@ def plot_performance_comparison(path_1, shift_1, path_2, shift_2, title_1, title
     plt.savefig(save_path)
     pass
 
+def plot_performance_comparison_prior_post(path, save_path, barcolor="darkviolet",
+                                add_trial_numbers=False):
+    # load fraction and std data
+
+    shift = 1
+    lick_id_details, lick_id_details_k = get_metric_details(path, shift,pathname_metadata="_prior")
+    # return_sample_count_by_lick_id(lick_id_details_k_1)
+    x_1, std_1, n_1 = get_accuracy_for_comparison(lick_id_details, lick_id_details_k)
+    std_lower_1, std_upper_1 = get_corrected_std(x_1, std_1)
+    lick_id_details, lick_id_details_k = get_metric_details(path, shift,pathname_metadata="_post")
+    # return_sample_count_by_lick_id(lick_id_details_k_1)
+    x_2, std_2, n_2 = get_accuracy_for_comparison(lick_id_details, lick_id_details_k)
+    std_lower_2, std_upper_2 = get_corrected_std(x_2, std_2)
+
+    shift = -1
+    lick_id_details, lick_id_details_k = get_metric_details(path, shift,pathname_metadata="_prior")
+    # return_sample_count_by_lick_id(lick_id_details_k_1)
+    x_3, std_3, n_3 = get_accuracy_for_comparison(lick_id_details, lick_id_details_k)
+    std_lower_3, std_upper_3 = get_corrected_std(x_3, std_3)
+    lick_id_details, lick_id_details_k = get_metric_details(path, shift,pathname_metadata="_post")
+    # return_sample_count_by_lick_id(lick_id_details_k_1)
+    x_4, std_4, n_4 = get_accuracy_for_comparison(lick_id_details, lick_id_details_k)
+    std_lower_4, std_upper_4 = get_corrected_std(x_4, std_4)
+    # plot bar charts
+
+    width = 0.75
+    fontsize = 12
+    font = {'family': 'normal',
+            'size': 12}
+    matplotlib.rc('font', **font)
+    matplotlib.rc('xtick', labelsize=fontsize - 3)
+
+    ind = np.arange(5)  # the x locations for the groups
+    fig, (ax1, ax2) = plt.subplots(2)
+    ax1.set_ylim(0,1.0)
+    ax2.set_ylim(0,1.0)
+    ax_b1 = ax1.twinx()
+    ax_b2 = ax2.twinx()
+    error_kw = {'capsize': 5, 'capthick': 1, 'ecolor': 'black'}
+    ax1.bar(ind, x_1, color=barcolor, yerr=[std_lower_1, std_upper_1], error_kw=error_kw, align='center')
+    ax1.set_xticks(ind)
+    ax1.set_xticklabels(['all licks', 'target correct', 'target false', 'prior switch', 'after switch'])
+    ax_b1.set_ylim(0, 1.0)
+    ax1.set_title(title_1)
+    ax1.set_ylabel("fraction decoded correctly", fontsize=fontsize)
+    if add_trial_numbers is True:
+        for i, j in zip(ind, x_1):
+            if j < 0.2:
+                offset = 0.1
+            else:
+                offset = -0.1
+            ax1.annotate(int(n_1[i]), xy=(i - 0.1, j + offset))
+
+    ax2.bar(ind, x_2, color=barcolor, yerr=[std_lower_2, std_upper_2], error_kw=error_kw, align='center')
+    ax2.set_xticks(ind)
+    ax2.set_xticklabels(['all licks', 'target correct', 'target false', 'prior switch', 'after switch'])
+    ax_b2.set_ylim(0, 1.0)
+    ax2.set_title(title_2)
+    ax2.set_ylabel("fraction decoded correctly", fontsize=fontsize)
+    if add_trial_numbers is True:
+        for i, j in zip(ind, x_2):
+            if j < 0.2:
+                offset = 0.1
+            else:
+                offset = -0.1
+            ax2.annotate(int(n_2[i]), xy=(i - 0.1, j + offset))
+
+    plt.tight_layout(pad=0.1, w_pad=0.5, h_pad=0)
+    plt.savefig(save_path)
+    pass
+
 
 def get_accuracy_for_comparison(lick_id_details, lick_id_details_k):
     """fra_list, std_list, n_list
@@ -195,8 +266,9 @@ def return_fraction_decoded_and_std(lick_id_details):
     return fraction_decoded, std, n
 
 
-def plot_metric_details_by_lickwell(path, timeshift, savepath,add_trial_numbers=False):
-    lick_id_details, lick_id_details_k = get_metric_details(path, timeshift)
+
+def metric_details_by_lickwell(path,timeshift):
+    lick_id_details, lick_id_details_k = get_metric_details(path+"output/", timeshift)
     lick_id_details.filter = lick_id_details.next_well_licked_2
     fractions_decoded_2, std_2, n_2 = return_fraction_decoded_and_std(lick_id_details=lick_id_details)
     lick_id_details.filter = lick_id_details.next_well_licked_3
@@ -211,10 +283,17 @@ def plot_metric_details_by_lickwell(path, timeshift, savepath,add_trial_numbers=
     n_well = [n_2,n_3,n_4,n_5]
     # so error bars show up correctly
     std_lower, std_upper = get_corrected_std(bar_values, std_well)
+    return bar_values,std_lower,std_upper,n_well
 
-    # plot bars
 
-    fontsize = 12
+def plot_metric_details_by_lickwell(model_path_list, timeshift, savepath,add_trial_numbers=False):
+
+    bar_values_1,std_lower_1,std_upper_1,n_well_1 = metric_details_by_lickwell(model_path_list[2],1)
+    bar_values_2,std_lower_2,std_upper_2,n_well_2 = metric_details_by_lickwell(model_path_list[2],-1)
+    bar_values_3,std_lower_3,std_upper_3,n_well_3 = metric_details_by_lickwell(model_path_list[3],1)
+    bar_values_4,std_lower_4,std_upper_4,n_well_4 = metric_details_by_lickwell(model_path_list[3],-1)
+
+    fontsize = 16
     font = {'family': 'normal',
             'size': 12}
     matplotlib.rc('font', **font)
@@ -222,23 +301,61 @@ def plot_metric_details_by_lickwell(path, timeshift, savepath,add_trial_numbers=
 
     ind = np.arange(4)  # the x locations for the groups
 
-    fig, ax = plt.subplots()
-    ax_b = ax.twinx()
+    fig, ((ax_1,ax_3),(ax_2,ax_4)) = plt.subplots(2,2)
     error_kw = {'capsize': 5, 'capthick': 1, 'ecolor': 'black'}
-    ax.bar(ind, bar_values, color='lightblue', yerr=[std_lower, std_upper], error_kw=error_kw, align='center')
-    ax.set_xticks(ind)
-    ax.set_xticklabels(['well 2', 'well 3', 'well 4', 'well 5'])
-    ax_b.set_ylim(0, 1)
-    ax.set_title("Decoding accuracy by well")
-    ax.set_ylabel("fraction of labels decoded correctly", fontsize=fontsize)
+
+
+    ax_1.bar(ind, bar_values_1, color='b', yerr=[std_lower_1, std_upper_1], error_kw=error_kw, align='center',label="Hippocampus")
+    ax_1.set_xticks(ind)
+    ax_1.set_xticklabels(['well 2', 'well 3', 'well 4', 'well 5'],fontsize=fontsize)
+    ax_1.set_ylabel("next well accuracy", fontsize=fontsize)
+    ax_1.legend()
     if add_trial_numbers is True:
-        for i, j in zip(ind, bar_values):
+        for i, j in zip(ind, bar_values_1):
             if j < 0.2:
                 offset = 0.1
             else:
                 offset = -0.1
-            ax.annotate(int(n_well[i]), xy=(i - 0.1, j + offset))
+            ax_1.annotate(int(n_well_1[i]), xy=(i - 0.1, j + offset))
+
+    ax_2.bar(ind, bar_values_2, color='b', yerr=[std_lower_2, std_upper_2], error_kw=error_kw, align='center',label="Hippocampus")
+    ax_2.set_xticks(ind)
+    ax_2.set_xticklabels(['well 2', 'well 3', 'well 4', 'well 5'], fontsize=fontsize)
+    ax_2.set_ylabel("previous well accuracy", fontsize=fontsize)
+    ax_2.legend()
+    if add_trial_numbers is True:
+        for i, j in zip(ind, bar_values_2):
+            if j < 0.2:
+                offset = 0.1
+            else:
+                offset = -0.1
+            ax_2.annotate(int(n_well_2[i]), xy=(i - 0.1, j + offset))
+
+    ax_3.bar(ind, bar_values_3, color='r', yerr=[std_lower_3, std_upper_3], error_kw=error_kw, align='center',label="Prefrontal Cortex")
+    ax_3.set_xticks(ind)
+    ax_3.set_xticklabels(['well 2', 'well 3', 'well 4', 'well 5'], fontsize=fontsize)
+    ax_3.legend()
+    if add_trial_numbers is True:
+        for i, j in zip(ind, bar_values_3):
+            if j < 0.2:
+                offset = 0.1
+            else:
+                offset = -0.1
+            ax_3.annotate(int(n_well_3[i]), xy=(i - 0.1, j + offset))
+    ax_4.bar(ind, bar_values_4, color='r', yerr=[std_lower_4, std_upper_4], error_kw=error_kw, align='center',label="Prefrontal Cortex")
+    ax_4.set_xticks(ind)
+    ax_4.set_xticklabels(['well 2', 'well 3', 'well 4', 'well 5'], fontsize=fontsize)
+    ax_4.legend()
+    if add_trial_numbers is True:
+        for i, j in zip(ind, bar_values_4):
+            if j < 0.2:
+                offset = 0.1
+            else:
+                offset = -0.1
+            ax_4.annotate(int(n_well_4[i]), xy=(i - 0.1, j + offset))
+    plt.show()
     plt.savefig(savepath)
+
 
 
 def fraction_decoded_in_array(filter_func, array):
@@ -274,6 +391,9 @@ def plot_performance_by_licktime(path, shift, title, save_path, plotrange,color=
     plt.tight_layout(pad=0.1, w_pad=0.5, h_pad=0)
     # plt.show()
     plt.savefig(save_path)
+
+
+
 
 
 def plot_position_by_licktime(session,y,metadata,plotrange,title,save_path,color="darkviolet"):

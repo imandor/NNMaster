@@ -376,24 +376,18 @@ class Net_data:
         """"
         """
         valid_ratio = self.valid_ratio
-        if self.k_cross_validation == 1:
-            valid_length = int(len(X) * valid_ratio)
-            self.X_train = X[valid_length:]
-            self.y_train = y[valid_length:]
-            self.X_valid = X[:valid_length]
-            self.y_valid = y[:valid_length]
-        else:
-            k_len = int(len(X) * valid_ratio)
-            k_slice_valid = slice(k_len * k, k_len * (k + 1))
-            not_k_slice_1 = slice(0, k_len * k)
-            not_k_slice_2 = slice(k_len * (k + 1), len(X))
-            self.X_train = X[not_k_slice_1] + X[not_k_slice_2]
-            self.y_train = y[not_k_slice_1] + y[not_k_slice_2]
-            self.X_valid = X[k_slice_valid]
-            self.y_valid = y[k_slice_valid]
-            if normalize is True:
-                self.X_train, self.y_train = self.normalize_discrete(self.X_train, self.y_train,
-                                                                     excluded_wells=excluded_wells)
+
+        k_len = int(len(X) * valid_ratio)
+        k_slice_valid = slice(k_len * k, k_len * (k + 1))
+        not_k_slice_1 = slice(0, k_len * k)
+        not_k_slice_2 = slice(k_len * (k + 1), len(X))
+        self.X_train = X[not_k_slice_1] + X[not_k_slice_2]
+        self.y_train = y[not_k_slice_1] + y[not_k_slice_2]
+        self.X_valid = X[k_slice_valid]
+        self.y_valid = y[k_slice_valid]
+        if normalize is True:
+            self.X_train, self.y_train = self.normalize_discrete(self.X_train, self.y_train,
+                                                                 excluded_wells=excluded_wells)
         if self.keep_neuron != -1:
             for i in range(len(self.X_valid)):
                 for j in range(len(self.X_valid[0])):

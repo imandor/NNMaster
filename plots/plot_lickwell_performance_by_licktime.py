@@ -10,13 +10,14 @@ if __name__ == '__main__':
 
 # Removes a portion of the lick events and checks if performance changes
 
-    model_path_list = [
-        # "C:/Users/NN/Desktop/Master/experiments/Lickwell_prediction/MLP_PFC_lickwell_phasetarget/",
-        #                "C:/Users/NN/Desktop/Master/experiments/Lickwell_prediction/MLP_HC_lickwell_phasetarget/",
-                       "C:/Users/NN/Desktop/Master/experiments/Lickwell_prediction/MLP_PFC_timetest/",
-                       # "C:/Users/NN/Desktop/Master/experiments/Lickwell_prediction/MLP_HC_timetest/"
-    ]
-    plotrange = range(0, 28)
+    # model_path_list = [
+    #     # "C:/Users/NN/Desktop/Master/experiments/Lickwell_prediction/MLP_PFC_lickwell_phasetarget/",
+    #     #                "C:/Users/NN/Desktop/Master/experiments/Lickwell_prediction/MLP_HC_lickwell_phasetarget/",
+    #                    "C:/Users/NN/Desktop/Master/experiments/Lickwell_prediction/MLP_PFC_timetest/",
+    #                    # "C:/Users/NN/Desktop/Master/experiments/Lickwell_prediction/MLP_HC_timetest/"
+    # ]
+    model_path_list = ["C:/Users/NN/Desktop/Master/experiments/Lickwell_prediction/MLP_HC_prior_post/"]
+    plotrange = range(0, 4)
     shift = 1
     if shift == 1:
         shiftpath = "next"
@@ -25,4 +26,4 @@ if __name__ == '__main__':
     for model_path in model_path_list:
         plot_performance_by_licktime(path=model_path + "output/", shift=shift,save_path=model_path+"images/by_licktime_"+shiftpath+".png",
                                      add_trial_numbers=True,title="Fraction decoded correctly by time into lick-event",
-                                     plotrange=plotrange)
+                                     plotrange=plotrange,plot_post_last=True)

@@ -12,15 +12,15 @@ if __name__ == '__main__':
 
     # Data set 1 Prefrontal Cortex
 
-    MODEL_PATH = "G:/master_datafiles/trained_networks/MLP_PFC_2019-02-04_lickwell_licktimetest/"
-    RAW_DATA_PATH = "G:/master_datafiles/raw_data/PFC/"
-    FILTERED_DATA_PATH = "session_pfc_lw.pkl"
+    # MODEL_PATH = "G:/master_datafiles/trained_networks/MLP_PFC_2019-02-04_lickwell_licktimetest/"
+    # RAW_DATA_PATH = "G:/master_datafiles/raw_data/PFC/"
+    # FILTERED_DATA_PATH = "session_pfc_lw.pkl"
 
     # Data set 2 Hippocampus
 
-    # MODEL_PATH = "G:/master_datafiles/trained_networks/MLP_HC_2019-01-29_lickwell_licktimetest_filter/"
-    # RAW_DATA_PATH = "G:/master_datafiles/raw_data/HC/"
-    # FILTERED_DATA_PATH = "session_hc_lw.pkl"
+    MODEL_PATH = "G:/master_datafiles/trained_networks/MLP_HC_2019-02-11_last_next_time_comparison/"
+    RAW_DATA_PATH = "G:/master_datafiles/raw_data/HC/"
+    FILTERED_DATA_PATH = "session_hc_lw.pkl"
 
     nd = Net_data(
         # Program execution settings
@@ -47,13 +47,13 @@ if __name__ == '__main__':
         lw_normalize=True,
         lw_differentiate_false_licks=False,
         num_wells=5,
-        initial_timeshift=1,
+        initial_timeshift=-1,
         from_raw_data=True,
         dropout=0.65
     )
 
     seed(0)
-    plotrange = range(0,28)
+    plotrange = range(0,1)
     # plot_performance_by_licktime(path=MODEL_PATH + "output/", shift=1,save_path=MODEL_PATH+"images/by_licktime_next.png",
     #                              add_trial_numbers=True,title="Fraction decoded correctly by time into lick-event",
     #                              plotrange=plotrange)
@@ -61,7 +61,7 @@ if __name__ == '__main__':
     X, y,nd,session = lickwells_io(session, nd, excluded_wells=[1], shift=nd.initial_timeshift,
                                   normalize=nd.lw_normalize,
                                   differentiate_false_licks=nd.lw_differentiate_false_licks,target_is_phase=True,
-                                   lickstart=0,lickstop=5000)
+                                   lickstart=4000,lickstop=9000)
     # for i, lick in session.licks: # only uncomment during phase test
     #     if lick.target!=1:
     #         lick.target = lick.phase
