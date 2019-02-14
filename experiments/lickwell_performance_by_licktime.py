@@ -48,20 +48,20 @@ if __name__ == '__main__':
         lw_differentiate_false_licks=False,
         num_wells=5,
         initial_timeshift=-1,
-        from_raw_data=True,
+        from_raw_data=False,
         dropout=0.65
     )
-
+    lickstart = 4000
+    lickstop = 9000
+    bins_in_sample = 39
     seed(0)
     plotrange = range(0,1)
-    # plot_performance_by_licktime(path=MODEL_PATH + "output/", shift=1,save_path=MODEL_PATH+"images/by_licktime_next.png",
-    #                              add_trial_numbers=True,title="Fraction decoded correctly by time into lick-event",
-    #                              plotrange=plotrange)
+
     session = initiate_lickwell_network(nd)  # Initialize session
     X, y,nd,session = lickwells_io(session, nd, excluded_wells=[1], shift=nd.initial_timeshift,
                                   normalize=nd.lw_normalize,
                                   differentiate_false_licks=nd.lw_differentiate_false_licks,target_is_phase=True,
-                                   lickstart=4000,lickstop=9000)
+                                   lickstart=lickstart,lickstop=lickstop)
     # for i, lick in session.licks: # only uncomment during phase test
     #     if lick.target!=1:
     #         lick.target = lick.phase
@@ -79,14 +79,10 @@ if __name__ == '__main__':
         metadata_star = []
         licks = []
         for i,y_i in enumerate(y):
-            j = i%39
+            j = i%bins_in_sample
             if j>=lower_border and j <upper_border:
                 X_star.append(X[i])
                 y_star.append(y_i)
                 metadata_star.append(y[i])
-        for lick in session.licks:
-            if lick.lickwell == 1 and lick.lick_id!=1:
-                timestart = lick.time +(lower_border+offset)*(5000/39)
-                timestop = lick.time +(upper_border+offset-1)*(5000/39)
         run_lickwell_network(nd, session, X_star, y_star,pathname_metadata="_"+str(z))
 

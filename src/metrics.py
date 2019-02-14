@@ -724,7 +724,6 @@ def get_metric_details(path, timeshift,pathname_metadata=""):
     metrics_k = load_pickle(path + "metrics_k_timeshift=" + str(timeshift) + pathname_metadata + ".pkl")
     nd = load_pickle(path + "nd_timeshift=" + str(timeshift) + pathname_metadata + ".pkl")
     licks = load_pickle(path + "licks_timeshift=" + str(timeshift) + pathname_metadata +".pkl")
-    # all_guesses_k = load_pickle(path + "all_guesses_timeshift=" + str(timeshift) + ".pkl")
     lick_id_details = Lick_id_details()
     lick_id_details.from_metrics(nd=nd, metrics=metrics, timeshift=timeshift, licks=licks)
     lick_id_details_k = []
@@ -732,7 +731,9 @@ def get_metric_details(path, timeshift,pathname_metadata=""):
         obj = Lick_id_details()
         obj.from_metrics(nd=nd, metrics=metric, timeshift=timeshift, licks=licks)
         lick_id_details_k.append(obj)
-    # all_guesses_by_id = return_guesses_by_lick_id(lick_id_details,all_guesses_k)
+
+
+    # generate all_guesses_k for standard deviation
     return lick_id_details, lick_id_details_k
 
 

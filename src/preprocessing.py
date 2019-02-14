@@ -245,11 +245,11 @@ def lickwells_io(session, nd, excluded_wells=[1], shift=1, normalize=False, diff
                 next_well = lick.phase
             filtered_next_wells.append(next_well)
 
-    # shuffle
-
-    r = shuffle_list_key(length=len(filtered_next_wells),shuffle_batch_size=1,seed_no=0)
-    filtered_next_wells = [filtered_next_wells[j] for j in r]
-    filtered_licks = [filtered_licks[j] for j in r]
+    # # shuffle
+    #
+    # r = shuffle_list_key(length=len(filtered_next_wells),shuffle_batch_size=1,seed_no=0)
+    # filtered_next_wells = [filtered_next_wells[j] for j in r]
+    # filtered_licks = [filtered_licks[j] for j in r]
 
 
     # distribute list of licks as evenly over well type as possible

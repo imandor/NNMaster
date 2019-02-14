@@ -10,7 +10,7 @@ if __name__ == '__main__':
 
     # Data set 1 Prefrontal Cortex
 
-    MODEL_PATH = "G:/master_datafiles/trained_networks/MLP_PFC_2019-02-07_phase/"
+    MODEL_PATH = "G:/master_datafiles/trained_networks/MLP_PFC_2019-02-07/"
     RAW_DATA_PATH = "G:/master_datafiles/raw_data/PFC/"
     FILTERED_DATA_PATH = "session_pfc_lw.pkl"
 
@@ -50,7 +50,7 @@ if __name__ == '__main__':
         dropout=0.2
     )
 
-    # print_metric_details(MODEL_PATH,nd.initial_timeshift)
+    print_metric_details(MODEL_PATH,nd.initial_timeshift)
     session = initiate_lickwell_network(nd)  # Initialize session
     X, y,nd,session = lickwells_io(session, nd, excluded_wells=[1], shift=nd.initial_timeshift,
                                   normalize=nd.lw_normalize,

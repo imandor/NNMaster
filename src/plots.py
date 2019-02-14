@@ -110,77 +110,6 @@ def plot_performance_comparison(path_1, shift_1, path_2, shift_2, title_1, title
     plt.savefig(save_path)
     pass
 
-def plot_performance_comparison_prior_post(path, save_path, barcolor="darkviolet",
-                                add_trial_numbers=False):
-    # load fraction and std data
-
-    shift = 1
-    lick_id_details, lick_id_details_k = get_metric_details(path, shift,pathname_metadata="_prior")
-    # return_sample_count_by_lick_id(lick_id_details_k_1)
-    x_1, std_1, n_1 = get_accuracy_for_comparison(lick_id_details, lick_id_details_k)
-    std_lower_1, std_upper_1 = get_corrected_std(x_1, std_1)
-    lick_id_details, lick_id_details_k = get_metric_details(path, shift,pathname_metadata="_post")
-    # return_sample_count_by_lick_id(lick_id_details_k_1)
-    x_2, std_2, n_2 = get_accuracy_for_comparison(lick_id_details, lick_id_details_k)
-    std_lower_2, std_upper_2 = get_corrected_std(x_2, std_2)
-
-    shift = -1
-    lick_id_details, lick_id_details_k = get_metric_details(path, shift,pathname_metadata="_prior")
-    # return_sample_count_by_lick_id(lick_id_details_k_1)
-    x_3, std_3, n_3 = get_accuracy_for_comparison(lick_id_details, lick_id_details_k)
-    std_lower_3, std_upper_3 = get_corrected_std(x_3, std_3)
-    lick_id_details, lick_id_details_k = get_metric_details(path, shift,pathname_metadata="_post")
-    # return_sample_count_by_lick_id(lick_id_details_k_1)
-    x_4, std_4, n_4 = get_accuracy_for_comparison(lick_id_details, lick_id_details_k)
-    std_lower_4, std_upper_4 = get_corrected_std(x_4, std_4)
-    # plot bar charts
-
-    width = 0.75
-    fontsize = 12
-    font = {'family': 'normal',
-            'size': 12}
-    matplotlib.rc('font', **font)
-    matplotlib.rc('xtick', labelsize=fontsize - 3)
-
-    ind = np.arange(5)  # the x locations for the groups
-    fig, (ax1, ax2) = plt.subplots(2)
-    ax1.set_ylim(0,1.0)
-    ax2.set_ylim(0,1.0)
-    ax_b1 = ax1.twinx()
-    ax_b2 = ax2.twinx()
-    error_kw = {'capsize': 5, 'capthick': 1, 'ecolor': 'black'}
-    ax1.bar(ind, x_1, color=barcolor, yerr=[std_lower_1, std_upper_1], error_kw=error_kw, align='center')
-    ax1.set_xticks(ind)
-    ax1.set_xticklabels(['all licks', 'target correct', 'target false', 'prior switch', 'after switch'])
-    ax_b1.set_ylim(0, 1.0)
-    ax1.set_title(title_1)
-    ax1.set_ylabel("fraction decoded correctly", fontsize=fontsize)
-    if add_trial_numbers is True:
-        for i, j in zip(ind, x_1):
-            if j < 0.2:
-                offset = 0.1
-            else:
-                offset = -0.1
-            ax1.annotate(int(n_1[i]), xy=(i - 0.1, j + offset))
-
-    ax2.bar(ind, x_2, color=barcolor, yerr=[std_lower_2, std_upper_2], error_kw=error_kw, align='center')
-    ax2.set_xticks(ind)
-    ax2.set_xticklabels(['all licks', 'target correct', 'target false', 'prior switch', 'after switch'])
-    ax_b2.set_ylim(0, 1.0)
-    ax2.set_title(title_2)
-    ax2.set_ylabel("fraction decoded correctly", fontsize=fontsize)
-    if add_trial_numbers is True:
-        for i, j in zip(ind, x_2):
-            if j < 0.2:
-                offset = 0.1
-            else:
-                offset = -0.1
-            ax2.annotate(int(n_2[i]), xy=(i - 0.1, j + offset))
-
-    plt.tight_layout(pad=0.1, w_pad=0.5, h_pad=0)
-    plt.savefig(save_path)
-    pass
-
 
 def get_accuracy_for_comparison(lick_id_details, lick_id_details_k):
     """fra_list, std_list, n_list
@@ -229,6 +158,47 @@ def get_accuracy_for_comparison(lick_id_details, lick_id_details_k):
     return fra_list, std_list, n_list
 
 
+
+def get_std(lick_id_details_k,k_cross):
+    lick_id_details_k = np.reshape(lick_id_details_k,-1)
+    lick_id_details_k = np.split(lick_id_details_k,k_cross)
+    print("asd")
+
+
+def get_accuracy_for_comparison_2(lick_id_details, lick_id_details_k,k_cross=10):
+    """second version on request of Professor, I wanted to keep the old one as well
+
+    :param lick_id_details: lick_id_details_object
+    :param lick_id_details_k: list of lick_id_detail objects, one for each k-cross-validation step in first parameter
+    : param k_cross: cross validation factor, relevant for the updated standard deviation since the old format didn't need it
+    :return: list of accuracies by filtered lickwell,list of bernoulli standard deviations, list of absolute count of samples for each list entry
+    """
+    # fraction decoded in all licks
+    lick_id_details.filter=lick_id_details.licks_decoded
+    fractions_decoded_all, std_all, n_all = return_fraction_decoded_and_std(lick_id_details=lick_id_details)
+    std_all = get_std(lick_id_details_k,k_cross)
+    # fraction decoded if target was last lick instead of next (or vice versa)
+    lick_id_details.filter = lick_id_details.last_lick_decoded
+    for i, li in enumerate(lick_id_details_k):
+        lick_id_details_k[i].filter = li.target_lick_correct
+    fractions_decoded_last, std_last, n_last = return_fraction_decoded_and_std(
+        lick_id_details=lick_id_details)
+
+    # fraction decoded if target lick is current phase
+    lick_id_details.filter = lick_id_details.current_phase_decoded
+    for i, li in enumerate(lick_id_details_k):
+        lick_id_details_k[i].filter = li.target_lick_false
+    fractions_decoded_phase, std_phase, n_phase = return_fraction_decoded_and_std(
+        lick_id_details=lick_id_details)
+
+
+
+    fra_list = [fractions_decoded_all, fractions_decoded_last, fractions_decoded_phase]
+    std_list = [std_all, std_last, std_phase]
+    n_list = [n_all, n_last, n_phase]
+    return fra_list, std_list, n_list
+
+
 def get_corrected_std(bar_values, std_well):
     """
     :param bar_values: list of fractional values for bar charts
@@ -251,8 +221,7 @@ def get_corrected_std(bar_values, std_well):
 
 def return_fraction_decoded_and_std(lick_id_details):
     confidence = 1.96
-    fraction_decoded = fraction_decoded_in_array(lick_id_details.filter,
-                                                 lick_id_details.fraction_decoded)  # TODO licks_decoded?
+    fraction_decoded = np.average(lick_id_details.filter)
 
     # calculate number of samples in range
     n = 0
@@ -263,6 +232,8 @@ def return_fraction_decoded_and_std(lick_id_details):
     # calculate bernoulli standard deviation
 
     std = confidence*np.sqrt(fraction_decoded * (1 - fraction_decoded) / n)
+    # std = np.std(lick_id_details.fraction_decoded*lick_id_details.filter)
+    # calculate average error
     return fraction_decoded, std, n
 
 
@@ -362,12 +333,16 @@ def fraction_decoded_in_array(filter_func, array):
     return np.sum(filter_func * array) / np.sum(filter_func)
 
 def plot_performance_by_licktime(path, shift, title, save_path, plotrange,color="darkviolet",
-                                add_trial_numbers=False):
+                                add_trial_numbers=False,pathname_metadata=""):
     # get lickwell for each path data and average
     y_list = []
     n_list = []
     for i in plotrange:
-        lick_id_details, lick_id_details_k = get_metric_details(path, shift,pathname_metadata="_"+str(i))
+        if pathname_metadata !="":
+            pm = pathname_metadata[i]
+        else:
+            pm = "_" + str(i)
+        lick_id_details, lick_id_details_k = get_metric_details(path, shift,pathname_metadata=pm)
         y, std, n = get_accuracy_for_comparison(lick_id_details, lick_id_details_k)
         y_list.append(np.average(y))
         n_list.append(np.sum(n))
@@ -389,7 +364,7 @@ def plot_performance_by_licktime(path, shift, title, save_path, plotrange,color=
     ax.set_ylabel("fraction decoded correctly", fontsize=fontsize)
     ax.set_xlabel("Time since start of lick [s]",fontsize=fontsize)
     plt.tight_layout(pad=0.1, w_pad=0.5, h_pad=0)
-    # plt.show()
+    plt.show()
     plt.savefig(save_path)
 
 
