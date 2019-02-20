@@ -29,14 +29,14 @@ def timehistogram_bar_values(nd,lickstart,lickstop,searchradius,interval):
                 if not is_before_lick and enter_time is None: # sets time when rat enters vicinity of well 1
                     enter_time = 0
                     print("Warning: there seems to be a problem with the position of the rat during a lick at well 1")
-                if (position<searchradius or time==lickstart) and enter_time is None: # determine when rat enters area
+                if (position < searchradius or time == lickstart) and enter_time is None: # determine when rat enters area
                     enter_time = time
                 if position>searchradius and exit_time is None:
                     if is_before_lick: # rat leaves area before lick
                         enter_time = None
                     else: # set exit time
-                        exit_time=time
-                if exit_time is None and time==lickstop-lickstart-1:
+                        exit_time = time
+                if exit_time is None and time == lickstop-lickstart-1:
                     print("Warning: the rat does not leave the vicinity inside the given time range")
                     exit_time = lickstop-lickstart
                 if enter_time is not None and exit_time is not None:
@@ -44,10 +44,12 @@ def timehistogram_bar_values(nd,lickstart,lickstop,searchradius,interval):
                     exit_list.append(exit_time+lickstart)
                     lickids.append(lick.lick_id)
                     break
+
     # determine what percentage of licks are in range for histogram
+
     counter_list = []
     ind_labels = []
-    for i in range(-5000,15000,interval):
+    for i in range(lickstart,lickstop+1,interval):
         counter = 0
         for j in range(0,len(lickids)):
             if i>=entry_list[j] and i<exit_list[j]:
@@ -96,8 +98,8 @@ if __name__ == '__main__':
 
     # print_metric_details(MODEL_PATH,nd.initial_timeshift)
 
-    lickstart= -5000
-    lickstop = 30000
+    lickstart= 0
+    lickstop = 5000
     searchradius = 40
     xtickresolution = 2500
     # ytickresolution = 10
@@ -107,6 +109,26 @@ if __name__ == '__main__':
     path = nd.model_path+ "output/"
     save_path = nd.model_path + "images/lick_duration"+".png"
 
+
+    nd.model_path = "G:/master_datafiles/trained_networks/MLP_PFC_2019-02-07_phase/"
+    nd.raw_data_path = "G:/master_datafiles/raw_data/PFC/"
+    nd.filtered_data_path = "session_pfc_lw.pkl"
+
+
+    # lickids,entry_list,exit_list,counter_list,ind_labels = timehistogram_bar_values(nd,lickstart,lickstop,searchradius,interval)
+
+
+    # TODO delete start
+    session = initiate_lickwell_network(nd)  # Initialize session
+    for lick in session.licks:
+        if lick.lickwell == 1:
+            timeslice = session[int(lick.time + lickstart):int(lick.time + lickstop)]
+            for pos in timeslice.position_x:
+                if pos>77:
+                    print("id",lick.lick_id)
+                    break
+
+    # TODO delete end histogram
 
     lickids,entry_list,exit_list,counter_list,ind_labels = timehistogram_bar_values(nd,lickstart,lickstop,searchradius,interval)
     # plot results

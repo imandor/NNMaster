@@ -209,7 +209,8 @@ class Net_data:
                  filter_tetrodes=None,
                  # removes tetrodes from raw session data before creating slice object. Useful if some of the tetrodes are e.g. hippocampal and others for pfc
                  phases=None,  # contains list of training phases
-                 phase_change_ids=None  # contains list of phase change lick_ids
+                 phase_change_ids=None,  # contains list of phase change lick_ids
+                 number_of_bins = 11 # number of win sized bins going into the input
                  ):
         self.dropout = dropout
         self.session_from_raw = from_raw_data
@@ -272,6 +273,7 @@ class Net_data:
         self.filter_tetrodes = filter_tetrodes
         self.phase_change_ids = phase_change_ids
         self.phases = phases
+        self.number_of_bins = number_of_bins
 
     def clear_io(self):
         self.network_shape = None
@@ -858,16 +860,30 @@ class Slice:
             pickle.dump(self, f)
 
 
-def get_lick_from_id(id, licks, shift=0):
+def get_lick_from_id(id, licks, shift=0,get_next_best=False,dir=1):
     """
 
     :param id: id of lick being searched
     :param licks: list of lick objects
     :param shift: if set, gets lick before or after id'd lick
-    :return: corresponding lick
+    :param get_next_best: if True, takes the next available lick if requested lick not found
+    :param dir: search direction of get_next_best through licks
+
+    :return: corresponding lick or next best lick
     """
-    lick_id_list = [lick.lick_id for lick in licks]
+    if id is None: # catch no id
+        return None
+    lick_id_list = np.array([lick.lick_id for lick in licks])
     try:
         return [licks[i + shift] for i, lick in enumerate(licks) if lick.lick_id == id][0]
     except IndexError:
-        return None
+        if get_next_best is True:
+            if dir == 1:
+                index = np.argmax(lick_id_list>id)
+            if dir == -1:
+                index = np.argmax(lick_id_list<id)
+            id = lick_id_list[index]
+            try:
+                return [licks[i + shift] for i, lick in enumerate(licks) if lick.lick_id == id][0]
+            except IndexError:
+                return None

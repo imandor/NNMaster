@@ -4,8 +4,7 @@ from matplotlib import pyplot as plt
 from src.database_api_beta import  Filter, hann, Net_data
 
 from src.preprocessing import lickwells_io
-from src.plots import plot_performance_by_licktime, get_accuracy_for_comparison_2, get_corrected_std
-from src.network_functions import initiate_lickwell_network, run_lickwell_network
+from src.plots import get_accuracy_for_comparison_2, get_corrected_std
 from src.metrics import print_metric_details, get_metric_details
 from random import seed
 import numpy as np
@@ -19,7 +18,7 @@ if __name__ == '__main__':
     model_path = "C:/Users/NN/Desktop/Master/experiments/Lickwell_prediction/MLP_HC/"
     save_path=model_path+"images/"
     barcolor = "darkviolet"
-    add_trial_numbers=False
+    add_trial_numbers=True
     # load fraction and std data
     path_hc = model_path + "output/"
     path_pfc = "C:/Users/NN/Desktop/Master/experiments/Lickwell_prediction/MLP_PFC/output/"
@@ -59,11 +58,11 @@ if __name__ == '__main__':
     ax4.set_ylim(0, 1.0)
 
     error_kw = {'capsize': 5, 'capthick': 1, 'ecolor': 'black'}
-    ax1.bar(ind, x_1, color="b", yerr=[std_lower_1, std_upper_1], error_kw=error_kw, align='center')
+    ax1.bar(ind, x_1, color="b", yerr=[std_lower_1, std_upper_1], error_kw=error_kw, align='center',label="Hippocampus")
     ax1.set_xticks(ind)
-    ax1.set_ylabel("fraction decoded correctly", fontsize=fontsize)
-    ax1.set_xticklabels(['decoded next well', 'decoded last well', 'decoded current phase'], fontsize=fontsize)
-    ax1.set_title("Set trained to decode next well",fontsize=fontsize)
+    ax1.set_ylabel("fraction decoded", fontsize=fontsize)
+    ax1.set_xticklabels(['next well', 'last well', 'current phase'], fontsize=fontsize)
+    ax1.set_title("decoding next well",fontsize=fontsize)
     if add_trial_numbers is True:
         for i, j in zip(ind, x_1):
             if j < 0.2:
@@ -72,10 +71,10 @@ if __name__ == '__main__':
                 offset = -0.1
             ax1.annotate(int(n_1[i]), xy=(i - 0.1, j + offset))
 
-    ax2.bar(ind, x_2, color="r", yerr=[std_lower_2, std_upper_2], error_kw=error_kw, align='center')
+    ax2.bar(ind, x_2, color="r", yerr=[std_lower_2, std_upper_2], error_kw=error_kw, align='center',label="Prefrontal Cortex")
     ax2.set_xticks(ind)
-    ax2.set_ylabel("fraction decoded correctly", fontsize=fontsize)
-    ax2.set_xticklabels(['decoded next well', 'decoded last well', 'decoded current phase'], fontsize=fontsize)
+    ax2.set_ylabel("fraction decoded", fontsize=fontsize)
+    ax2.set_xticklabels(['next well', 'last well', 'current phase'], fontsize=fontsize)
     if add_trial_numbers is True:
         for i, j in zip(ind, x_2):
             if j < 0.2:
@@ -83,10 +82,10 @@ if __name__ == '__main__':
             else:
                 offset = -0.1
             ax2.annotate(int(n_2[i]), xy=(i - 0.1, j + offset))
-    ax3.bar(ind, x_3, color="b", yerr=[std_lower_3, std_upper_3], error_kw=error_kw, align='center')
+    ax3.bar(ind, x_3, color="b", yerr=[std_lower_3, std_upper_3], error_kw=error_kw, align='center',label="Hippocampus")
     ax3.set_xticks(ind)
-    ax3.set_xticklabels(['decoded last well', 'decoded next well', 'decoded current phase'], fontsize=fontsize)
-    ax3.set_title("Set trained to decode last well", fontsize=fontsize)
+    ax3.set_xticklabels(['last well', 'next well', 'current phase'], fontsize=fontsize)
+    ax3.set_title("decoding last well", fontsize=fontsize)
     if add_trial_numbers is True:
         for i, j in zip(ind, x_3):
             if j < 0.2:
@@ -94,9 +93,9 @@ if __name__ == '__main__':
             else:
                 offset = -0.1
             ax3.annotate(int(n_3[i]), xy=(i - 0.1, j + offset))
-    ax4.bar(ind, x_4, color="r", yerr=[std_lower_4, std_upper_4], error_kw=error_kw, align='center')
+    ax4.bar(ind, x_4, color="r", yerr=[std_lower_4, std_upper_4], error_kw=error_kw, align='center',label="Prefrontal Cortex")
     ax4.set_xticks(ind)
-    ax4.set_xticklabels(['decoded last well', 'decoded next well', 'decoded current phase'], fontsize=fontsize)
+    ax4.set_xticklabels(['last well', 'next well', 'current phase'], fontsize=fontsize)
     if add_trial_numbers is True:
         for i, j in zip(ind, x_4):
             if j < 0.2:
@@ -106,6 +105,11 @@ if __name__ == '__main__':
             ax4.annotate(int(n_4[i]), xy=(i - 0.1, j + offset))
 
     # plt.tight_layout(pad=0.1, w_pad=0.5, h_pad=0)
+    ax1.legend()
+    ax2.legend()
+    ax3.legend()
+    ax4.legend()
+
     plt.show()
     plt.savefig(save_path)
     pass

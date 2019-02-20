@@ -50,8 +50,8 @@ def licks_to_logits(licks, num_classifiers,max_well_no):
 def run_lickwell_network_process(nd):
     # Initialize session, parameters and network
     ns = mlp_discrete
-    ns.fc1.weights = tf.truncated_normal(shape=(11*nd.n_neurons,100), stddev=0.01) # 36, 56, 75, 111, 147
-    S = MultiLayerPerceptron([None, nd.n_neurons, 11, 1], ns)
+    ns.fc1.weights = tf.truncated_normal(shape=(nd.number_of_bins*nd.n_neurons,100), stddev=0.01) # 36, 56, 75, 111, 147
+    S = MultiLayerPerceptron([None, nd.n_neurons, nd.number_of_bins, 1], ns)
     sess = tf.Session()
     acc_scores_valid = []
     avg_acc_valid = []
@@ -304,13 +304,21 @@ def run_lickwell_network(nd, session, X, y,pathname_metadata=""):
 
     for k in range(0, nd.k_cross_validation):
         for j in range(0,int(1/nd.valid_ratio)):
-            print("cross validation step", str(k + 1), "of", nd.k_cross_validation)
+            print("cross validation step", str(j + 1), "of",str(int(1/nd.valid_ratio)) )
             nd.assign_training_testing_lickwell(X, y, j, excluded_wells=[1], normalize=nd.lw_normalize)
-            save_nd = run_lickwell_network_process(nd)
-            # with multiprocessing.Pool(
-            #         1) as p:  # keeping network inside process prevents memory issues when restarting session
-            #     save_nd = p.map(run_lickwell_network_process, [nd])[0]
-            #     p.close()
+            # save_nd = run_lickwell_network_process(nd)
+            with multiprocessing.Pool(
+                    1) as p:  # keeping network inside process prevents memory issues when restarting session
+                save_nd = p.map(run_lickwell_network_process, [nd])[0]
+                # TODO delete
+                counter = 0
+                for guess in save_nd[-1].guesses:
+                    if guess.guess_is_correct is True:
+                        counter +=1
+                print("Accuracy",counter/len(save_nd[-1].guesses))
+
+                # TODO delete
+                p.close()
             metrics_k.append(save_nd)
 
 
@@ -325,6 +333,6 @@ def run_lickwell_network(nd, session, X, y,pathname_metadata=""):
     save_as_pickle(nd.model_path + "output/nd_timeshift="+str(nd.time_shift)+ pathname_metadata +".pkl",nd)
     save_as_pickle(nd.model_path + "output/licks_timeshift="+str(nd.time_shift)+ pathname_metadata +".pkl",session.licks)
     save_as_pickle(nd.model_path + "output/metrics_k_timeshift="+str(nd.time_shift)+ pathname_metadata +".pkl",metrics_k_obj)
-    print_metric_details(nd.model_path, nd.initial_timeshift, pathname_metadata=pathname_metadata)
+    # print_metric_details(nd.model_path, nd.initial_timeshift, pathname_metadata=pathname_metadata)
     pass
 

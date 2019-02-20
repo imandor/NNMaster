@@ -540,7 +540,7 @@ class Lick_id_details:
                  licks_after_switch=None, filter=None, target_lick_correct=None, target_lick_false=None,
                  next_well_licked_2=None, next_well_licked_3=None, next_well_licked_4=None, next_well_licked_5=None,
                  next_phase_decoded=None, last_phase_decoded=None, next_lick_decoded=None, last_lick_decoded=None,
-                 current_phase_decoded=None, fraction_decoded=None, fraction_predicted=None):
+                 current_phase_decoded=None, fraction_decoded=None, fraction_predicted=None,valid_licks=None):
         self.licks = licks  # list (of evaluated) licks
         self.target_lick_correct = target_lick_correct  # binary array, 1 if the rat licked correctly at target well of lick in list
         self.target_lick_false = target_lick_false  # 1 if said lick was false
@@ -561,15 +561,15 @@ class Lick_id_details:
         # active filter is target_lick_correct, so self.next_well_licked_2*self.filter gives all correct target licks at well 2 as a new binary array
         self.fraction_decoded = fraction_decoded  # fractional array, indicates which confidence the network has in its guess (what fraction of samples of lick were decoded with active prediction)
         self.fraction_predicted = fraction_predicted  # fractional array, indicates what fraction of samples were decoded as the correct target
-
+        self.valid_licks = valid_licks # TODO was added later, very small chance I missed updating some method for this # binary array of valid licks
     def print_details(self):
         # prints object details filtered with active filter in the format used in the lickwell_prediction excel file
         correct_licks = self.licks_decoded * self.filter
         false_licks = self.licks_not_decoded * self.filter
         licks = []
-        for i, li in enumerate(self.filter):
-            if li == 1:
-                licks.append(self.licks[i])
+        for i, lick in enumerate(self.licks):
+            if self.filter[lick.lick_id-1]==1:
+                licks.append(lick)
         licks = np.array(licks)
         last_phase_correct = self.last_phase_decoded * self.filter
         next_phase_correct = self.next_phase_decoded * self.filter
@@ -599,24 +599,27 @@ class Lick_id_details:
         :param licks:
         :return:
         """
-        licks_decoded = np.zeros(len(metrics))
-        licks_not_decoded = np.zeros(len(metrics))
-        licks_prior_to_switch = np.zeros(len(metrics))
-        licks_after_switch = np.zeros(len(metrics))
-        next_phase_decoded = np.zeros(len(metrics))
-        last_phase_decoded = np.zeros(len(metrics))
-        current_phase_decoded = np.zeros(len(metrics))
-        next_lick_decoded = np.zeros(len(metrics))  # misnomer, actually lick after next or before last lick
-        last_lick_decoded = np.zeros(len(metrics))
-        fraction_decoded = np.zeros(len(metrics))
-        fraction_predicted = np.zeros(len(metrics))
-        next_well_licked_2 = np.zeros(len(metrics))
-        next_well_licked_3 = np.zeros(len(metrics))
-        next_well_licked_4 = np.zeros(len(metrics))
-        next_well_licked_5 = np.zeros(len(metrics))
-        target_lick_correct = np.zeros(len(metrics))
-        target_lick_false = np.zeros(len(metrics))
-        for i, lick in enumerate(metrics):
+        licks_decoded = np.zeros(len(licks))
+        licks_not_decoded = np.zeros(len(licks))
+        licks_prior_to_switch = np.zeros(len(licks))
+        licks_after_switch = np.zeros(len(licks))
+        next_phase_decoded = np.zeros(len(licks))
+        last_phase_decoded = np.zeros(len(licks))
+        current_phase_decoded = np.zeros(len(licks))
+        next_lick_decoded = np.zeros(len(licks))  # misnomer, actually lick after next or before last lick
+        last_lick_decoded = np.zeros(len(licks))
+        fraction_decoded = np.zeros(len(licks))
+        fraction_predicted = np.zeros(len(licks))
+        next_well_licked_2 = np.zeros(len(licks))
+        next_well_licked_3 = np.zeros(len(licks))
+        next_well_licked_4 = np.zeros(len(licks))
+        next_well_licked_5 = np.zeros(len(licks))
+        target_lick_correct = np.zeros(len(licks))
+        target_lick_false = np.zeros(len(licks))
+        filter = np.zeros(len(licks))
+        for j, lick in enumerate(metrics):
+            i = lick.lick_id-1
+            filter[i] = 1
             fraction_predicted[i] = lick.fraction_predicted
             fraction_decoded[i] = lick.fraction_decoded
 
@@ -640,10 +643,13 @@ class Lick_id_details:
             # filter by whether lick was prior or after a switch
 
             if i != len(metrics) - 1:
-                next_lick = get_lick_from_id(lick.next_lick_id, licks)
+                next_lick = get_lick_from_id(lick.next_lick_id, metrics,get_next_best=True,dir=1)
                 if next_lick.phase is not None and lick.phase != next_lick.phase:
                     licks_prior_to_switch[i] = 1
-                    licks_after_switch[i + 1] = 1
+            if i!=0:
+                last_lick = get_lick_from_id(lick.last_lick_id,metrics,get_next_best=True,dir=-1)
+                if last_lick.phase is not None and lick.phase != last_lick.phase:
+                    licks_after_switch[i] = 1
 
             # filter by whether lick was correctly decoded
 
@@ -686,7 +692,8 @@ class Lick_id_details:
                 target_lick_false[i] = 1
 
         self.licks = metrics
-        self.filter = np.zeros(len(metrics)) + 1
+        self.filter = filter
+        self.valid_licks = filter
         self.licks_decoded = licks_decoded
         self.licks_not_decoded = licks_not_decoded
         self.licks_prior_to_switch = licks_prior_to_switch

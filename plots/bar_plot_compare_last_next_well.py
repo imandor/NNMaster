@@ -5,8 +5,8 @@ if __name__ == '__main__':
 
     model_path_list = ["C:/Users/NN/Desktop/Master/experiments/Lickwell_prediction/MLP_PFC_phasetarget/",
                        "C:/Users/NN/Desktop/Master/experiments/Lickwell_prediction/MLP_HC_phasetarget/",
-                       "C:/Users/NN/Desktop/Master/experiments/Lickwell_prediction/MLP_PFC_lickwell/",
-                       "C:/Users/NN/Desktop/Master/experiments/Lickwell_prediction/MLP_HC_lickwell/"
+                       "C:/Users/NN/Desktop/Master/experiments/Lickwell_prediction/MLP_PFC/",
+                       "C:/Users/NN/Desktop/Master/experiments/Lickwell_prediction/MLP_HC/"
 
                        ]
     image_title_list = ["pfc_phase","hc_phase","pfc","hc"]
