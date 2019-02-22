@@ -20,13 +20,15 @@ if __name__ == '__main__':
     model_path_list = [
        # "C:/Users/NN/Desktop/Master/experiments/Lickwell_prediction/MLP_HC_timetest/",
        #  "C:/Users/NN/Desktop/Master/experiments/Lickwell_prediction/MLP_PFC_timetest/"
-"C:/Users/NN/Desktop/Master/experiments/Lickwell_prediction/MLP_PFC_test/",
-  "C:/Users/NN/Desktop/Master/experiments/Lickwell_prediction/MLP_PFC_test/"
+"C:/Users/NN/Desktop/Master/experiments/Lickwell_prediction/MLP_HC_xkcd2/",
+  # "C:/Users/NN/Desktop/Master/experiments/Lickwell_prediction/MLP_HC_xkcd2/"
     ]
     save_path = "C:/Users/NN/Desktop/Master/experiments/Lickwell_prediction/time_test_comparison.png"
-    plotrange = range(0, 28)
-    y_range = range(0,5000)
-    # for model_path in model_path_list:
+    plotrange = range(0, 140)
+    y_range = range(-5000,10000)
+    offset = 1500  # every point is supposed to show +-500 ms around marker, but does actually 0 to 1000 ms. Offset shifts the axis labels
+
+# for model_path in model_path_list:
         # plot_performance_by_licktime(path=model_path + "output/", shift=shift,save_path=model_path+"images/by_licktime_"+shiftpath+".png",
         #                              add_trial_numbers=True,title="Fraction decoded correctly by time into lick-event",
         #                              plotrange=plotrange)
@@ -34,7 +36,7 @@ if __name__ == '__main__':
 
     y_list = []
     n_list = []
-    for shift in [1,1]: # TODO
+    for shift in [1]: # TODO
         for path in model_path_list:
             y_n = []
             n_n = []
@@ -47,15 +49,14 @@ if __name__ == '__main__':
             n_list.append(n_n)#
     y_list_1 = y_list[0]
     n_list_1 = n_list[0]
-    y_list_2 = y_list[1]
-    n_list_2 = n_list[1]
-    y_list_3 = y_list[2]
-    n_list_3 = n_list[2]
-    y_list_4 = y_list[3]
-    n_list_4 = n_list[3]
+    # y_list_2 = y_list[1]
+    # n_list_2 = n_list[1]
+    # y_list_3 = y_list[2]
+    # n_list_3 = n_list[2]
+    # y_list_4 = y_list[3]
+    # n_list_4 = n_list[3]
 
 # plot chart
-    offset = 500 # every point is supposed to show +-500 ms around marker, but does actually 0 to 1000 ms. Offset shifts the axis labels
     fontsize = 16
     font = {'family': 'normal',
             'size': 12}
@@ -68,20 +69,20 @@ if __name__ == '__main__':
     ax1.set_ylabel("next well accuracy", fontsize=fontsize)
     # ax1.set_xlabel("Time since start of lick [s]",fontsize=fontsize)
     ax1.set_title("Hippocampus")
-    ax2.plot(corrected_ind, y_list_2, color="violet", label="", linestyle="None", marker="X")  # label="cv "+str(i+1)+"/10",
-    ax2.set_ylabel("fraction decoded correctly", fontsize=fontsize)
-    # ax2.set_xlabel("Time since start of lick [s]", fontsize=fontsize)
-    ax2.set_title("Prefrontal Cortex")
-    ax3.plot(corrected_ind, y_list_3, color="violet", label="", linestyle="None", marker="X")  # label="cv "+str(i+1)+"/10",
-    ax3.set_ylabel("last well accuracy", fontsize=fontsize)
-    ax3.set_xlabel("Time since start of lick [s]", fontsize=fontsize)
-    ax4.plot(corrected_ind, y_list_4, color="violet", label="", linestyle="None", marker="X")  # label="cv "+str(i+1)+"/10",
+    # ax2.plot(corrected_ind, y_list_2, color="violet", label="", linestyle="None", marker="X")  # label="cv "+str(i+1)+"/10",
+    # ax2.set_ylabel("fraction decoded correctly", fontsize=fontsize)
+    # # ax2.set_xlabel("Time since start of lick [s]", fontsize=fontsize)
+    # ax2.set_title("Prefrontal Cortex")
+    # ax3.plot(corrected_ind, y_list_3, color="violet", label="", linestyle="None", marker="X")  # label="cv "+str(i+1)+"/10",
+    # ax3.set_ylabel("last well accuracy", fontsize=fontsize)
+    # ax3.set_xlabel("Time since start of lick [s]", fontsize=fontsize)
+    # ax4.plot(corrected_ind, y_list_4, color="violet", label="", linestyle="None", marker="X")  # label="cv "+str(i+1)+"/10",
     # ax4.set_ylabel("fraction decoded correctly", fontsize=fontsize)
     ax4.set_xlabel("Time since start of lick [s]", fontsize=fontsize)
-    ax1.set_ylim(0.2, 0.7)
-    ax2.set_ylim(0.2, 0.7)
-    ax3.set_ylim(0.2, 0.7)
-    ax4.set_ylim(0.2, 0.7)
+    ax1.set_ylim(0, 1)
+    ax2.set_ylim(0, 1)
+    ax3.set_ylim(0, 1)
+    ax4.set_ylim(0, 1)
     plt.tight_layout(pad=0.1, w_pad=0.5, h_pad=0)
     plt.show()
     plt.savefig(save_path)

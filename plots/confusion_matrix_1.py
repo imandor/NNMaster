@@ -7,7 +7,7 @@ from src.metrics import get_lick_from_id
 
 
 if __name__ == '__main__':
-    exclude_phase_change_trials = False
+    exclude_phase_change_trials = True
     path = "C:/Users/NN/Desktop/Master/experiments/Lickwell_prediction/"
     model_path_list = [
                        path + "MLP_PFC/",

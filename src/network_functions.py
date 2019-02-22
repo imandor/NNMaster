@@ -79,7 +79,7 @@ def run_lickwell_network_process(nd):
 
             # Evaluate
 
-            print("Epoch", i, "of",nd.epochs)
+            # print("Epoch", i, "of",nd.epochs)
             if nd.evaluate_training is True: # print training performance
                 epoch_metric = Lick_Metric_By_Epoch.test_accuracy(sess=sess, S=S, nd=nd, X=X_train, y=logits_train,
                                                                   metadata=nd.y_train, epoch=i)
@@ -307,6 +307,20 @@ def run_lickwell_network(nd, session, X, y,pathname_metadata=""):
             print("cross validation step", str(j + 1), "of",str(int(1/nd.valid_ratio)) )
             nd.assign_training_testing_lickwell(X, y, j, excluded_wells=[1], normalize=nd.lw_normalize)
             # save_nd = run_lickwell_network_process(nd)
+
+
+            lick_id_1 = []
+            lick_id_2 = []
+            for y_i in nd.y_train:
+                i = y_i.lick_id
+                if i not in lick_id_1:
+                    lick_id_1.append(i)
+            for y_i in nd.y_valid:
+                i = y_i.lick_id
+                if i not in lick_id_2:
+                    lick_id_2.append(i)
+                lick_id_1.sort()
+                lick_id_2.sort()
             with multiprocessing.Pool(
                     1) as p:  # keeping network inside process prevents memory issues when restarting session
                 save_nd = p.map(run_lickwell_network_process, [nd])[0]

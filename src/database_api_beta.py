@@ -210,7 +210,7 @@ class Net_data:
                  # removes tetrodes from raw session data before creating slice object. Useful if some of the tetrodes are e.g. hippocampal and others for pfc
                  phases=None,  # contains list of training phases
                  phase_change_ids=None,  # contains list of phase change lick_ids
-                 number_of_bins = 11 # number of win sized bins going into the input
+                 number_of_bins = 10 # number of win sized bins going into the input
                  ):
         self.dropout = dropout
         self.session_from_raw = from_raw_data
@@ -380,13 +380,13 @@ class Net_data:
         valid_ratio = self.valid_ratio
 
         k_len = int(len(X) * valid_ratio)
-        k_slice_valid = slice(k_len * k, k_len * (k + 1))
-        not_k_slice_1 = slice(0, k_len * k)
-        not_k_slice_2 = slice(k_len * (k + 1), len(X))
-        self.X_train = X[not_k_slice_1] + X[not_k_slice_2]
-        self.y_train = y[not_k_slice_1] + y[not_k_slice_2]
-        self.X_valid = X[k_slice_valid]
-        self.y_valid = y[k_slice_valid]
+        valid_slice = slice(k_len * k, k_len * (k + 1))
+        train_slice_1 = slice(0, k_len * k)
+        train_slice_2 = slice(k_len * (k + 1), len(X))
+        self.X_train = X[train_slice_1] + X[train_slice_2]
+        self.y_train = y[train_slice_1] + y[train_slice_2]
+        self.X_valid = X[valid_slice]
+        self.y_valid = y[valid_slice]
         if normalize is True:
             self.X_train, self.y_train = self.normalize_discrete(self.X_train, self.y_train,
                                                                  excluded_wells=excluded_wells)
@@ -878,12 +878,13 @@ def get_lick_from_id(id, licks, shift=0,get_next_best=False,dir=1):
         return [licks[i + shift] for i, lick in enumerate(licks) if lick.lick_id == id][0]
     except IndexError:
         if get_next_best is True:
-            if dir == 1:
-                index = np.argmax(lick_id_list>id)
-            if dir == -1:
-                index = np.argmax(lick_id_list<id)
-            id = lick_id_list[index]
             try:
+                if dir == 1:
+                    index = np.argmax(lick_id_list>id)
+                    id = lick_id_list[index]
+                if dir == -1:
+                    id = [a for a in lick_id_list if a<id][-1]
+
                 return [licks[i + shift] for i, lick in enumerate(licks) if lick.lick_id == id][0]
             except IndexError:
                 return None

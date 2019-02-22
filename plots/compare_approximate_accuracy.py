@@ -21,33 +21,28 @@ def get_accuracy(lick_id_details, lick_id_details_k,d=0):
     :return: list of accuracies by filtered lickwell,list of bernoulli standard deviations, list of absolute count of samples for each list entry
     """
     # change licks_decoded to let guesses be valid that are d off
+    parameter = np.zeros(len(lick_id_details.valid_licks))
     if d!=0:
         for i,lick in enumerate(lick_id_details.licks):
-            if lick.target == lick.prediction + d or lick.target == lick.prediction-d:
-                lick_id_details.valid_licks[i] = 1
+            if lick.lickwell == 1 and abs(lick.target - lick.prediction)<= d :
+                parameter[lick.lick_id-1] = 1
             else:
-                lick_id_details.valid_licks[i] = 0
-
-    phase_change_filter = []
-    for i,e in enumerate(lick_id_details.licks_prior_to_switch):
-        if e == 1 or lick_id_details.licks_after_switch[i] == 1:
-            phase_change_filter.append(1)
-        else:
-            phase_change_filter.append(0)
-    # fraction decoded in all licks
+                parameter[lick.lick_id-1] = 0
+        parameter = np.ndarray.tolist(parameter)
+    else:
+        parameter = lick_id_details.licks_decoded
     fractions_decoded_all, std_all, n_all = return_fraction_decoded_and_std(lick_id_details=lick_id_details,
-    lick_id_details_k=lick_id_details_k,parameter=lick_id_details.licks_decoded, filter=lick_id_details.valid_licks)
+    lick_id_details_k=lick_id_details_k,parameter=parameter, filter=lick_id_details.valid_licks)
 
-    # fraction decoded if only phase changes are included
+    # fraction decoded before a phase change
     lick_id_details.filter = lick_id_details.valid_licks
     fractions_decoded_phase, std_phase, n_phase = return_fraction_decoded_and_std(lick_id_details=lick_id_details,
-    lick_id_details_k=lick_id_details_k,parameter=lick_id_details.licks_decoded, filter=phase_change_filter)
+    lick_id_details_k=lick_id_details_k,parameter=parameter, filter=lick_id_details.licks_prior_to_switch)
 
-    # fraction decoded if phase changes are not included
-    phase_change_filter = np.ndarray.tolist(np.ones(len(phase_change_filter))-phase_change_filter)# phase_change_filter ^= 1 # invert filter
+    # fraction decoded after phase change
 
     fractions_decoded_nophase, std_nophase, n_nophase = return_fraction_decoded_and_std(lick_id_details=lick_id_details,
-    lick_id_details_k=lick_id_details_k,parameter=lick_id_details.licks_decoded, filter=phase_change_filter)
+    lick_id_details_k=lick_id_details_k,parameter=parameter, filter=lick_id_details.licks_after_switch)
 
     fractions_decoded= [fractions_decoded_all,fractions_decoded_phase,fractions_decoded_nophase]
     std = [std_all, std_phase, std_nophase]
@@ -63,17 +58,18 @@ if __name__ == '__main__':
 
 
     model_path = "C:/Users/NN/Desktop/Master/experiments/Lickwell_prediction/MLP_HC/"
-    save_path=model_path+"images/"
+    save_path=model_path+"images/approximate_accuracy.png"
     barcolor = "darkviolet"
-    add_trial_numbers=True
+    add_trial_numbers = True
+    shift = 1
     # load fraction and std data
     path_hc = model_path + "output/"
-    lick_id_details, lick_id_details_k = get_metric_details(path_hc, 1)
+    lick_id_details, lick_id_details_k = get_metric_details(path_hc, shift)
     x_1, std_1, n_1 = get_accuracy(lick_id_details, lick_id_details_k)
     x_2, std_2, n_2 = get_accuracy(lick_id_details, lick_id_details_k, d=1)
     x_3, std_3, n_3 = get_accuracy(lick_id_details, lick_id_details_k, d=2)
     path_pfc = "C:/Users/NN/Desktop/Master/experiments/Lickwell_prediction/MLP_PFC/output/"
-    lick_id_details, lick_id_details_k = get_metric_details(path_hc, 1)
+    lick_id_details, lick_id_details_k = get_metric_details(path_pfc, shift)
     x_4, std_4, n_4 = get_accuracy(lick_id_details, lick_id_details_k)
     x_5, std_5, n_5 = get_accuracy(lick_id_details, lick_id_details_k,d=1)
     x_6, std_6, n_6 = get_accuracy(lick_id_details, lick_id_details_k,d=2)
@@ -87,7 +83,7 @@ if __name__ == '__main__':
 
 # plot results
 
-    width = 0.75
+    width = 0.3
     fontsize = 16
     font = {'family': 'normal',
             'size': 12}
@@ -96,20 +92,20 @@ if __name__ == '__main__':
 
     ind = np.arange(3)  # the x locations for the groups
     # fig, ((ax1, ax2,ax3), (ax4, ax5,ax6)) = plt.subplots(nrows=3, ncols=2)
-    fig, ((ax1, ax2),(ax3, ax4), (ax5,ax6)) = plt.subplots(nrows=3, ncols=2)
+    fig, (ax1,ax2) = plt.subplots(nrows=1, ncols=2)
 
     ax1.set_ylim(0, 1.0)
     ax2.set_ylim(0, 1.0)
-    ax3.set_ylim(0, 1.0)
-    ax4.set_ylim(0, 1.0)
-    ax5.set_ylim(0, 1.0)
-    ax6.set_ylim(0, 1.0)
+
     error_kw = {'capsize': 5, 'capthick': 1, 'ecolor': 'black'}
-    ax1.bar(ind, x_1, color="b", yerr=[std_lower_1, std_upper_1], error_kw=error_kw, align='center',label="Hippocampus")
+    ax1.bar(ind, x_1, color="darkblue", error_kw=error_kw, align='center',label="d=0")
+    ax1.bar(ind, x_2, color="slateblue",bottom=x_1, error_kw=error_kw, align='center', label="d=1")
+    ax1.bar(ind, x_3, color="blue",bottom=x_2, error_kw=error_kw, align='center', label="d=2")
+
     ax1.set_xticks(ind)
     ax1.set_ylabel("fraction decoded", fontsize=fontsize)
-    ax1.set_xticklabels(['next well', 'last well', 'current phase'], fontsize=fontsize)
-    ax1.set_title("decoding next well",fontsize=fontsize)
+    ax1.set_xticklabels(["all events","prior change", "after change"], fontsize=fontsize)
+    ax1.set_title("hippocampus",fontsize=fontsize)
     if add_trial_numbers is True:
         for i, j in zip(ind, x_1):
             if j < 0.2:
@@ -118,68 +114,24 @@ if __name__ == '__main__':
                 offset = -0.1
             ax1.annotate(int(n_1[i]), xy=(i - 0.1, j + offset))
 
-    ax2.bar(ind, x_2, color="r", yerr=[std_lower_2, std_upper_2], error_kw=error_kw, align='center',label="Prefrontal Cortex")
     ax2.set_xticks(ind)
     ax2.set_ylabel("fraction decoded", fontsize=fontsize)
-    ax2.set_xticklabels(['next well', 'last well', 'current phase'], fontsize=fontsize)
-    if add_trial_numbers is True:
-        for i, j in zip(ind, x_2):
-            if j < 0.2:
-                offset = 0.1
-            else:
-                offset = -0.1
-            ax2.annotate(int(n_2[i]), xy=(i - 0.1, j + offset))
-    ax3.bar(ind, x_3, color="b", yerr=[std_lower_3, std_upper_3], error_kw=error_kw, align='center',label="Hippocampus")
-    ax3.set_xticks(ind)
-    ax3.set_xticklabels(['last well', 'next well', 'current phase'], fontsize=fontsize)
-    ax3.set_title("decoding last well", fontsize=fontsize)
-    if add_trial_numbers is True:
-        for i, j in zip(ind, x_3):
-            if j < 0.2:
-                offset = 0.1
-            else:
-                offset = -0.1
-            ax3.annotate(int(n_3[i]), xy=(i - 0.1, j + offset))
-
-    ax4.bar(ind, x_4, color="r", yerr=[std_lower_4, std_upper_4], error_kw=error_kw, align='center',label="Prefrontal Cortex")
-    ax4.set_xticks(ind)
-    ax4.set_xticklabels(['last well', 'next well', 'current phase'], fontsize=fontsize)
+    ax2.set_xticklabels(["all events","prior change", "after change"], fontsize=fontsize)
+    ax2.set_title("prefrontal cortex", fontsize=fontsize)
+    ax2.bar(ind, x_4, color="darkred", error_kw=error_kw, align='center',
+            label="d=0")
+    ax2.bar(ind, x_5, color="tomato", bottom=x_4, error_kw=error_kw, align='center',
+            label="d=1")
+    ax2.bar(ind, x_6, color="r", bottom=x_5, error_kw=error_kw, align='center', label="d=2")
     if add_trial_numbers is True:
         for i, j in zip(ind, x_4):
             if j < 0.2:
                 offset = 0.1
             else:
                 offset = -0.1
-            ax4.annotate(int(n_4[i]), xy=(i - 0.1, j + offset))
-
-    ax5.bar(ind, x_5, color="r", yerr=[std_lower_5, std_upper_5], error_kw=error_kw, align='center',label="Prefrontal Cortex")
-    ax5.set_xticks(ind)
-    ax5.set_xticklabels(['last well', 'next well', 'current phase'], fontsize=fontsize)
-    if add_trial_numbers is True:
-        for i, j in zip(ind, x_5):
-            if j < 0.2:
-                offset = 0.1
-            else:
-                offset = -0.1
-            ax4.annotate(int(n_5[i]), xy=(i - 0.1, j + offset))
-
-    ax6.bar(ind, x_6, color="r", yerr=[std_lower_4, std_upper_4], error_kw=error_kw, align='center',label="Prefrontal Cortex")
-    ax6.set_xticks(ind)
-    ax6.set_xticklabels(['last well', 'next well', 'current phase'], fontsize=fontsize)
-    if add_trial_numbers is True:
-        for i, j in zip(ind, x_6):
-            if j < 0.2:
-                offset = 0.1
-            else:
-                offset = -0.1
-            ax4.annotate(int(n_6[i]), xy=(i - 0.1, j + offset))
-    # plt.tight_layout(pad=0.1, w_pad=0.5, h_pad=0)
+            ax2.annotate(int(n_4[i]), xy=(i - 0.1, j + offset))
     ax1.legend()
     ax2.legend()
-    ax3.legend()
-    ax4.legend()
-    ax5.legend()
-    ax6.legend()
     plt.show()
     plt.savefig(save_path)
     pass

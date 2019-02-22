@@ -648,7 +648,7 @@ class Lick_id_details:
                     licks_prior_to_switch[i] = 1
             if i!=0:
                 last_lick = get_lick_from_id(lick.last_lick_id,metrics,get_next_best=True,dir=-1)
-                if last_lick.phase is not None and lick.phase != last_lick.phase:
+                if last_lick is not None and last_lick.phase is not None and lick.phase != last_lick.phase:
                     licks_after_switch[i] = 1
 
             # filter by whether lick was correctly decoded
