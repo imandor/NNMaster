@@ -35,15 +35,13 @@ if __name__ == '__main__':
     session.position_y = copy_pos_x
     for lick in session.licks:
         print(lick.lickwell)
-    X, y, metadata, nd, session = lickwells_io(session, nd, excluded_wells=[1], shift=nd.initial_timeshift,
-                                               normalize=nd.lw_normalize,
-                                               differentiate_false_licks=nd.lw_differentiate_false_licks)
+
     array = np.zeros((10,10))
     for i,lick in enumerate(session.licks):
         x = lick.lickwell - 1
         if lick.target is not None:
             y = lick.target - 1
-        array[x][y] += 1
+            array[x][y] += 1
     df_cm = pd.DataFrame(array, index = [i for i in [1,2,3,4,5,6,7,8,9,10]],
                       columns = [i for i in [1,2,3,4,5,6,7,8,9,10]])
     plt.figure(figsize = (10,7))

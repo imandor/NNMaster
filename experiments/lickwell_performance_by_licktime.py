@@ -9,15 +9,15 @@ if __name__ == '__main__':
 
     # Data set 1 Prefrontal Cortex
 
-    # MODEL_PATH = "G:/master_datafiles/trained_networks/MLP_PFC_2019-02-20_licktime_problemtest/"
-    # RAW_DATA_PATH = "G:/master_datafiles/raw_data/PFC/"
-    # FILTERED_DATA_PATH = "session_pfc_lw.pkl"
+    MODEL_PATH = "G:/master_datafiles/trained_networks/MLP_PFC_2019-02-23_licktime/"
+    RAW_DATA_PATH = "G:/master_datafiles/raw_data/PFC/"
+    FILTERED_DATA_PATH = "session_pfc_lw.pkl"
 
     # Data set 2 Hippocampus
 
-    MODEL_PATH = "G:/master_datafiles/trained_networks/MLP_HC_2019-02-22_licktime/"
-    RAW_DATA_PATH = "G:/master_datafiles/raw_data/HC/"
-    FILTERED_DATA_PATH = "session_hc_lw.pkl"
+    # MODEL_PATH = "G:/master_datafiles/trained_networks/MLP_HC_2019-02-22_licktime/"
+    # RAW_DATA_PATH = "G:/master_datafiles/raw_data/HC/"
+    # FILTERED_DATA_PATH = "session_hc_lw.pkl"
 
     nd = Net_data(
         # Program execution settings
@@ -49,13 +49,13 @@ if __name__ == '__main__':
         dropout=0.65,
     )
     lickstart = -5000
-    lickstop = 0
+    lickstop = 10000
     seed(0)
-    plotrange = range(0,int((lickstop-lickstart)/nd.win_size)-nd.number_of_bins)
+    plotrange = range(0,int((lickstop-lickstart)/nd.win_size)-nd.number_of_bins) # number of possible partitions of lick event slices
 
     session = initiate_lickwell_network(nd)  # Initialize session
 
-    X, y, nd, session, samplestarts, samplestops = lickwells_io(session, nd, excluded_wells=[1], shift=nd.initial_timeshift,
+    X, y, nd, session = lickwells_io(session, nd, excluded_wells=[1], shift=nd.initial_timeshift,
                                   normalize=nd.lw_normalize,
                                   differentiate_false_licks=nd.lw_differentiate_false_licks,target_is_phase=True,
                                    lickstart=lickstart,lickstop=lickstop)
@@ -68,17 +68,18 @@ if __name__ == '__main__':
 
     for z in plotrange:
         offset = z
-        lower_border = lickstart + z*nd.win_size
-        upper_border = lickstart+ (z+20)*nd.win_size
+        lower_border = z*nd.win_size # borders in ms of start of sliced event
+        upper_border = (z+20)*nd.win_size
 
         X_star = []
         y_star = []
-        for i,y_i in enumerate(y):
-            if samplestarts[i]>=lower_border and samplestarts[i]<upper_border:
-                X_star.append(X[i])
-                y_star.append(y_i)
-        print("Border is now",lower_border,upper_border)
+        for i,x in enumerate(X):
+            X_star.append(x[lower_border:upper_border])
+            # if samplestarts[i]>=lower_border and samplestarts[i]<upper_border:
+            #     X_star.append(X[i])
+            #     y_star.append(y_i)
+        print("Border is now",str(lickstart + lower_border),str(lickstart + upper_border))
 
 
-        run_lickwell_network(nd, session, X_star, y_star,pathname_metadata="_"+str(z))
+        run_lickwell_network(nd, session, X_star, y,pathname_metadata="_"+str(z))
 

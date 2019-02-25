@@ -18,16 +18,18 @@ if __name__ == '__main__':
     FILTERED_DATA_PATH = "session_hc"
 
     nd = Net_data(
-        initial_timeshift=0,
-        time_shift_iter=-500,
-        time_shift_steps=1,
-        early_stopping=False,
+        initial_timeshift=-20000,
+        time_shift_iter=500,
+        time_shift_steps=41,
+        early_stopping=True,
         model_path=MODEL_PATH,
         raw_data_path=RAW_DATA_PATH,
+        filtered_data_path=FILTERED_DATA_PATH,
         k_cross_validation = 10,
-        naive_test=True,
-        from_raw_data=False,
-        epochs = 1
+        naive_test=False,
+        from_raw_data=True,
+        epochs = 20,
+        dropout=0.65
 
 
     )

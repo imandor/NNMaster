@@ -3,7 +3,7 @@ from src.nets import MultiLayerPerceptron
 from src.metrics import  plot_histogram, Metric, Network_output,print_metric_details
 from src.conf import mlp, mlp_discrete
 from src.database_api_beta import Slice, Filter, hann
-from src.metrics import print_Net_data, cross_validate_lickwell_data, Lick_Metric_By_Epoch,print_lickwell_metrics
+from src.metrics import print_Net_data, cross_validate_lickwell_data, Evaluated_Samples_By_Epoch,print_lickwell_metrics
 import numpy as np
 from src.settings import save_as_pickle, load_pickle, save_net_dict
 from src.preprocessing import time_shift_positions, shuffle_io, position_as_map, lickwells_io, generate_counter, \
@@ -54,7 +54,6 @@ def run_lickwell_network_process(nd):
     S = MultiLayerPerceptron([None, nd.n_neurons, nd.number_of_bins, 1], ns)
     sess = tf.Session()
     acc_scores_valid = []
-    avg_acc_valid = []
     X_train = nd.X_train
     logits_train = licks_to_logits(nd.y_train, nd.lw_classifications,nd.num_wells)
     X_valid = nd.X_valid
@@ -81,11 +80,11 @@ def run_lickwell_network_process(nd):
 
             # print("Epoch", i, "of",nd.epochs)
             if nd.evaluate_training is True: # print training performance
-                epoch_metric = Lick_Metric_By_Epoch.test_accuracy(sess=sess, S=S, nd=nd, X=X_train, y=logits_train,
-                                                                  metadata=nd.y_train, epoch=i)
+                epoch_metric = Evaluated_Samples_By_Epoch.test_accuracy(sess=sess, S=S, nd=nd, X=X_train, y=logits_train,
+                                                                        metadata=nd.y_train, epoch=i)
 
-            epoch_metric = Lick_Metric_By_Epoch.test_accuracy(sess=sess, S=S, nd=nd, X=X_valid, y=logits_valid,
-                                                              metadata=nd.y_valid, epoch=i)
+            epoch_metric = Evaluated_Samples_By_Epoch.test_accuracy(sess=sess, S=S, nd=nd, X=X_valid, y=logits_valid,
+                                                                    metadata=nd.y_valid, epoch=i)
             acc_scores_valid.append(epoch_metric)
             metric_counter = 0
 
@@ -103,7 +102,6 @@ def run_lickwell_network_process(nd):
         nd.epochs_trained = i
 
     # Add performance to return dict
-    nd.avg_scores_valid = avg_acc_valid
     nd.acc_scores_valid = acc_scores_valid
     nd.metric_step_counter = metric_step_counter
     # Close session and add current time shift to network save file
@@ -321,6 +319,14 @@ def run_lickwell_network(nd, session, X, y,pathname_metadata=""):
                     lick_id_2.append(i)
                 lick_id_1.sort()
                 lick_id_2.sort()
+
+            counter_1 = np.zeros(5)
+            for y_i in nd.y_train:
+                counter_1[y_i.target-1] += 1
+            counter_2 = np.zeros(5)
+            for y_i in nd.y_valid:
+                counter_2[y_i.target-1] += 1
+
             with multiprocessing.Pool(
                     1) as p:  # keeping network inside process prevents memory issues when restarting session
                 save_nd = p.map(run_lickwell_network_process, [nd])[0]

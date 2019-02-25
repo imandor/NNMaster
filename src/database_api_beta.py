@@ -383,10 +383,19 @@ class Net_data:
         valid_slice = slice(k_len * k, k_len * (k + 1))
         train_slice_1 = slice(0, k_len * k)
         train_slice_2 = slice(k_len * (k + 1), len(X))
-        self.X_train = X[train_slice_1] + X[train_slice_2]
-        self.y_train = y[train_slice_1] + y[train_slice_2]
-        self.X_valid = X[valid_slice]
-        self.y_valid = y[valid_slice]
+        X_train = X[train_slice_1] + X[train_slice_2]
+        y_train = y[train_slice_1] + y[train_slice_2]
+        X_valid = X[valid_slice]
+        y_valid = y[valid_slice]
+        if k == int(1/valid_ratio)-1: # last index adds rest of validation slice
+            X_valid = X + X[valid_slice.stop:len(X)]
+            y_valid = y + y[valid_slice.stop:len(X)]
+            X_train = X[train_slice_1]
+            y_train = y[train_slice_1]
+
+        self.X_train,self.y_train = process_samples(self,X_train,y_train)
+        self.X_valid,self.y_valid = process_samples(self,X_valid,y_valid)
+
         if normalize is True:
             self.X_train, self.y_train = self.normalize_discrete(self.X_train, self.y_train,
                                                                  excluded_wells=excluded_wells)
@@ -442,6 +451,21 @@ class Net_data:
         ax.set_ylabel("y [cm]")
         fig.tight_layout()
         plt.savefig("C:/Users/NN/Desktop/Master/experiments/Histogram of positions/_" + str(k))
+
+
+def process_samples(nd,slice_list,licks):
+    y = []
+    X = []
+    for i, lick in enumerate(licks):
+        slice = slice_list[i]
+        lick_start = slice.absolute_time_offset
+        lick_stop = lick_start + len(slice.position_x)
+        for j in range(0, (lick_stop - lick_start) // nd.win_size - nd.number_of_bins):
+            bins_to_x = [c[j:j + nd.number_of_bins] for c in slice.filtered_spikes]
+            bins_to_x = np.reshape(bins_to_x, [len(bins_to_x), len(bins_to_x[0])])
+            X.append(bins_to_x)
+            y.append(lick)
+    return X,y
 
 
 class Slice:

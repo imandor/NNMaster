@@ -120,14 +120,14 @@ def get_accuracy_for_comparison(lick_id_details, lick_id_details_k):
     """
     # fraction decoded in all licks
     fractions_decoded_all, std_all, n_all = return_fraction_decoded_and_std(lick_id_details=lick_id_details,
-    lick_id_details_k=lick_id_details_k, parameter=lick_id_details.licks_decoded, filter=lick_id_details.valid_licks)
+    lick_id_details_k=lick_id_details_k, parameter=lick_id_details.fraction_decoded, filter=lick_id_details.valid_licks)
 
     # fraction decoded if target lick is correct
     lick_id_details.filter = lick_id_details.target_lick_correct
     for i, li in enumerate(lick_id_details_k):
         lick_id_details_k[i].filter = li.target_lick_correct
     fractions_decoded_target_correct, std_target_correct, n_target_correct = return_fraction_decoded_and_std(
-        lick_id_details=lick_id_details,lick_id_details_k=lick_id_details_k,parameter=lick_id_details.licks_decoded,
+        lick_id_details=lick_id_details,lick_id_details_k=lick_id_details_k,parameter=lick_id_details.fraction_decoded,
         filter=lick_id_details.target_lick_correct)
 
     # fraction decoded if target lick is false
@@ -135,7 +135,7 @@ def get_accuracy_for_comparison(lick_id_details, lick_id_details_k):
     for i, li in enumerate(lick_id_details_k):
         lick_id_details_k[i].filter = li.target_lick_false
     fractions_decoded_target_false, std_target_false, n_target_false = return_fraction_decoded_and_std(
-        lick_id_details=lick_id_details,lick_id_details_k=lick_id_details_k,parameter=lick_id_details.licks_decoded,
+        lick_id_details=lick_id_details,lick_id_details_k=lick_id_details_k,parameter=lick_id_details.fraction_decoded,
         filter=lick_id_details.target_lick_false)
 
     # fraction decoded in licks prior to a switch
@@ -143,7 +143,7 @@ def get_accuracy_for_comparison(lick_id_details, lick_id_details_k):
     for i, li in enumerate(lick_id_details_k):
         lick_id_details_k[i].filter = li.licks_prior_to_switch
     fractions_decoded_licks_prior_to_switch, std_licks_prior_to_switch, n_licks_prior_to_switch = return_fraction_decoded_and_std(
-        lick_id_details=lick_id_details,lick_id_details_k=lick_id_details_k,parameter=lick_id_details.licks_decoded,
+        lick_id_details=lick_id_details,lick_id_details_k=lick_id_details_k,parameter=lick_id_details.fraction_decoded,
         filter=lick_id_details.licks_prior_to_switch)
 
     # fraction decoded in licks after a switch
@@ -151,7 +151,7 @@ def get_accuracy_for_comparison(lick_id_details, lick_id_details_k):
     for i, li in enumerate(lick_id_details_k):
         lick_id_details_k[i].filter = li.licks_after_switch
     fractions_decoded_licks_after_switch, std_licks_after_switch, n_licks_after_switch = return_fraction_decoded_and_std(
-        lick_id_details=lick_id_details,lick_id_details_k=lick_id_details_k,parameter=lick_id_details.licks_decoded,
+        lick_id_details=lick_id_details,lick_id_details_k=lick_id_details_k,parameter=lick_id_details.fraction_decoded,
         filter=lick_id_details.licks_after_switch)
 
     fra_list = [fractions_decoded_all, fractions_decoded_target_correct, fractions_decoded_target_false,

@@ -180,13 +180,13 @@ def return_guesses(y_predicted, y_target, metadata,nd):
         lick_id = e.lick_id
         lickwell = e.lickwell
         prediction = prediction_index + 1 + nd.num_wells-nd.lw_classifications
-        guess = Lick_Metric(guess_is_correct=guess_is_correct, lick_id=lick_id, lickwell=lickwell,
-                            prediction=prediction)
+        guess = Evaluated_Sample(guess_is_correct=guess_is_correct, lick_id=lick_id, lickwell=lickwell,
+                                 prediction=prediction)
         guesses.append(guess)
     return guesses
 
 
-class Lick_Metric_By_Epoch:
+class Evaluated_Samples_By_Epoch:
     def __init__(self, epoch, guesses=[]):
         self.guesses = guesses
         self.epoch = epoch
@@ -198,7 +198,7 @@ class Lick_Metric_By_Epoch:
         return cls(epoch=epoch, guesses=guesses)
 
 
-class Lick_Metric:
+class Evaluated_Sample:
     def __init__(self, guess_is_correct, lick_id, lickwell, prediction):
         self.guess_is_correct = guess_is_correct
         self.lick_id = lick_id

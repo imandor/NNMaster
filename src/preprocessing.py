@@ -273,19 +273,13 @@ def lickwells_io(session, nd, excluded_wells=[1], shift=1, normalize=False, diff
     X = []
     y = []
     # Generate input and output
-    samplestarts = []
-    samplestops = []
-    for i, lick in enumerate(licks):
-        lick_start = int(lick.time + lickstart)
-        lick_end = int(lick.time + lickstop)
-        slice = session[lick_start:lick_end]
-        for j in range(0, (lickstop - lickstart) // nd.win_size - nd.number_of_bins):
-            bins_to_x = [c[j:j + nd.number_of_bins] for c in slice.filtered_spikes]
-            bins_to_x = np.reshape(bins_to_x, [len(bins_to_x), len(bins_to_x[0])])
-            X.append(bins_to_x)
-            lick.target = next_well[i]
-            y.append(lick)
-            samplestarts.append(lickstart+j*nd.win_size)
-            samplestops.append(lickstart+(j+nd.number_of_bins)*nd.win_size)
 
-    return X, y,nd,session,samplestarts,samplestops
+    for i,lick in enumerate(licks):
+        lick_start = int(lick.time + lickstart)
+        lick.target = next_well[i]
+        lick_end = int(lick.time + lickstop)
+        X.append(session[lick_start:lick_end])
+        y.append(lick)
+    return X, y,nd,session
+
+

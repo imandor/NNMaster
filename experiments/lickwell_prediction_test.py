@@ -16,7 +16,7 @@ if __name__ == '__main__':
 
     # Data set 2 Hippocampus
 
-    MODEL_PATH = "G:/master_datafiles/trained_networks/MLP_HC_2019-02-07_phase/"
+    MODEL_PATH = "G:/master_datafiles/trained_networks/MLP_HC_2019-02-24/"
     RAW_DATA_PATH = "G:/master_datafiles/raw_data/HC/"
     FILTERED_DATA_PATH = "session_hc_lw.pkl"
 
@@ -29,7 +29,7 @@ if __name__ == '__main__':
         y_step=100,
         win_size=100,
         search_radius=100,
-        k_cross_validation=10,
+        k_cross_validation=1,
         session_filter=Filter(func=hann, search_radius=100, step_size=100),
         valid_ratio=0.1,
         testing_ratio=0,
@@ -47,15 +47,15 @@ if __name__ == '__main__':
         num_wells=5,
         initial_timeshift=-1,
         from_raw_data=False,
-        dropout=0.2,
-        number_of_bins=11
+        dropout=0.65,
+        number_of_bins=10
     )
-    MODEL_PATH = "C:/Users/NN/Desktop/Master/experiments/Lickwell_prediction/MLP_HC/"
+    # MODEL_PATH = "C:/Users/NN/Desktop/Master/experiments/Lickwell_prediction/MLP_HC/"
     print_metric_details(MODEL_PATH,nd.initial_timeshift)
     session = initiate_lickwell_network(nd)  # Initialize session
-    X, y,nd,session,_,_ = lickwells_io(session, nd, excluded_wells=[1], shift=nd.initial_timeshift,
+    X, y,nd,session, = lickwells_io(session, nd, excluded_wells=[1], shift=nd.initial_timeshift,
                                   normalize=nd.lw_normalize,
-                                  differentiate_false_licks=nd.lw_differentiate_false_licks,target_is_phase=True,
+                                  differentiate_false_licks=nd.lw_differentiate_false_licks,target_is_phase=False,
                                    lickstart=0,lickstop=5000)
     run_lickwell_network(nd, session, X, y)
     print("fin")
