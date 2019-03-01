@@ -182,10 +182,7 @@ def run_network_process(nd):
         nd.epochs_trained = i
         if stop_early is True:
             break
-    # saver.save(sess, net_dict["model_path"])
-
-    # Add performance to return dict
-
+    saver.save(sess, nd.model_path)
     # Close session and add current time shift to network save file
     sess.close()
     metric_eval.set_bests(nd.early_stopping)  # find best (or newest) value in metric object
@@ -280,64 +277,34 @@ def run_network(nd, session):
                         1) as p:  # keeping network inside process prevents memory issues when restarting session
                     metric = p.map(run_network_process, [nd])[0]
                     p.close()
-        metric_list.append(metric)
+            metric_list.append(metric)
         save_nd = copy.deepcopy(nd)
         save_nd.clear_io()
         save_metric = Network_output(net_data=save_nd, metric_by_cvs=metric_list)
-        path = save_nd.model_path + "output/" + "network_output_timeshift=" + str(
-            z) + ".pkl"
+        path = save_nd.model_path + "output/" + "network_output_timeshift=" + str(z) + ".pkl"
         save_as_pickle(path, save_metric)
     print("fin")
 
 
 def run_lickwell_network(nd, session, X, y,pathname_metadata=""):
     nd.time_shift = nd.initial_timeshift  # set current shift
-
     # Shift input and output
-
     if len(X) != len(y):
         raise ValueError("Error: Length of x and y are not identical")
-
     metrics_k = []
-
     for k in range(0, nd.k_cross_validation):
         for j in range(0,int(1/nd.valid_ratio)):
             print("cross validation step", str(j + 1), "of",str(int(1/nd.valid_ratio)) )
             nd.assign_training_testing_lickwell(X, y, j, excluded_wells=[1], normalize=nd.lw_normalize)
             # save_nd = run_lickwell_network_process(nd)
-
-
-            lick_id_1 = []
-            lick_id_2 = []
-            for y_i in nd.y_train:
-                i = y_i.lick_id
-                if i not in lick_id_1:
-                    lick_id_1.append(i)
-            for y_i in nd.y_valid:
-                i = y_i.lick_id
-                if i not in lick_id_2:
-                    lick_id_2.append(i)
-                lick_id_1.sort()
-                lick_id_2.sort()
-
-            counter_1 = np.zeros(5)
-            for y_i in nd.y_train:
-                counter_1[y_i.target-1] += 1
-            counter_2 = np.zeros(5)
-            for y_i in nd.y_valid:
-                counter_2[y_i.target-1] += 1
-
             with multiprocessing.Pool(
                     1) as p:  # keeping network inside process prevents memory issues when restarting session
                 save_nd = p.map(run_lickwell_network_process, [nd])[0]
-                # TODO delete
                 counter = 0
                 for guess in save_nd[-1].guesses:
                     if guess.guess_is_correct is True:
                         counter +=1
                 print("Accuracy",counter/len(save_nd[-1].guesses))
-
-                # TODO delete
                 p.close()
             metrics_k.append(save_nd)
 

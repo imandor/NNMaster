@@ -52,7 +52,7 @@ def timehistogram_bar_values(nd,lickstart,lickstop,searchradius,interval):
     for i in range(lickstart,lickstop+1,interval):
         counter = 0
         for j in range(0,len(lickids)):
-            if i>=entry_list[j] and i<exit_list[j]:
+            if i>=entry_list[j] and i<=exit_list[j]:
                 counter += 1
         counter_list.append(counter/len(lickids))
         ind_labels.append(i)
@@ -98,8 +98,8 @@ if __name__ == '__main__':
 
     # print_metric_details(MODEL_PATH,nd.initial_timeshift)
 
-    lickstart= 0
-    lickstop = 5000
+    lickstart= -5000
+    lickstop = 10000
     searchradius = 40
     xtickresolution = 2500
     # ytickresolution = 10
@@ -134,7 +134,7 @@ if __name__ == '__main__':
     # plot results
     ind = np.arange(0,len(ind_labels))
     fig, (ax1,ax2) = plt.subplots(2)
-    ax1.bar(ind_labels, counter_list, color='lightblue', align='center',width=500)
+    ax1.bar(ind_labels, counter_list, color='b', align='center',width=500,edgecolor="black")
     ax1.set_xticklabels(ind_labels)
     ax1.set_ylabel("fraction of occurring events", fontsize=fontsize)
     # ax1.set_xlabel("time", fontsize=fontsize)
@@ -142,7 +142,7 @@ if __name__ == '__main__':
     ax1.set_xticks(np.arange(min(ind_labels), max(ind_labels) + 1, xtickresolution))
     ax1.set_xticklabels(np.arange(min(ind_labels), max(ind_labels) + 1, xtickresolution),fontsize=fontsize)
     # ax1.set_yticklabels(np.arange(0, len(lickids) + 1, ytickresolution),fontsize=fontsize)
-    ax1.legend(["HC","0.95"])
+    ax1.legend(["0.95","HC"])
 
     nd.model_path = "G:/master_datafiles/trained_networks/MLP_PFC_2019-02-07_phase/"
     nd.raw_data_path = "G:/master_datafiles/raw_data/PFC/"
@@ -150,7 +150,7 @@ if __name__ == '__main__':
 
 
     lickids,entry_list,exit_list,counter_list,ind_labels = timehistogram_bar_values(nd,lickstart,lickstop,searchradius,interval)
-    ax2.bar(ind_labels, counter_list, color='lightblue', align='center',width=interval)
+    ax2.bar(ind_labels, counter_list, color='r', align='center',width=interval,edgecolor="black")
     ax2.set_xticklabels(ind_labels)
     ax2.set_ylabel("fraction of occurring events", fontsize=fontsize)
     ax2.set_xlabel("time", fontsize=fontsize)
@@ -158,7 +158,7 @@ if __name__ == '__main__':
     ax2.set_xticks(np.arange(min(ind_labels), max(ind_labels) + 1, xtickresolution))
     ax2.set_xticklabels(np.arange(min(ind_labels), max(ind_labels) + 1, xtickresolution),fontsize=fontsize)
     # ax2.set_yticklabels(np.arange(0, len(lickids) + 1, ytickresolution),fontsize=fontsize)
-    ax2.legend(["PFC","0.95"])
+    ax2.legend(["0.95","PFC"])
     plt.show()
     plt.savefig(save_path)
 

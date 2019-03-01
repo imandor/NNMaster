@@ -41,18 +41,21 @@ if __name__ == '__main__':
 
 
     nd = Net_data(
-        initial_timeshift=-10000,
-        time_shift_iter=500,
-        time_shift_steps=41,
+        initial_timeshift=-5000,
+        time_shift_iter=5000,
+        time_shift_steps=3,
+        valid_ratio=1,
         early_stopping=True,
         model_path=MODEL_PATH,
         raw_data_path=RAW_DATA_PATH,
         filtered_data_path=FILTERED_DATA_PATH,
-        k_cross_validation = 10,
+        k_cross_validation = 1,
         naive_test=False,
+        load_model=True,
         from_raw_data=True,
-        epochs = 20,
-        dropout=0.65
+        epochs = 1,
+        dropout=0.65,
+        train_model=False
 
 
     )
@@ -61,5 +64,8 @@ if __name__ == '__main__':
         copy_pos_x = session.position_x
         session.position_x = session.position_y
         session.position_y = copy_pos_x
+
+
+    # pick
     run_network(nd, session)
     # Create save file directories

@@ -4,21 +4,32 @@ from src.preprocessing import lickwells_io
 from src.network_functions import initiate_lickwell_network, run_lickwell_network
 from src.metrics import print_metric_details
 from random import seed
-if __name__ == '__main__':
 
+def determine_t_leave(session,max_pos):
+    time_by_lick_id = []
+    for lick in session.licks:
+        if lick.lickwell == 1:
+            for i,pos in enumerate(session.position_x[int(lick.time):-1]):
+                if pos>max_pos:
+                    time_by_lick_id.append((lick.lick_id,i))
+                    break
+    return time_by_lick_id
+
+if __name__ == '__main__':
+    # Determines time rat leaves area and trains for that + 5 preceding seconds
 
 
     # Data set 1 Prefrontal Cortex
 
-    # MODEL_PATH = "G:/master_datafiles/trained_networks/MLP_PFC/"
-    # RAW_DATA_PATH = "G:/master_datafiles/raw_data/PFC/"
-    # FILTERED_DATA_PATH = "session_pfc_lw.pkl"
+    MODEL_PATH = "G:/master_datafiles/trained_networks/MLP_PFC_tleave/"
+    RAW_DATA_PATH = "G:/master_datafiles/raw_data/PFC/"
+    FILTERED_DATA_PATH = "session_pfc_lw.pkl"
 
     # Data set 2 Hippocampus
 
-    MODEL_PATH = "G:/master_datafiles/trained_networks/MLP_HC/"
-    RAW_DATA_PATH = "G:/master_datafiles/raw_data/HC/"
-    FILTERED_DATA_PATH = "session_hc_lw.pkl"
+    # MODEL_PATH = "G:/master_datafiles/trained_networks/MLP_HC_tleave/"
+    # RAW_DATA_PATH = "G:/master_datafiles/raw_data/HC/"
+    # FILTERED_DATA_PATH = "session_hc_lw.pkl"
 
     nd = Net_data(
         # Program execution settings
@@ -49,10 +60,16 @@ if __name__ == '__main__':
         from_raw_data=False,
         dropout=0.65,
         number_of_bins=10,
+
     )
+
+    search_radius = 40
     # print_metric_details(MODEL_PATH,nd.initial_timeshift)
     session = initiate_lickwell_network(nd)  # Initialize session
-    X, y,nd,session, = lickwells_io(session, nd, excluded_wells=[1], shift=nd.initial_timeshift, target_is_phase=False,
-                                   lickstart=0,lickstop=5000)
+    nd.start_time_by_lick_id =  determine_t_leave(session,search_radius)
+
+    X, y,nd,session, = lickwells_io(session, nd, excluded_wells=[1], shift=nd.initial_timeshift,target_is_phase=False,
+                                   lickstart=-5000,lickstop=0)
     run_lickwell_network(nd, session, X, y)
+
     print("fin")

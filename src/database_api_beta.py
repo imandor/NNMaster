@@ -210,7 +210,8 @@ class Net_data:
                  # removes tetrodes from raw session data before creating slice object. Useful if some of the tetrodes are e.g. hippocampal and others for pfc
                  phases=None,  # contains list of training phases
                  phase_change_ids=None,  # contains list of phase change lick_ids
-                 number_of_bins = 10 # number of win sized bins going into the input
+                 number_of_bins = 10, # number of win sized bins going into the input
+                 start_time_by_lick_id = None # list of tuples (lick_id,start time) which describe the time at which a lick "officially starts relative to the lick time described in the lick object. Defaults to zero but can be changed if a different range is to be observed
                  ):
         self.dropout = dropout
         self.session_from_raw = from_raw_data
@@ -274,7 +275,7 @@ class Net_data:
         self.phase_change_ids = phase_change_ids
         self.phases = phases
         self.number_of_bins = number_of_bins
-
+        self.start_time_by_lick_id = start_time_by_lick_id
     def clear_io(self):
         self.network_shape = None
         self.X_train = None
@@ -388,8 +389,8 @@ class Net_data:
         X_valid = X[valid_slice]
         y_valid = y[valid_slice]
         if k == int(1/valid_ratio)-1: # last index adds rest of validation slice
-            X_valid = X + X[valid_slice.stop:len(X)]
-            y_valid = y + y[valid_slice.stop:len(X)]
+            X_valid = X_valid + X[valid_slice.stop:len(X)]
+            y_valid = y_valid + y[valid_slice.stop:len(X)]
             X_train = X[train_slice_1]
             y_train = y[train_slice_1]
 
@@ -454,11 +455,16 @@ class Net_data:
 
 
 def process_samples(nd,slice_list,licks):
+    """ generates samples from list of slices"""
     y = []
     X = []
     for i, lick in enumerate(licks):
+        if nd.start_time_by_lick_id is not None:
+            offset = [i[1] for i in nd.start_time_by_lick_id if i[0]==lick.lick_id][0]
+        else:
+            offset = 0
         slice = slice_list[i]
-        lick_start = slice.absolute_time_offset
+        lick_start = slice.absolute_time_offset + offset
         lick_stop = lick_start + len(slice.position_x)
         for j in range(0, (lick_stop - lick_start) // nd.win_size - nd.number_of_bins):
             bins_to_x = [c[j:j + nd.number_of_bins] for c in slice.filtered_spikes]

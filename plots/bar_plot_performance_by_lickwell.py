@@ -50,7 +50,6 @@ if __name__ == '__main__':
     ax_2.set_xticks(ind)
     ax_2.set_xticklabels(['well 2', 'well 3', 'well 4', 'well 5'], fontsize=fontsize)
     ax_2.set_title("previous well accuracy", fontsize=fontsize)
-    ax_2.set_ylabel("fraction decoded")
     ax_2.legend()
     if add_trial_numbers is True:
         for i, j in zip(ind, bar_values_2):
@@ -63,6 +62,7 @@ if __name__ == '__main__':
     ax_3.bar(ind, bar_values_3, color='r', yerr=[std_lower_3, std_upper_3], error_kw=error_kw, align='center',label="Prefrontal Cortex")
     ax_3.set_xticks(ind)
     ax_3.set_xticklabels(['well 2', 'well 3', 'well 4', 'well 5'], fontsize=fontsize)
+    ax_3.set_ylabel("fraction decoded")
     ax_3.legend()
     if add_trial_numbers is True:
         for i, j in zip(ind, bar_values_3):

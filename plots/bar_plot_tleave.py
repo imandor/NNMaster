@@ -14,13 +14,13 @@ if __name__ == '__main__':
 
 # Removes a portion of the lick events and checks if performance changes
 
-    model_path = "C:/Users/NN/Desktop/Master/experiments/Lickwell_prediction/MLP_HC/"
-    save_path=model_path+"images/"
+    model_path = "C:/Users/NN/Desktop/Master/experiments/Lickwell_prediction/"
+    path_pfc = "C:/Users/NN/Desktop/Master/experiments/Lickwell_prediction/MLP_HC/output/"
+    path_hc = model_path + "MLP_HC_tleave/output/"
+    save_path=model_path
     barcolor = "darkviolet"
     add_trial_numbers=True
     # load fraction and std data
-    path_hc = model_path + "output/"
-    path_pfc = "C:/Users/NN/Desktop/Master/experiments/Lickwell_prediction/MLP_PFC/output/"
     lick_id_details, lick_id_details_k = get_metric_details(path_hc, 1)
     # return_sample_count_by_lick_id(lick_id_details_k_1)
     x_1, std_1, n_1 = get_accuracy_for_comparison_2(lick_id_details, lick_id_details_k)
@@ -57,7 +57,7 @@ if __name__ == '__main__':
     ax4.set_ylim(0, 1.0)
 
     error_kw = {'capsize': 5, 'capthick': 1, 'ecolor': 'black'}
-    ax1.bar(ind, x_1, color="b", yerr=[std_lower_1, std_upper_1], error_kw=error_kw, align='center',label="Hippocampus",edgecolor="black")
+    ax1.bar(ind, x_1, color="b", yerr=[std_lower_1, std_upper_1], error_kw=error_kw, align='center',label="first five seconds",edgecolor="black")
     ax1.set_xticks(ind)
     ax1.set_ylabel("fraction decoded", fontsize=fontsize)
     ax1.set_xticklabels(['next well', 'last well', 'current phase'], fontsize=fontsize)
@@ -83,7 +83,7 @@ if __name__ == '__main__':
             else:
                 offset = -0.1
             ax2.annotate(int(n_2[i]), xy=(i - 0.1, j + offset))
-    ax3.bar(ind, x_3, color="r", yerr=[std_lower_3, std_upper_3], error_kw=error_kw, align='center',edgecolor="black",label="Prefrontal Cortex")
+    ax3.bar(ind, x_3, color="darkblue", yerr=[std_lower_3, std_upper_3], error_kw=error_kw, align='center',edgecolor="black",label="last five seconds")
     ax3.set_xticks(ind)
     ax3.set_ylabel("fraction decoded", fontsize=fontsize)
 

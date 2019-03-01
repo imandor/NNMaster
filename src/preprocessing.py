@@ -214,8 +214,21 @@ def abs_to_logits(y_abs, num_classifiers, max_well_no):
     return y_i
 
 
-def lickwells_io(session, nd, excluded_wells=[1], shift=1, normalize=False, differentiate_false_licks=False,
+def lickwells_io(session, nd, excluded_wells=[1], shift=1,
                  valid_licks=[], lickstart=0, lickstop=5000, target_is_phase=False):
+    """
+
+    :param session: session object
+    :param nd: net_data object
+    :param excluded_wells: wells to be excluded from test. Note that by now well 1 is hard coded in some places, so changing this parameter would require further clean up elsewhere
+    :param shift: if 1, target is set as next well, if -1 as last well
+    :param valid_licks: predetermined list of valid lick_ids (TODO)
+    :param lickstart: start of recording relative to lick_time
+    :param lickstop: end of recording relative to lick_time
+    :param target_is_phase: if True, sets target to current training phase rather than actually visited well
+    :param start_time_by_lick_id: can contain list of tuples of (lick_id,time). times are set as starting time of lick for lick event(otherwise defaults to zero for each event)
+    :return: samples in format x (list of slices) ,y (list of labels), updated nd, updated session
+    """
     # get all slices within n milliseconds around lick_well
 
     # Filter licks and spread them as evenly as possible
@@ -275,10 +288,14 @@ def lickwells_io(session, nd, excluded_wells=[1], shift=1, normalize=False, diff
     # Generate input and output
 
     for i,lick in enumerate(licks):
-        lick_start = int(lick.time + lickstart)
+        if nd.start_time_by_lick_id is not None:
+            offset = [i[1] for i in nd.start_time_by_lick_id if i[0]==lick.lick_id][0]
+        else:
+            offset = 0
+        lick_start = int(lick.time + lickstart+offset)
         lick.target = next_well[i]
-        lick_end = int(lick.time + lickstop)
-        X.append(session[lick_start:lick_end])
+        lick_end = int(lick.time + lickstop+offset)
+        X.append(session[lick_start+offset:lick_end+offset])
         y.append(lick)
     return X, y,nd,session
 

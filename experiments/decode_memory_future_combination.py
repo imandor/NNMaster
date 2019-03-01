@@ -29,8 +29,8 @@ if __name__ == '__main__':
 
 
     nd = Net_data(
-        initial_timeshift=0,
-        epochs=1,
+        initial_timeshift=-10000,
+        epochs=41,
         time_shift_iter=500,
         time_shift_steps=1,
         early_stopping=False,
@@ -38,7 +38,8 @@ if __name__ == '__main__':
         raw_data_path=RAW_DATA_PATH,
         filtered_data_path=FILTERED_DATA_PATH,
         k_cross_validation = 10,
-        from_raw_data=True
+        from_raw_data=True,
+        dropout=0.65
     )
 
     session = initiate_network(nd)
