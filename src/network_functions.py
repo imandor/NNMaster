@@ -113,14 +113,14 @@ def run_lickwell_network_process(nd):
 def run_network_process(nd):
     # S = ConvolutionalNeuralNetwork1([None, 56, 10, 1], cnn1)
     ns = mlp
-    ns.fc1.weights = tf.truncated_normal(shape=(10*nd.n_neurons,100), stddev=0.01) # 36, 56, 75, 111, 147
+    ns.fc1.weights = tf.truncated_normal(shape=(nd.number_of_bins*nd.n_neurons,100), stddev=0.01) # 36, 56, 75, 111, 147
     S = MultiLayerPerceptron([None, nd.n_neurons, 10, 1], ns)  # 56 147
     sess = tf.Session()
     metric_eval = Metric(r2_by_epoch=[], ape_by_epoch=[], acc20_by_epoch=[], r2_best=None,
                          ape_best=None, acc20_best=None)
     metric_test = Metric(r2_by_epoch=[], ape_by_epoch=[], acc20_by_epoch=[], r2_best=None,
                          ape_best=None, acc20_best=None)
-    early_stop_max = -np.inf
+    ape_min = -np.inf
     X_train = nd.X_train
     y_train = nd.y_train
     saver = tf.train.Saver()
@@ -159,16 +159,15 @@ def run_network_process(nd):
             if nd.early_stopping is True and i >= 10:  # most likely overfitting instead of training
                 if i % 1 == 0:
                     metric_test.set_metrics(sess=sess, S=S, nd=nd, X=nd.X_test, y=nd.y_test)
-                    acc = metric_test.acc20_by_epoch[-1]
-                    if early_stop_max < acc:
-                        early_stop_max = acc
+                    ape = metric_test.ape_by_epoch[-1]
+                    if ape_min > ape:
+                        ape_min = ape
                     else:
-                        if acc < early_stop_max - 0.05:
+                        if ape > ape_min + 5:
                             stop_early = True
                             metric_eval.r2_by_epoch = metric_eval.r2_by_epoch[0:-1]
                             metric_eval.ape_by_epoch = metric_eval.ape_by_epoch[0:-1]
                             metric_eval.acc20_by_epoch = metric_eval.acc20_by_epoch[0:-1]
-
             # a = get_radius_accuracy(prediction_list, actual_list, [network_dict["X_STEP"], network_dict["Y_STEP"]], 19)
         for j in range(0, len(X_train) - nd.batch_size, nd.batch_size):
             x = np.array([data_slice for data_slice in X_train[j:j + nd.batch_size]])

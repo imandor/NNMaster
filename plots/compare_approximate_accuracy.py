@@ -61,7 +61,7 @@ if __name__ == '__main__':
     save_path=model_path+"images/approximate_accuracy.png"
     barcolor = "darkviolet"
     add_trial_numbers = True
-    shift = 1
+    shift = -1
     # load fraction and std data
     path_hc = model_path + "output/"
     lick_id_details, lick_id_details_k = get_metric_details(path_hc, shift)
@@ -98,9 +98,9 @@ if __name__ == '__main__':
     ax2.set_ylim(0, 1.0)
 
     error_kw = {'capsize': 5, 'capthick': 1, 'ecolor': 'black'}
-    ax1.bar(ind, x_1, color="darkblue", error_kw=error_kw, align='center',label="d=0")
-    ax1.bar(ind, x_2, color="slateblue",bottom=x_1, error_kw=error_kw, align='center', label="d=1")
-    ax1.bar(ind, x_3, color="blue",bottom=x_2, error_kw=error_kw, align='center', label="d=2")
+    ax1.bar(ind, x_1, color="darkblue", error_kw=error_kw, align='center',label="d=0",edgecolor="black")
+    ax1.bar(ind, x_2, color="slateblue",bottom=x_1, error_kw=error_kw, align='center', label="d=1",edgecolor="black")
+    ax1.bar(ind, x_3, color="blue",bottom=x_2, error_kw=error_kw, align='center', label="d=2",edgecolor="black")
 
     ax1.set_xticks(ind)
     ax1.set_ylabel("fraction decoded", fontsize=fontsize)
@@ -119,10 +119,10 @@ if __name__ == '__main__':
     ax2.set_xticklabels(["all events","prior change", "after change"], fontsize=fontsize)
     ax2.set_title("prefrontal cortex", fontsize=fontsize)
     ax2.bar(ind, x_4, color="darkred", error_kw=error_kw, align='center',
-            label="d=0")
+            label="d=0",edgecolor="black")
     ax2.bar(ind, x_5, color="tomato", bottom=x_4, error_kw=error_kw, align='center',
-            label="d=1")
-    ax2.bar(ind, x_6, color="r", bottom=x_5, error_kw=error_kw, align='center', label="d=2")
+            label="d=1",edgecolor="black")
+    ax2.bar(ind, x_6, color="r", bottom=x_5, error_kw=error_kw, align='center', label="d=2",edgecolor="black")
     if add_trial_numbers is True:
         for i, j in zip(ind, x_4):
             if j < 0.2:

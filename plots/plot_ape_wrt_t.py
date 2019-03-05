@@ -52,26 +52,32 @@ def get_c(i):
 if __name__ == '__main__':
 
     # Settings
-
+    fontsize = 18
     barcolor = "darkred"
     epoch = -1 # raw data contains information about all epochs, we only want the newest iteration
     dir = "C:/Users/NN/Desktop/Master/experiments/position decoding/"
     # model_path_list = "C:/Users/NN/Desktop/Master/experiments/position decoding/MLP_HC_early_stopping/"
     model_path_list = [
-        dir + "naive_chc/",
-        dir + "naive_cpfc/",
-        dir + "naive_c/"
+        dir + "MLP_C/",
+        dir + "MLP_CHC/",
+        dir + "MLP_CPFC/",
+        dir + "MLP_HC/",
+        dir + "MLP_PFC/",
+        dir + "MLP_HC_naive/",
+        dir + "MLP_PFC_naive/",
+        dir + "MLP_PFC_k1/",
+
     ]
-    ax_label_list = ["CHC","CPFC","C"]
+    ax_label_list = ["C","CHC","CPFC","HC","PFC","HC naive","PFC naive","PFC k1"]
     save_path ="C:/Users/NN/Desktop/Master/experiments/position decoding/ape.png"
     fig, ax = plt.subplots()
     axis_label_x = 'Time shift [ms]'
     axis_label_y = r'$\varnothing$ absolute position error [cm]'
     # plt.rc('font', family='serif', serif='Times')
     plt.rc('text', usetex=True)
-    plt.rc('xtick', labelsize=8)
-    plt.rc('ytick', labelsize=8)
-    plt.rc('axes', labelsize=8)
+    plt.rc('xtick', labelsize=fontsize)
+    plt.rc('ytick', labelsize=fontsize)
+    plt.rc('axes', labelsize=fontsize)
     width = 3.5
     height = width / 1.5
     fig.set_size_inches(width, height)

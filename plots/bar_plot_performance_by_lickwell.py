@@ -10,8 +10,8 @@ from src.plots import metric_details_by_lickwell
 
 
 if __name__ == '__main__':
-    model_path_list = ["C:/Users/NN/Desktop/Master/experiments/Lickwell_prediction/MLP_HC/",
-                       "C:/Users/NN/Desktop/Master/experiments/Lickwell_prediction/MLP_PFC/"
+    model_path_list = ["C:/Users/NN/Desktop/Master/experiments/Lickwell_prediction/MLP_PFC/",
+                       "C:/Users/NN/Desktop/Master/experiments/Lickwell_prediction/MLP_PFC_more_epochs/"
                        ]
     image_save_path = "C:/Users/NN/Desktop/Master/experiments/Lickwell_prediction/compare_wells.png"
     add_trial_numbers = True
@@ -32,7 +32,7 @@ if __name__ == '__main__':
     error_kw = {'capsize': 5, 'capthick': 1, 'ecolor': 'black'}
 
 
-    ax_1.bar(ind, bar_values_1, color='b', yerr=[std_lower_1, std_upper_1], error_kw=error_kw, align='center',label="Hippocampus")
+    ax_1.bar(ind, bar_values_1, color='r', yerr=[std_lower_1, std_upper_1], error_kw=error_kw, align='center',label="PFC 20 epochs")
     ax_1.set_xticks(ind)
     ax_1.set_xticklabels(['well 2', 'well 3', 'well 4', 'well 5'],fontsize=fontsize)
     ax_1.set_title("next well accuracy", fontsize=fontsize)
@@ -46,7 +46,7 @@ if __name__ == '__main__':
                 offset = -0.1
             ax_1.annotate(int(n_well_1[i]), xy=(i - 0.1, j + offset))
 
-    ax_2.bar(ind, bar_values_2, color='b', yerr=[std_lower_2, std_upper_2], error_kw=error_kw, align='center',label="Hippocampus")
+    ax_2.bar(ind, bar_values_2, color='r', yerr=[std_lower_2, std_upper_2], error_kw=error_kw, align='center',label="PFC 20 epochs")
     ax_2.set_xticks(ind)
     ax_2.set_xticklabels(['well 2', 'well 3', 'well 4', 'well 5'], fontsize=fontsize)
     ax_2.set_title("previous well accuracy", fontsize=fontsize)
@@ -59,7 +59,7 @@ if __name__ == '__main__':
                 offset = -0.1
             ax_2.annotate(int(n_well_2[i]), xy=(i - 0.1, j + offset))
 
-    ax_3.bar(ind, bar_values_3, color='r', yerr=[std_lower_3, std_upper_3], error_kw=error_kw, align='center',label="Prefrontal Cortex")
+    ax_3.bar(ind, bar_values_3, color='darkred', yerr=[std_lower_3, std_upper_3], error_kw=error_kw, align='center',label="PFC 40 epochs")
     ax_3.set_xticks(ind)
     ax_3.set_xticklabels(['well 2', 'well 3', 'well 4', 'well 5'], fontsize=fontsize)
     ax_3.set_ylabel("fraction decoded")
@@ -71,7 +71,7 @@ if __name__ == '__main__':
             else:
                 offset = -0.1
             ax_3.annotate(int(n_well_3[i]), xy=(i - 0.1, j + offset))
-    ax_4.bar(ind, bar_values_4, color='r', yerr=[std_lower_4, std_upper_4], error_kw=error_kw, align='center',label="Prefrontal Cortex")
+    ax_4.bar(ind, bar_values_4, color='darkred', yerr=[std_lower_4, std_upper_4], error_kw=error_kw, align='center',label="PFC 40 epochs")
     ax_4.set_xticks(ind)
     ax_4.set_xticklabels(['well 2', 'well 3', 'well 4', 'well 5'], fontsize=fontsize)
     ax_4.legend()

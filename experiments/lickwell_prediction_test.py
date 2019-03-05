@@ -10,15 +10,15 @@ if __name__ == '__main__':
 
     # Data set 1 Prefrontal Cortex
 
-    # MODEL_PATH = "G:/master_datafiles/trained_networks/MLP_PFC/"
-    # RAW_DATA_PATH = "G:/master_datafiles/raw_data/PFC/"
-    # FILTERED_DATA_PATH = "session_pfc_lw.pkl"
+    MODEL_PATH = "G:/master_datafiles/trained_networks/MLP_PFC_phase/"
+    RAW_DATA_PATH = "G:/master_datafiles/raw_data/PFC/"
+    FILTERED_DATA_PATH = "session_pfc_lw.pkl"
 
     # Data set 2 Hippocampus
 
-    MODEL_PATH = "G:/master_datafiles/trained_networks/MLP_HC/"
-    RAW_DATA_PATH = "G:/master_datafiles/raw_data/HC/"
-    FILTERED_DATA_PATH = "session_hc_lw.pkl"
+    # MODEL_PATH = "G:/master_datafiles/trained_networks/MLP_HC_phase/"
+    # RAW_DATA_PATH = "G:/master_datafiles/raw_data/HC/"
+    # FILTERED_DATA_PATH = "session_hc_lw.pkl"
 
     nd = Net_data(
         # Program execution settings
@@ -45,14 +45,14 @@ if __name__ == '__main__':
         lw_normalize=True,
         lw_differentiate_false_licks=False,
         num_wells=5,
-        initial_timeshift=-1,
+        initial_timeshift=1,
         from_raw_data=False,
         dropout=0.65,
         number_of_bins=10,
     )
     # print_metric_details(MODEL_PATH,nd.initial_timeshift)
     session = initiate_lickwell_network(nd)  # Initialize session
-    X, y,nd,session, = lickwells_io(session, nd, excluded_wells=[1], shift=nd.initial_timeshift, target_is_phase=False,
+    X, y,nd,session, = lickwells_io(session, nd, excluded_wells=[1], shift=nd.initial_timeshift, target_is_phase=True,
                                    lickstart=0,lickstop=5000)
     run_lickwell_network(nd, session, X, y)
     print("fin")

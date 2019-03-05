@@ -7,7 +7,7 @@ from src.metrics import get_lick_from_id
 
 
 if __name__ == '__main__':
-    exclude_phase_change_trials = False
+    only_phase_change_trials = True
     by_sample = True
     path = "C:/Users/NN/Desktop/Master/experiments/Lickwell_prediction/"
     model_path_list = [
@@ -34,7 +34,7 @@ if __name__ == '__main__':
 
 
                 for i, evaluated_sample in enumerate(metrics_flattened): # TODO change back
-                    if exclude_phase_change_trials is True:
+                    if only_phase_change_trials is True:
                         next_lick = get_lick_from_id(evaluated_sample.next_lick_id, licks, shift=0, get_next_best=True, dir=1)
                         last_lick = get_lick_from_id(evaluated_sample.last_lick_id, licks, shift=0, get_next_best=True, dir=-1)
                         if (last_lick is not None and last_lick.phase != evaluated_sample.phase) or (next_lick is not None and next_lick.phase != evaluated_sample.phase):
@@ -55,7 +55,7 @@ if __name__ == '__main__':
                 else:
                     shift = "next"
                 pathname_metadata = ""
-                if exclude_phase_change_trials is True:
+                if only_phase_change_trials is True:
                     pathname_metadata = "_exclude_phasechange"
                 plt.savefig(path+"images/confusion_matrix_"+image_title_list[j]+"_"+shift+pathname_metadata)
     else:
@@ -74,11 +74,11 @@ if __name__ == '__main__':
 
                 for i, evaluated_sample in enumerate(metrics_flattened):  # TODO change back
                     current_lick = get_lick_from_id(evaluated_sample.lick_id, licks)
-                    if exclude_phase_change_trials is True:
-                        next_lick = get_lick_from_id(current_lick, licks, shift=0, get_next_best=True, dir=1)
-                        last_lick = get_lick_from_id(current_lick, licks, shift=0, get_next_best=True, dir=-1)
-                        if (last_lick is not None and last_lick.phase != current_lick.phase) or (
-                                next_lick is not None and next_lick.phase != current_lick.phase):
+                    if only_phase_change_trials is True:
+                        next_lick = get_lick_from_id(current_lick.lick_id, licks, shift=1, get_next_best=True, dir=1)
+                        last_lick = get_lick_from_id(current_lick.lick_id, licks, shift=-1, get_next_best=True, dir=-1)
+                        if not ((last_lick is not None and last_lick.phase != current_lick.phase) or (
+                                next_lick is not None and next_lick.phase != current_lick.phase)):
                             continue
                     x = evaluated_sample.prediction - 2
                     if current_lick.target is not None:
@@ -97,7 +97,7 @@ if __name__ == '__main__':
                 else:
                     shift = "next"
                 pathname_metadata = ""
-                if exclude_phase_change_trials is True:
-                    pathname_metadata = "_exclude_phasechange"
+                if only_phase_change_trials is True:
+                    pathname_metadata = "_only_phasechange"
                 plt.savefig(path + "images/confusion_matrix_" + image_title_list[j] + "_" + shift + pathname_metadata)
 

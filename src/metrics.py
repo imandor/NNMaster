@@ -353,7 +353,7 @@ class Metric:  # object containing evaluation metrics for all epochs
             self.ape_best = self.ape_by_epoch[-1]
             self.acc20_best = self.acc20_by_epoch[-1]
         else:
-            self.r2_best = np.max(self.r2_by_epoch)
+            self.r2_best = np.max([a[0] for a in self.r2_by_epoch]) # y axis is ignored for best score
             self.ape_best = np.min(self.ape_by_epoch)
             self.acc20_best = np.max(self.acc20_by_epoch)
 

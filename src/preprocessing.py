@@ -107,6 +107,7 @@ def shuffle_io(X, y, nd, seed_no=None, shuffle_batch_size=None):
 
 
 def time_shift_positions(session, shift, nd):
+
     slice_size = nd.slice_size
     win_size = nd.win_size
     x_step = nd.x_step
@@ -117,54 +118,66 @@ def time_shift_positions(session, shift, nd):
     y_min = nd.y_min
     stride = nd.stride
     y_slice_size = nd.y_slice_size
+    position_x = session.position_x
+    position_y = session.position_y
+
+    # Shift position index
+
+    shift_in_filtered_spikes = int(shift/win_size)
+    if shift>0:
+        position_x = position_x[shift:]
+        position_y = position_y
 
     # Shift positions
 
-    shift_in_filtered_spikes = int(shift / win_size)
-    position_x = session.position_x
-    position_y = session.position_y
-    filtered_spikes = session.filtered_spikes
-    if shift > 0:
-        position_x = position_x[shift:]
-        position_y = position_y[shift:]
-        filtered_spikes = [x[:-shift_in_filtered_spikes] for x in filtered_spikes]
-
-    if shift < 0:
-        position_x = position_x[:shift]
-        position_y = position_y[:shift]
-        filtered_spikes = [x[-shift_in_filtered_spikes:] for x in filtered_spikes]
-    y = []
-    pos_x = position_x
-    pos_y = position_y
-    bins_in_sample = slice_size // win_size
-    bins_in_stride = stride // win_size
-    surrounding_index = int(0.5 * (slice_size - y_slice_size))
+    # shift_in_filtered_spikes = int(shift / win_size)
+    # position_x = session.position_x
+    # position_y = session.position_y
+    # filtered_spikes = session.filtered_spikes
+    # # Remove data for which no shifted labels exist
+    # if shift > 0:
+    #     position_x = position_x[shift:]
+    #     position_y = position_y[shift:]
+    #     filtered_spikes = [x[:-shift_in_filtered_spikes] for x in filtered_spikes]
+    #
+    # if shift < 0:
+    #     position_x = position_x[:shift]
+    #     position_y = position_y[:shift]
+    #     filtered_spikes = [x[-shift_in_filtered_spikes:] for x in filtered_spikes]
+    # y = []
+    # pos_x = position_x
+    # pos_y = position_y
+    # bins_in_sample = slice_size // win_size
+    # bins_in_stride = stride // win_size
+    # surrounding_index = int(0.5 * (slice_size - y_slice_size))
+    # X = []
+    # while len(filtered_spikes[0]) >= slice_size:
+    #
+    #     # Input
+    #
+    #     bins_to_X = []
+    #     remaining_bins = []
+    #     for spike in filtered_spikes:
+    #         bins_to_X.append(spike[:bins_in_sample])
+    #         remaining_bins.append(spike[bins_in_stride:])
+    #     bins_to_X = np.reshape(bins_to_X, [len(bins_to_X), len(bins_to_X[0])])
+    #     X.append(bins_to_X)
+    #     filtered_spikes = remaining_bins
+    #
+    #     # output
+    #
+    #     norm_x = pos_x[:slice_size]
+    #     norm_y = pos_y[:slice_size]
+    #     right_index_border = len(norm_x) - surrounding_index
+    #     x_list = (((norm_x[surrounding_index:right_index_border]) - x_min) // x_step).astype(int)
+    #     y_list = (((norm_y[surrounding_index:right_index_border]) - y_min) // y_step).astype(int)
+    #
+    #     posxy_list = [x_list, y_list]  # remove surrounding positional data and form average
+    #     y.append(position_as_map(posxy_list, x_step, y_step, x_max, x_min, y_max, y_min))
+    #     pos_x = pos_x[bins_in_stride * win_size:]
+    #     pos_y = pos_y[bins_in_stride * win_size:]
     X = []
-    while len(filtered_spikes[0]) >= slice_size:
-
-        # Input
-
-        bins_to_X = []
-        remaining_bins = []
-        for spike in filtered_spikes:
-            bins_to_X.append(spike[:bins_in_sample])
-            remaining_bins.append(spike[bins_in_stride:])
-        bins_to_X = np.reshape(bins_to_X, [len(bins_to_X), len(bins_to_X[0])])
-        X.append(bins_to_X)
-        filtered_spikes = remaining_bins
-
-        # output
-
-        norm_x = pos_x[:slice_size]
-        norm_y = pos_y[:slice_size]
-        right_index_border = len(norm_x) - surrounding_index
-        x_list = (((norm_x[surrounding_index:right_index_border]) - x_min) // x_step).astype(int)
-        y_list = (((norm_y[surrounding_index:right_index_border]) - y_min) // y_step).astype(int)
-
-        posxy_list = [x_list, y_list]  # remove surrounding positional data and form average
-        y.append(position_as_map(posxy_list, x_step, y_step, x_max, x_min, y_max, y_min))
-        pos_x = pos_x[bins_in_stride * win_size:]
-        pos_y = pos_y[bins_in_stride * win_size:]
+    y = []
     return X, y
 
 

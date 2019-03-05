@@ -14,13 +14,13 @@ if __name__ == '__main__':
 
 # Removes a portion of the lick events and checks if performance changes
 
-    model_path = "C:/Users/NN/Desktop/Master/experiments/Lickwell_prediction/MLP_HC/"
+    model_path = "C:/Users/NN/Desktop/Master/experiments/Lickwell_prediction/MLP_HC_phase/"
     save_path=model_path+"images/"
     barcolor = "darkviolet"
     add_trial_numbers=True
     # load fraction and std data
     path_hc = model_path + "output/"
-    path_pfc = "C:/Users/NN/Desktop/Master/experiments/Lickwell_prediction/MLP_PFC/output/"
+    path_pfc = "C:/Users/NN/Desktop/Master/experiments/Lickwell_prediction/MLP_PFC_phase/output/"
     lick_id_details, lick_id_details_k = get_metric_details(path_hc, 1)
     # return_sample_count_by_lick_id(lick_id_details_k_1)
     x_1, std_1, n_1 = get_accuracy_for_comparison_2(lick_id_details, lick_id_details_k)

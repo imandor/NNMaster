@@ -15,8 +15,8 @@ if __name__ == '__main__':
 # Removes a portion of the lick events and checks if performance changes
 
     model_path = "C:/Users/NN/Desktop/Master/experiments/Lickwell_prediction/"
-    path_pfc = "C:/Users/NN/Desktop/Master/experiments/Lickwell_prediction/MLP_HC/output/"
-    path_hc = model_path + "MLP_HC_tleave/output/"
+    path_hc = "C:/Users/NN/Desktop/Master/experiments/Lickwell_prediction/MLP_PFC/output/"
+    path_pfc = model_path + "MLP_PFC_tleave/output/"
     save_path=model_path
     barcolor = "darkviolet"
     add_trial_numbers=True
@@ -57,7 +57,7 @@ if __name__ == '__main__':
     ax4.set_ylim(0, 1.0)
 
     error_kw = {'capsize': 5, 'capthick': 1, 'ecolor': 'black'}
-    ax1.bar(ind, x_1, color="b", yerr=[std_lower_1, std_upper_1], error_kw=error_kw, align='center',label="first five seconds",edgecolor="black")
+    ax1.bar(ind, x_1, color="r", yerr=[std_lower_1, std_upper_1], error_kw=error_kw, align='center',label="first five seconds",edgecolor="black")
     ax1.set_xticks(ind)
     ax1.set_ylabel("fraction decoded", fontsize=fontsize)
     ax1.set_xticklabels(['next well', 'last well', 'current phase'], fontsize=fontsize)
@@ -70,7 +70,7 @@ if __name__ == '__main__':
                 offset = -0.1
             ax1.annotate(int(n_1[i]), xy=(i - 0.1, j + offset))
 
-    ax2.bar(ind, x_2, color="b", yerr=[std_lower_2, std_upper_2], error_kw=error_kw, align='center',edgecolor="black")
+    ax2.bar(ind, x_2, color="r", yerr=[std_lower_2, std_upper_2], error_kw=error_kw, align='center',edgecolor="black")
     ax2.set_xticks(ind)
     # ax2.set_ylabel("fraction decoded", fontsize=fontsize)
     ax2.set_xticklabels(['last well', 'next well', 'current phase'], fontsize=fontsize)
@@ -83,7 +83,7 @@ if __name__ == '__main__':
             else:
                 offset = -0.1
             ax2.annotate(int(n_2[i]), xy=(i - 0.1, j + offset))
-    ax3.bar(ind, x_3, color="darkblue", yerr=[std_lower_3, std_upper_3], error_kw=error_kw, align='center',edgecolor="black",label="last five seconds")
+    ax3.bar(ind, x_3, color="darkred", yerr=[std_lower_3, std_upper_3], error_kw=error_kw, align='center',edgecolor="black",label="last five seconds")
     ax3.set_xticks(ind)
     ax3.set_ylabel("fraction decoded", fontsize=fontsize)
 
@@ -95,7 +95,7 @@ if __name__ == '__main__':
             else:
                 offset = -0.1
             ax3.annotate(int(n_3[i]), xy=(i - 0.1, j + offset))
-    ax4.bar(ind, x_4, color="r", yerr=[std_lower_4, std_upper_4], error_kw=error_kw, align='center',edgecolor="black")
+    ax4.bar(ind, x_4, color="darkred", yerr=[std_lower_4, std_upper_4], error_kw=error_kw, align='center',edgecolor="black")
     ax4.set_xticks(ind)
     ax4.set_xticklabels(['last well', 'next well', 'current phase'], fontsize=fontsize)
     if add_trial_numbers is True:
@@ -115,7 +115,6 @@ if __name__ == '__main__':
     ax2.grid(True,axis="y")
     ax3.grid(True,axis="y")
     ax4.grid(True,axis="y")
-
     plt.show()
     plt.savefig(save_path)
     pass
