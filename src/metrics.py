@@ -15,10 +15,9 @@ def get_r2(y_predicted, y_target):
     R2_list = []
     y_predicted = y_predicted
     y_target = y_target
-    for i in range(y_target.shape[1]):
-        y_mean = np.mean(y_target[:, i])
-        R2 = 1 - np.sum((y_predicted[:, i] - y_target[:, i]) ** 2) / np.sum((y_target[:, i] - y_mean) ** 2)
-        R2_list.append(R2)
+    y_mean = np.mean(y_target)
+    R2 = 1 - np.sum((y_predicted - y_target) ** 2) / np.sum((y_target - y_mean) ** 2)
+    R2_list.append(R2)
     R2_array = np.array(R2_list)
     return R2_array  # Return an array of R2s
 
@@ -42,7 +41,7 @@ def get_avg_distance(y_predicted, y_target, step_size):
     :param step_size: length of output bins, format [len_x-bins,len_y-bins]
     :return: list of distances in bins between all target and prediction bins
     """
-    distance_list = get_distances(y_predicted, y_target, step_size)
+    distance_list = np.abs(step_size*(y_predicted-y_target))# get_distances(y_predicted, y_target, step_size)
     return np.average(distance_list, axis=0)
 
 
@@ -66,9 +65,9 @@ def get_radius_distance_list(y_predicted, y_target, step_size, absolute_margin=0
     :param absolute_margin:
     :return:
     """
-    return np.sqrt(np.square(step_size[0] * (y_predicted[:, 0] - y_target[:, 0])) + np.square(
-        step_size[1] * (y_predicted[:, 1] - y_target[:, 1]))) <= absolute_margin
-
+    # return np.sqrt(np.square(step_size[0] * (y_predicted[:, 0] - y_target[:, 0])) + np.square(
+    #     step_size[1] * (y_predicted[:, 1] - y_target[:, 1]))) <= absolute_margin
+    return np.abs(step_size*(y_predicted-y_target))<=absolute_margin
 
 def sigmoid(x):
     return 1 / (1 + np.exp(-x))
@@ -80,16 +79,16 @@ def average_position(mapping):
     :param mapping: list of positions in map format
     :return: averaged position over [x-coordinate,y-coordinate]
     """
-
-    sum_0 = np.sum(mapping, axis=0)
-    sum_0 = np.sum(np.sum(sum_0 * np.arange(mapping.shape[1]))) / np.sum(np.sum(sum_0))
-    sum_1 = np.sum(mapping, axis=1)
-    sum_1 = np.sum(np.sum(sum_1 * np.arange(mapping.shape[0]))) / np.sum(np.sum(sum_1))
+    # sum_0 = np.sum(mapping, axis=0)
+    # sum_0 = np.sum(np.sum(sum_0 * np.arange(mapping.shape[1]))) / np.sum(np.sum(sum_0))
+    # sum_1 = np.sum(mapping, axis=1)
+    # sum_1 = np.sum(np.sum(sum_1 * np.arange(mapping.shape[0]))) / np.sum(np.sum(sum_1))
     try:
-        return [int(sum_1), int(sum_0)]
+        sum = np.sum(mapping * np.arange(len(mapping))) / np.sum(mapping)
+        return int(sum)
     except ValueError:
-        print("Value error, check validation output")
-        return "Value error, check validation output"
+        print("Value error, check network output")
+        return "Value error, check network output"
 
 
 def plot_histogram(sess, S, nd, X, y):
@@ -97,7 +96,7 @@ def plot_histogram(sess, S, nd, X, y):
     :return: plots binary histogram of positions
     """
     y_predicted, y_target = predict_map(S, sess, X, y)
-    distances = get_distances(y_predicted, y_target, [nd.x_step, nd.y_step])
+    distances =  get_distances(y_predicted, y_target, [nd.x_step, nd.y_step])
     fig, ax = plt.subplots()
     x_axis_labels = np.linspace(0, 150, 15)
     ax.hist(distances, x_axis_labels, density=True, cumulative=True, rwidth=0.9, color='b')
@@ -120,25 +119,23 @@ def plot_histogram(sess, S, nd, X, y):
 
 def predict_map(S, sess, X, Y):
     """ returns list of x/y tuples for predicted and actual positions"""
-    xshape = [1] + list(X[0].shape) + [1]
+    xshape = [1] + [len(X[0])] + [len(X[0][0])] + [1]
     yshape = [1] + list(Y[0].shape) + [1]
-    y_predicted = np.zeros([len(Y), 2])
-    y_target = np.zeros([len(Y), 2])
+    y_predicted = np.zeros([len(Y)])
+    y_target = np.zeros([len(Y)])
     for j in range(0, len(X), 1):
         x = np.array([data_slice for data_slice in X[j:j + 1]])
         y = np.array(Y[j:j + 1])
         x = np.reshape(x, xshape)
         y = np.reshape(y, yshape)
-        prediction = S.valid(sess, x)[0, :, :, 0]
+        prediction = S.valid(sess, x)[0, :, 0]
         prediction_a = sigmoid(prediction)
-        y = y[0, :, :, 0]
+        y = y[0, :, 0]
         # bin_1 = average_position(a)
-        bin_1 = np.unravel_index(prediction_a.argmax(), prediction_a.shape) # returns the position in bin format
+        bin_1 = np.argmax(prediction_a) # returns the position in bin format
         bin_2 = average_position(y)
-        y_predicted[j][0] = bin_1[0]
-        y_predicted[j][1] = bin_1[1]
-        y_target[j][0] = bin_2[0]
-        y_target[j][1] = bin_2[1]
+        y_predicted[j] = bin_1
+        y_target[j] = bin_2
     return y_predicted, y_target
 
 
@@ -353,7 +350,7 @@ class Metric:  # object containing evaluation metrics for all epochs
             self.ape_best = self.ape_by_epoch[-1]
             self.acc20_best = self.acc20_by_epoch[-1]
         else:
-            self.r2_best = np.max([a[0] for a in self.r2_by_epoch]) # y axis is ignored for best score
+            self.r2_best = np.max(self.r2_by_epoch)# np.max([a[0] for a in self.r2_by_epoch]) # y axis is ignored for best score
             self.ape_best = np.min(self.ape_by_epoch)
             self.acc20_best = np.max(self.acc20_by_epoch)
 
@@ -361,13 +358,9 @@ class Metric:  # object containing evaluation metrics for all epochs
         y_predicted, y_target = predict_map(S, sess, X, y)
         a = []
         b = []
-        for i, y in enumerate(y_target):
-            a.append(y[0])
-            b.append(y_predicted[i][0])
-        print("average position:", np.average(a), np.average(b))
         r2 = get_r2(y_predicted, y_target)  # r2 score
-        ape = get_avg_distance(y_predicted, y_target, [nd.x_step, nd.y_step])  # absolute position error
-        acc20 = get_radius_accuracy(y_predicted, y_target, [nd.x_step, nd.y_step], 20)  # accuracy 20
+        ape = get_avg_distance(y_predicted, y_target, nd.x_step)  # absolute position error
+        acc20 = get_radius_accuracy(y_predicted, y_target, nd.x_step, 20)  # accuracy 20
         self.r2_by_epoch.append(r2)
         self.ape_by_epoch.append(ape)
         self.acc20_by_epoch.append(acc20)

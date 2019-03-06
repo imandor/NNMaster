@@ -6,7 +6,7 @@ from src.network_functions import run_network_process, initiate_network, run_net
 if __name__ == '__main__':
     combination_data_set  = False
     # prefrontal cortex
-    MODEL_PATH = "G:/master_datafiles/trained_networks/naive_test_pfc_tester/"
+    MODEL_PATH = "G:/master_datafiles/trained_networks/pfc_1d/"
     RAW_DATA_PATH = "G:/master_datafiles/raw_data/PFC/"
     FILTERED_DATA_PATH = "session_pfc"
 
@@ -40,18 +40,18 @@ if __name__ == '__main__':
 
 
     nd = Net_data(
-        initial_timeshift=0,
+        initial_timeshift=-10000,
         time_shift_iter=500,
-        time_shift_steps=1,
-        early_stopping=False,
+        time_shift_steps=41,
+        early_stopping=True,
         model_path=MODEL_PATH,
         raw_data_path=RAW_DATA_PATH,
         filtered_data_path=FILTERED_DATA_PATH,
-        k_cross_validation = 1,
-        valid_ratio=0.2,
+        k_cross_validation = 10,
+        valid_ratio=0.1,
         naive_test=False,
         from_raw_data=False,
-        epochs = 100,
+        epochs = 20,
         dropout=0.65
 
 

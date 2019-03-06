@@ -6,7 +6,7 @@ from src.database_api_beta import Slice, Filter, hann
 from src.metrics import print_Net_data, cross_validate_lickwell_data, Evaluated_Samples_By_Epoch,print_lickwell_metrics
 import numpy as np
 from src.settings import save_as_pickle, load_pickle, save_net_dict
-from src.preprocessing import time_shift_positions, shuffle_io, position_as_map, lickwells_io, generate_counter, \
+from src.preprocessing import time_shift_positions, shuffle_io,shuffle_list_key, position_as_map, lickwells_io, generate_counter, \
     abs_to_logits
 import multiprocessing
 import os
@@ -120,7 +120,7 @@ def run_network_process(nd):
                          ape_best=None, acc20_best=None)
     metric_test = Metric(r2_by_epoch=[], ape_by_epoch=[], acc20_by_epoch=[], r2_best=None,
                          ape_best=None, acc20_best=None)
-    ape_min = -np.inf
+    r2_max = -np.inf
     X_train = nd.X_train
     y_train = nd.y_train
     saver = tf.train.Saver()
@@ -136,7 +136,7 @@ def run_network_process(nd):
 
     sess.run(tf.local_variables_initializer())
     print("Training model...")
-    xshape = [nd.batch_size] + list(X_train[0].shape) + [1]
+    xshape = [nd.batch_size] + [len(X_train[0])] + [len(X_train[0][0])] + [1]
     yshape = [nd.batch_size] + list(y_train[0].shape) + [1]
     metric_counter = 0  # net_dict["metric_iter"]
     metric_step_counter = []
@@ -156,23 +156,25 @@ def run_network_process(nd):
             print("Avg-distance:", metric_eval.ape_by_epoch[-1])
             # saver.save(sess, nd.model_path, global_step=i, write_meta_graph=False)
             metric_counter = 0
-            if nd.early_stopping is True and i >= 10:  # most likely overfitting instead of training
-                if i % 1 == 0:
-                    metric_test.set_metrics(sess=sess, S=S, nd=nd, X=nd.X_test, y=nd.y_test)
-                    ape = metric_test.ape_by_epoch[-1]
-                    if ape_min > ape:
-                        ape_min = ape
-                    else:
-                        if ape > ape_min + 5:
-                            stop_early = True
-                            metric_eval.r2_by_epoch = metric_eval.r2_by_epoch[0:-1]
-                            metric_eval.ape_by_epoch = metric_eval.ape_by_epoch[0:-1]
-                            metric_eval.acc20_by_epoch = metric_eval.acc20_by_epoch[0:-1]
+            if nd.early_stopping is True:  # most likely overfitting instead of training
+                metric_test.set_metrics(sess=sess, S=S, nd=nd, X=nd.X_test, y=nd.y_test)
+                r2 = metric_test.r2_by_epoch[-1]
+                if r2_max < r2:
+                    r2_max = r2
+                else:
+                    if r2 < r2_max and r2>=0: # network is at least random and performs worse than before
+                        stop_early = True
+                        metric_eval.r2_by_epoch = metric_eval.r2_by_epoch[0:-1]
+                        metric_eval.ape_by_epoch = metric_eval.ape_by_epoch[0:-1]
+                        metric_eval.acc20_by_epoch = metric_eval.acc20_by_epoch[0:-1]
             # a = get_radius_accuracy(prediction_list, actual_list, [network_dict["X_STEP"], network_dict["Y_STEP"]], 19)
         for j in range(0, len(X_train) - nd.batch_size, nd.batch_size):
-            x = np.array([data_slice for data_slice in X_train[j:j + nd.batch_size]])
+            x = (X_train[j:j + nd.batch_size])
             y = np.array(y_train[j:j + nd.batch_size])
-            x = np.reshape(x, xshape)
+            try:
+                x = np.reshape(x, xshape)
+            except ValueError:
+                print("asd")
             y = np.reshape(y, yshape)
             if nd.naive_test is False or nd.time_shift == 0:
                 t = np.max(S.train(sess, x, y, dropout=0.65))
@@ -268,7 +270,7 @@ def run_network(nd, session):
                 nd.load_model = True
                 nd.epochs=1
             nd.assign_training_testing(X, y, k)
-            nd.plot_validation_position_histogram(k)
+            # nd.plot_validation_position_histogram(k)
             if nd.time_shift_steps == 1:
                 metric = run_network_process(nd)
             else:

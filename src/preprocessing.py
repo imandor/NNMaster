@@ -79,105 +79,110 @@ def shuffle_list_key(length,shuffle_batch_size=1,seed_no=1):
     r = r[s]
     r = r.reshape(-1)
     return r
+
+
 def shuffle_io(X, y, nd, seed_no=None, shuffle_batch_size=None):
-    # Shuffle data
     if nd.shuffle_data is False:
-        return X, y
-    if shuffle_batch_size is None:
-        shuffle_batch_size = nd.shuffle_factor
-    if seed_no!= None:
-        seed(seed_no)
-
-    # crop length to fit shuffle factor
-
-    # print("Shuffling data...")
-    x_length = len(X) - (len(X) % shuffle_batch_size)
-    X = X[:x_length]
-    y = y[:x_length]
-
-    # Shuffle index of data
-
-    r = shuffle_list_key(len(X),shuffle_batch_size,seed_no)
-    # shuffle data
-
-    X = [X[j] for j in r]
-    y = [y[j] for j in r]
-    # print("Finished shuffling data")
+        return X,y
+    r = shuffle_list_key(len(y), shuffle_batch_size=1, seed_no=seed_no)
+    X = [X[i] for i in r]
+    y = [y[i] for i in r]
+    # # Shuffle data
+    # if nd.shuffle_data is False:
+    #     return X, y
+    # if shuffle_batch_size is None:
+    #     shuffle_batch_size = nd.shuffle_factor
+    # if seed_no!= None:
+    #     seed(seed_no)
+    #
+    # # crop length to fit shuffle factor
+    #
+    # # print("Shuffling data...")
+    # x_length = len(X) - (len(X) % shuffle_batch_size)
+    # X = X[:x_length]
+    # y = y[:x_length]
+    #
+    # # Shuffle index of data
+    #
+    # r = shuffle_list_key(len(X),shuffle_batch_size,seed_no)
+    # # shuffle data
+    #
+    # X = [X[j] for j in r]
+    # y = [y[j] for j in r]
+    # # print("Finished shuffling data")
     return X, y
 
+def position_to_1d_map(positions,min,max,step):
+    """
+    :param positions: list of positions
+    :param min: minimum value on map
+    :param max: maximum value on map
+    :return: numpy array containing ones where positions were and zero otherwise
+    """
+
+    positions = np.asarray(positions)
+    positions = np.dstack(positions)[0]
+    pos_list = np.unique(positions)
+    ret = np.zeros((max - min) // step)
+    for pos in pos_list:
+        try:
+            # ret[pos[0], pos[1]] = 1
+            ret[int(pos//step)] = 1
+        except IndexError:
+            print("Warning, check if pos_list is formatted correctly ([[x,x,x,x,x]")
+    return ret
 
 def time_shift_positions(session, shift, nd):
+    """
 
-    slice_size = nd.slice_size
+    :param session: Slice object containing session
+    :param shift: time shift intended for training
+    :param nd: Net data object
+    :return: neural data and corresponding labels for each time shift
+    """
     win_size = nd.win_size
-    x_step = nd.x_step
-    y_step = nd.y_step
-    x_max = nd.x_max
-    x_min = nd.x_min
-    y_max = nd.y_max
-    y_min = nd.y_min
-    stride = nd.stride
-    y_slice_size = nd.y_slice_size
     position_x = session.position_x
-    position_y = session.position_y
 
-    # Shift position index
+    # Shift position index and determine which range of filtered spikes contains valid samples
 
-    shift_in_filtered_spikes = int(shift/win_size)
     if shift>0:
         position_x = position_x[shift:]
-        position_y = position_y
+        ystart = 0
+        ystop = len(session.filtered_spikes[0])-shift//win_size
+    if shift<0:
+        position_x = position_x[:shift]
+        ystart = - shift//win_size
+        ystop = len(session.filtered_spikes[0])
 
-    # Shift positions
+    # map positions:
 
-    # shift_in_filtered_spikes = int(shift / win_size)
-    # position_x = session.position_x
-    # position_y = session.position_y
-    # filtered_spikes = session.filtered_spikes
-    # # Remove data for which no shifted labels exist
-    # if shift > 0:
-    #     position_x = position_x[shift:]
-    #     position_y = position_y[shift:]
-    #     filtered_spikes = [x[:-shift_in_filtered_spikes] for x in filtered_spikes]
-    #
-    # if shift < 0:
-    #     position_x = position_x[:shift]
-    #     position_y = position_y[:shift]
-    #     filtered_spikes = [x[-shift_in_filtered_spikes:] for x in filtered_spikes]
-    # y = []
-    # pos_x = position_x
-    # pos_y = position_y
-    # bins_in_sample = slice_size // win_size
-    # bins_in_stride = stride // win_size
-    # surrounding_index = int(0.5 * (slice_size - y_slice_size))
-    # X = []
-    # while len(filtered_spikes[0]) >= slice_size:
-    #
-    #     # Input
-    #
-    #     bins_to_X = []
-    #     remaining_bins = []
-    #     for spike in filtered_spikes:
-    #         bins_to_X.append(spike[:bins_in_sample])
-    #         remaining_bins.append(spike[bins_in_stride:])
-    #     bins_to_X = np.reshape(bins_to_X, [len(bins_to_X), len(bins_to_X[0])])
-    #     X.append(bins_to_X)
-    #     filtered_spikes = remaining_bins
-    #
-    #     # output
-    #
-    #     norm_x = pos_x[:slice_size]
-    #     norm_y = pos_y[:slice_size]
-    #     right_index_border = len(norm_x) - surrounding_index
-    #     x_list = (((norm_x[surrounding_index:right_index_border]) - x_min) // x_step).astype(int)
-    #     y_list = (((norm_y[surrounding_index:right_index_border]) - y_min) // y_step).astype(int)
-    #
-    #     posxy_list = [x_list, y_list]  # remove surrounding positional data and form average
-    #     y.append(position_as_map(posxy_list, x_step, y_step, x_max, x_min, y_max, y_min))
-    #     pos_x = pos_x[bins_in_stride * win_size:]
-    #     pos_y = pos_y[bins_in_stride * win_size:]
+    # positions = position_to_1d_map(position_x,nd.x_min,nd.x_max,nd.x_step)
     X = []
     y = []
+    xshape =  [len(session.filtered_spikes)] + [nd.number_of_bins]
+    for i in range(ystart,ystop-nd.number_of_bins,nd.number_of_bins):
+        # Append input data for given range
+        # spikes = np.zeros(xshape)
+        # for j, neuron_spikes in enumerate(session.filtered_spikes):
+        #     spikes[j] = np.array(neuron_spikes[i:i+nd.number_of_bins])
+        spikes = [neuron_spikes[i:i+nd.number_of_bins] for neuron_spikes in session.filtered_spikes]
+        # spikes_as_array = np.zeros((len(spikes),len(spikes[0])))
+        # for i,neuron_spikes in enumerate(spikes):
+        #     for j,spike in enumerate(neuron_spikes):
+        #         spikes_as_array[i][j] = spike
+        X.append(spikes) # Input data for given range
+
+        # determine which y range is used
+        range_start = (i-ystart) * win_size
+        range_stop = (i + nd.number_of_bins-ystart) * win_size
+        y_raw = position_x[range_start:range_stop]
+        try:
+            asd = position_to_1d_map(positions=y_raw, min=nd.x_min, max=nd.x_max, step=nd.x_step)
+            y.append(asd)
+        except ValueError:
+            print("asd")
+            position_to_1d_map(positions=y_raw, min=nd.x_min, max=nd.x_max, step=nd.x_step)
+
     return X, y
 
 
