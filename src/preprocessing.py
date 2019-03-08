@@ -2,6 +2,7 @@ from random import seed, shuffle, randint
 import numpy as np
 import random
 
+
 def position_as_map(pos_list, xstep, ystep, x_max, x_min, y_max, y_min):
     """
 
@@ -144,8 +145,7 @@ def time_shift_positions(session, shift, nd):
     position_x = session.position_x
 
     # Shift position index and determine which range of filtered spikes contains valid samples
-
-    if shift>0:
+    if shift>=0:
         position_x = position_x[shift:]
         ystart = 0
         ystop = len(session.filtered_spikes[0])-shift//win_size
@@ -176,15 +176,82 @@ def time_shift_positions(session, shift, nd):
         range_start = (i-ystart) * win_size
         range_stop = (i + nd.number_of_bins-ystart) * win_size
         y_raw = position_x[range_start:range_stop]
-        try:
-            asd = position_to_1d_map(positions=y_raw, min=nd.x_min, max=nd.x_max, step=nd.x_step)
-            y.append(asd)
-        except ValueError:
-            print("asd")
-            position_to_1d_map(positions=y_raw, min=nd.x_min, max=nd.x_max, step=nd.x_step)
+        y_raw = position_to_1d_map(positions=y_raw, min=nd.x_min, max=nd.x_max, step=nd.x_step)
+        y.append(y_raw)
 
     return X, y
 
+
+def return_well_positions(session):
+    """
+
+    :param session:
+    :return: approximates the well positions by averaging over the positions at each lick event
+    """
+    position_by_well = []
+    position_counter = np.zeros((10,len(session.licks)))
+    for i, lick in enumerate(session.licks):
+        position_counter[lick.lickwell-1][i] = session.position_x[int(lick.time)]
+    for j,well in enumerate(position_counter):
+        avg_pos = []
+        for i,pos in enumerate(well):
+            if pos!=0:
+                avg_pos.append(pos)
+        if avg_pos!= []:
+            position_by_well.append(np.average(avg_pos))
+    return position_by_well
+
+def filter_behavior_component(X,y,nd,session,allowed_distance=3):
+    """
+    :param X:
+    :param y:
+    :param nd: net_data object
+    :return: removes neural data not corresponding to nd.behavior_component_filter
+    """
+    filter = nd.behavior_component_filter
+    if filter is None:
+        return X,y
+    X_return = []
+    y_return = []
+
+    if filter == "at lickwell":
+        well_positions = return_well_positions(session)
+        for i, position_as_map in enumerate(y):
+            position = nd.x_step * median_position_bin(position_as_map)
+            for well_position in well_positions:
+                if abs(position-well_position)<allowed_distance:
+                    X_return.append(X[i])
+                    y_return.append(position_as_map)
+                    break
+
+    if filter == "not at lickwell":
+        well_positions = return_well_positions(session)
+        for i, position_as_map in enumerate(y):
+            found_at_well = False
+            position = nd.x_step * median_position_bin(position_as_map)
+            for well_position in well_positions:
+                if abs(position-well_position)<allowed_distance:
+                    found_at_well = True
+                    break
+            if found_at_well is False:
+                X_return.append(X[i])
+                y_return.append(position_as_map)
+
+    if filter == "correct trials" or filter == "false trials":
+        start_index = 0
+        for lick in session.licks:
+            if lick.rewarded == 0:
+                print("asd")
+            stop_index = int(lick.time - nd.time_shift)
+            if filter == "correct trials" and lick.rewarded == 1 or filter == "false trials" and lick.rewarded == 0:
+                X_return.append(X[start_index:stop_index])
+                y_return.append(y[start_index:stop_index])
+            start_index = stop_index
+        X_return = [a for li in X_return for a in li ]
+        y_return = [a for li in y_return for a in li ]
+
+
+    return X_return,y_return
 
 def generate_counter(num_wells, excluded_wells):
     """
@@ -318,3 +385,19 @@ def lickwells_io(session, nd, excluded_wells=[1], shift=1,
     return X, y,nd,session
 
 
+def median_position_bin(mapping):
+    """
+
+    :param mapping: list of positions in map format
+    :return: median position bin over [x-coordinate,y-coordinate]
+    """
+    # sum_0 = np.sum(mapping, axis=0)
+    # sum_0 = np.sum(np.sum(sum_0 * np.arange(mapping.shape[1]))) / np.sum(np.sum(sum_0))
+    # sum_1 = np.sum(mapping, axis=1)
+    # sum_1 = np.sum(np.sum(sum_1 * np.arange(mapping.shape[0]))) / np.sum(np.sum(sum_1))
+    try:
+        sum = np.sum(mapping * np.arange(len(mapping))) / np.sum(mapping)
+        return int(sum)
+    except ValueError:
+        print("Value error, check network output")
+        return "Value error, check network output"

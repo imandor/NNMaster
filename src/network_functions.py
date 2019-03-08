@@ -7,7 +7,7 @@ from src.metrics import print_Net_data, cross_validate_lickwell_data, Evaluated_
 import numpy as np
 from src.settings import save_as_pickle, load_pickle, save_net_dict
 from src.preprocessing import time_shift_positions, shuffle_io,shuffle_list_key, position_as_map, lickwells_io, generate_counter, \
-    abs_to_logits
+    abs_to_logits,filter_behavior_component
 import multiprocessing
 import os
 import errno
@@ -257,6 +257,7 @@ def run_network(nd, session):
         nd.time_shift = z  # set current time shift
         # Time-Shift input and output
         X, y = time_shift_positions(session, z, nd)
+        # X,y = filter_behavior_component(X, y, nd, session)
         if len(X) != len(y):
             raise ValueError("Error: Length of x and y are not identical")
         X, y = shuffle_io(X, y, nd, seed_no=2,shuffle_batch_size=nd.shuffle_factor)

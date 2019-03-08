@@ -6,25 +6,25 @@ from src.network_functions import run_network_process, initiate_network, run_net
 if __name__ == '__main__':
     combination_data_set  = False
     # prefrontal cortex
-    MODEL_PATH = "G:/master_datafiles/trained_networks/pfc_1d/"
-    RAW_DATA_PATH = "G:/master_datafiles/raw_data/PFC/"
-    FILTERED_DATA_PATH = "session_pfc"
+    # MODEL_PATH = "G:/master_datafiles/trained_networks/pfc_1d/"
+    # RAW_DATA_PATH = "G:/master_datafiles/raw_data/PFC/"
+    # FILTERED_DATA_PATH = "session_pfc"
 
     # hippocampus
 
-    # MODEL_PATH = "G:/master_datafiles/trained_networks/test_hc/"
+    # MODEL_PATH = "G:/master_datafiles/trained_networks/hc_1d/"
     # RAW_DATA_PATH = "G:/master_datafiles/raw_data/HC/"
     # FILTERED_DATA_PATH = "session_hc"
 
     # Combination data set
 
-    # RAW_DATA_PATH = "G:/master_datafiles/raw_data/C"
-    # combination_data_set = True # for some reason, the combination data set has switched x and y axis, which needs to be manually switched back
+    RAW_DATA_PATH = "G:/master_datafiles/raw_data/C"
+    combination_data_set = True # for some reason, the combination data set has switched x and y axis, which needs to be manually switched back
     # only Hippocampus neurons
 
-    # MODEL_PATH = "G:/master_datafiles/trained_networks/MLP_CHC/"
-    # FILTERED_DATA_PATH = "session_CHC.pkl"
-    # filter_tetrodes=range(13,1000)
+    MODEL_PATH = "G:/master_datafiles/trained_networks/chc_1d/"
+    FILTERED_DATA_PATH = "session_CHC.pkl"
+    filter_tetrodes=range(13,1000)
 
     # only Prefrontal Cortex neurons
 
@@ -52,8 +52,8 @@ if __name__ == '__main__':
         naive_test=False,
         from_raw_data=False,
         epochs = 20,
-        dropout=0.65
-
+        dropout=0.65,
+        behavior_component_filter="correct trials"
 
     )
     session = initiate_network(nd)

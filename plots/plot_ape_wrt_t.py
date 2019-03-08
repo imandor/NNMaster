@@ -66,9 +66,10 @@ if __name__ == '__main__':
         dir + "MLP_HC_naive/",
         dir + "MLP_PFC_naive/",
         dir + "MLP_PFC_k1/",
+        dir + "hc_1d/"
 
     ]
-    ax_label_list = ["C","CHC","CPFC","HC","PFC","HC naive","PFC naive","PFC k1"]
+    ax_label_list = ["C","CHC","CPFC","HC","PFC","HC naive","PFC naive","PFC k1","HC 1d"]
     save_path ="C:/Users/NN/Desktop/Master/experiments/position decoding/ape.png"
     fig, ax = plt.subplots()
     axis_label_x = 'Time shift [ms]'

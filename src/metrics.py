@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-from src.preprocessing import position_as_map
+from src.preprocessing import position_as_map, median_position_bin
 from src.database_api_beta import Evaluated_Lick, get_lick_from_id
 from src.settings import load_pickle
 
@@ -73,24 +73,6 @@ def sigmoid(x):
     return 1 / (1 + np.exp(-x))
 
 
-def average_position(mapping):
-    """
-
-    :param mapping: list of positions in map format
-    :return: averaged position over [x-coordinate,y-coordinate]
-    """
-    # sum_0 = np.sum(mapping, axis=0)
-    # sum_0 = np.sum(np.sum(sum_0 * np.arange(mapping.shape[1]))) / np.sum(np.sum(sum_0))
-    # sum_1 = np.sum(mapping, axis=1)
-    # sum_1 = np.sum(np.sum(sum_1 * np.arange(mapping.shape[0]))) / np.sum(np.sum(sum_1))
-    try:
-        sum = np.sum(mapping * np.arange(len(mapping))) / np.sum(mapping)
-        return int(sum)
-    except ValueError:
-        print("Value error, check network output")
-        return "Value error, check network output"
-
-
 def plot_histogram(sess, S, nd, X, y):
     """
     :return: plots binary histogram of positions
@@ -133,7 +115,7 @@ def predict_map(S, sess, X, Y):
         y = y[0, :, 0]
         # bin_1 = average_position(a)
         bin_1 = np.argmax(prediction_a) # returns the position in bin format
-        bin_2 = average_position(y)
+        bin_2 = median_position_bin(y)
         y_predicted[j] = bin_1
         y_target[j] = bin_2
     return y_predicted, y_target
