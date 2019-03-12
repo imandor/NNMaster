@@ -5,44 +5,44 @@ from src.network_functions import run_network_process, initiate_network, run_net
 
 if __name__ == '__main__':
     combination_data_set  = False
+    filter_tetrodes = None
     # prefrontal cortex
-    # MODEL_PATH = "G:/master_datafiles/trained_networks/pfc_1d/"
+    # MODEL_PATH = "G:/master_datafiles/trained_networks/pfc_bc_correct_trials/"
     # RAW_DATA_PATH = "G:/master_datafiles/raw_data/PFC/"
     # FILTERED_DATA_PATH = "session_pfc"
 
     # hippocampus
-
-    # MODEL_PATH = "G:/master_datafiles/trained_networks/hc_1d/"
-    # RAW_DATA_PATH = "G:/master_datafiles/raw_data/HC/"
-    # FILTERED_DATA_PATH = "session_hc"
+    #
+    MODEL_PATH = "G:/master_datafiles/trained_networks/hc_bc_correct_trials/"
+    RAW_DATA_PATH = "G:/master_datafiles/raw_data/HC/"
+    FILTERED_DATA_PATH = "session_hc"
 
     # Combination data set
 
-    RAW_DATA_PATH = "G:/master_datafiles/raw_data/C"
-    combination_data_set = True # for some reason, the combination data set has switched x and y axis, which needs to be manually switched back
+    # RAW_DATA_PATH = "G:/master_datafiles/raw_data/C"
+    # combination_data_set = True # for some reason, the combination data set has switched x and y axis, which needs to be manually switched back
     # only Hippocampus neurons
 
-    MODEL_PATH = "G:/master_datafiles/trained_networks/chc_1d/"
-    FILTERED_DATA_PATH = "session_CHC.pkl"
-    filter_tetrodes=range(13,1000)
+    # MODEL_PATH = "G:/master_datafiles/trained_networks/chc_bc_test/"
+    # FILTERED_DATA_PATH = "session_CHC.pkl"
+    # filter_tetrodes=range(13,1000)
 
     # only Prefrontal Cortex neurons
 
-    # MODEL_PATH = "G:/master_datafiles/trained_networks/MLP_CPFC/"
+    # MODEL_PATH = "G:/master_datafiles/trained_networks/cpfc_bc_correct_trials/"
     # FILTERED_DATA_PATH = "session_CPFC.pkl"
     # filter_tetrodes=range(0,13)
 
     # all neurons
 
-    # MODEL_PATH = "G:/master_datafiles/trained_networks/MLP_C/"
+    # MODEL_PATH = "G:/master_datafiles/trained_networks/c_bc_false_trials/"
     # FILTERED_DATA_PATH = "slice_C.pkl"
-    # filter_tetrodes=None
 
 
     nd = Net_data(
-        initial_timeshift=-10000,
+        initial_timeshift=0,
         time_shift_iter=500,
-        time_shift_steps=41,
+        time_shift_steps=1,
         early_stopping=True,
         model_path=MODEL_PATH,
         raw_data_path=RAW_DATA_PATH,
@@ -53,13 +53,18 @@ if __name__ == '__main__':
         from_raw_data=False,
         epochs = 20,
         dropout=0.65,
-        behavior_component_filter="correct trials"
-
+        behavior_component_filter=None,
+        filter_tetrodes=filter_tetrodes,
+        shuffle_factor=50
     )
     session = initiate_network(nd)
+
+
+
     if combination_data_set is True:
         copy_pos_x = session.position_x
         session.position_x = session.position_y
         session.position_y = copy_pos_x
+
     run_network(nd, session)
     # Create save file directories

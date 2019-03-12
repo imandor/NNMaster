@@ -142,7 +142,7 @@ def run_network_process(nd):
     metric_step_counter = []
     stop_early = False
     for i in range(0, nd.epochs + 1):
-        X_train, y_train = shuffle_io(X_train, y_train, nd)
+        X_train, y_train = shuffle_io(X_train, y_train, nd,shuffle_batch_size=nd.shuffle_factor)
         if metric_counter == nd.metric_iter and stop_early is False:
             metric_step_counter.append(i)
             if nd.naive_test is True and nd.load_model is False:
@@ -257,7 +257,7 @@ def run_network(nd, session):
         nd.time_shift = z  # set current time shift
         # Time-Shift input and output
         X, y = time_shift_positions(session, z, nd)
-        # X,y = filter_behavior_component(X, y, nd, session)
+        X,y = filter_behavior_component(X, y, nd, session)
         if len(X) != len(y):
             raise ValueError("Error: Length of x and y are not identical")
         X, y = shuffle_io(X, y, nd, seed_no=2,shuffle_batch_size=nd.shuffle_factor)
@@ -276,7 +276,7 @@ def run_network(nd, session):
                 metric = run_network_process(nd)
             else:
                 with multiprocessing.Pool(
-                        1) as p:  # keeping network inside process prevents memory issues when restarting session
+                        1) as p:  # keeping network inside process prevents tensorflow memory issues when restarting training session
                     metric = p.map(run_network_process, [nd])[0]
                     p.close()
             metric_list.append(metric)

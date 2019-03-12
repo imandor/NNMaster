@@ -78,39 +78,20 @@ def shuffle_list_key(length,shuffle_batch_size=1,seed_no=1):
     s = np.arange(len(r))  # shuffling r directly doesnt work
     shuffle(s)
     r = r[s]
-    r = r.reshape(-1)
+    r = [u for g in r for u in g]
     return r
 
 
-def shuffle_io(X, y, nd, seed_no=None, shuffle_batch_size=None):
+def shuffle_io(X, y, nd, seed_no=2, shuffle_batch_size=1):
     if nd.shuffle_data is False:
         return X,y
-    r = shuffle_list_key(len(y), shuffle_batch_size=1, seed_no=seed_no)
+    modulo = len(X) % shuffle_batch_size
+    if modulo!=0:
+        X = X[0:-modulo]
+        y  = y[0:-modulo]
+    r = shuffle_list_key(len(y), shuffle_batch_size=shuffle_batch_size, seed_no=seed_no)
     X = [X[i] for i in r]
     y = [y[i] for i in r]
-    # # Shuffle data
-    # if nd.shuffle_data is False:
-    #     return X, y
-    # if shuffle_batch_size is None:
-    #     shuffle_batch_size = nd.shuffle_factor
-    # if seed_no!= None:
-    #     seed(seed_no)
-    #
-    # # crop length to fit shuffle factor
-    #
-    # # print("Shuffling data...")
-    # x_length = len(X) - (len(X) % shuffle_batch_size)
-    # X = X[:x_length]
-    # y = y[:x_length]
-    #
-    # # Shuffle index of data
-    #
-    # r = shuffle_list_key(len(X),shuffle_batch_size,seed_no)
-    # # shuffle data
-    #
-    # X = [X[j] for j in r]
-    # y = [y[j] for j in r]
-    # # print("Finished shuffling data")
     return X, y
 
 def position_to_1d_map(positions,min,max,step):
@@ -151,7 +132,7 @@ def time_shift_positions(session, shift, nd):
         ystop = len(session.filtered_spikes[0])-shift//win_size
     if shift<0:
         position_x = position_x[:shift]
-        ystart = - shift//win_size
+        ystart = - shift//win_size # how many samples are excluded from data set
         ystop = len(session.filtered_spikes[0])
 
     # map positions:
@@ -209,7 +190,7 @@ def filter_behavior_component(X,y,nd,session,allowed_distance=3):
     :return: removes neural data not corresponding to nd.behavior_component_filter
     """
     filter = nd.behavior_component_filter
-    if filter is None:
+    if filter is None or filter == "None":
         return X,y
     X_return = []
     y_return = []
@@ -240,15 +221,13 @@ def filter_behavior_component(X,y,nd,session,allowed_distance=3):
     if filter == "correct trials" or filter == "false trials":
         start_index = 0
         for lick in session.licks:
-            if lick.rewarded == 0:
-                print("asd")
-            stop_index = int(lick.time - nd.time_shift)
+            stop_index = int(lick.time - nd.time_shift) // nd.win_size
             if filter == "correct trials" and lick.rewarded == 1 or filter == "false trials" and lick.rewarded == 0:
                 X_return.append(X[start_index:stop_index])
                 y_return.append(y[start_index:stop_index])
             start_index = stop_index
-        X_return = [a for li in X_return for a in li ]
-        y_return = [a for li in y_return for a in li ]
+        X_return = [a for li in X_return for a in li]
+        y_return = [a for li in y_return for a in li]
 
 
     return X_return,y_return
