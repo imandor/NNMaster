@@ -363,6 +363,13 @@ class Net_data:
             self.y_test = y[k_slice_test]
             self.X_valid = X[k_slice_valid]
             self.y_valid = y[k_slice_valid]
+
+        if self.early_stopping is False:
+            self.X_valid = self.X_valid + self.X_test
+            self.y_valid = self.y_valid + self.y_test
+            self.X_test = []
+            self.y_test = []
+
         if self.keep_neuron != -1:
             for i in range(len(self.X_valid)):
                 for j in range(len(self.X_valid[0])):
@@ -774,7 +781,7 @@ class Slice:
         """
 
         :param path: file path
-        :param filter_tetrodes: list or range of tetrodes to be removed from session
+        :param filter_tetrodes: list or range of tetrodes to be kept in session
         :return: loads session from raw data set
         """
         print("start loading session")
@@ -798,9 +805,8 @@ class Slice:
         spikes = []
         for i, spike in enumerate(spikes_raw):
             # the raw data contains spikes outside the session scope
-            spikes.append(spikes_raw[i][:bisect.bisect_left(spikes_raw[i], len(position_x))])
             if filter_tetrodes is not None and tetrode_channel_list[i] in filter_tetrodes:
-                spikes.pop(-1)
+                spikes.append(spikes_raw[i][:bisect.bisect_left(spikes_raw[i], len(position_x))])
         # load foster data
 
         with open(foster_path, "r") as f:

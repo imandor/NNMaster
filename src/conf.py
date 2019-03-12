@@ -31,7 +31,7 @@ mlp.fc3.activation = tf.identity
 mlp.reshape = Map()
 mlp.reshape.shape = [None, 80, 1]
 mlp.loss_type = "sigmoid_cross_entropy"
-mlp.optimizer = tf.train.AdamOptimizer(0.005, epsilon=1e-14)
+mlp.optimizer = tf.train.AdamOptimizer(0.001, epsilon=1e-14)
 
 # Well decoding
 

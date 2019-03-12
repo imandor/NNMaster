@@ -60,9 +60,10 @@ if __name__ == '__main__':
 
     # Settings
     fontsize = 20
-    plot_error_bars = False
+    plot_error_bars = True
     epoch = -1 # raw data contains information about all epochs, we only want the newest iteration
-    plot_type="r2"
+    # plot_type="r2"
+    plot_type="ape"
 
     # Neuron filter 1
     # dir = "C:/Users/NN/Desktop/Master/experiments/Experiments for thesis/neuron filter/filter fraction/"
@@ -106,60 +107,60 @@ if __name__ == '__main__':
     # color_code_list_5 = ["black","green","limegreen","forestgreen","lightgreen"]
 
     # regular decoding
-    # dir = "C:/Users/NN/Desktop/Master/experiments/Experiments for thesis/Position decoding/"
-    # model_path_list_1 = [
-    #     dir + "pfc/",
-    # ]
-    # model_path_list_2 = [
-    #     dir + "cpfc/"
-    # ]
-    # model_path_list_3 = [
-    #     dir + "hc/"
-    # ]
-    # model_path_list_4 = [
-    #     dir + "chc/"
-    # ]
-    # ax_label_list_1 = ["PFC"]
-    # ax_label_list_2 = ["CPFC"]
-    # ax_label_list_3 = ["HC"]
-    # ax_label_list_4 = ["CHC"]
-    #
-    # color_code_list_1 = ["red","firebrick","darkred","maroon"]
-    # color_code_list_2 = ["orange","darkorange","orangered","coral"]
-    # color_code_list_3 = ["blue","mediumblue","darkblue","navy"]
-    # color_code_list_4 = ["slateblue","mediumslateblue","darkslateblue","midnightblue"]
-    # color_code_list_5 = ["green","limegreen","forestgreen","lightgreen"]
-
-    # at lickwell vs not at lickwell
-    dir = "C:/Users/NN/Desktop/Master/experiments/Experiments for thesis/behavior component test/at lickwell/"
+    dir = "C:/Users/NN/Desktop/Master/experiments/Experiments for thesis 2/Position decoding/"
     model_path_list_1 = [
-        dir + "pfc_bc_at_lickwell/",
-        dir + "pfc_bc_not_at_lickwell/",
-
+        dir + "pfc/",
     ]
     model_path_list_2 = [
-        dir + "cpfc_bc_at_lickwell/",
-        dir + "cpfc_bc_not_at_lickwell/"
-
+        dir + "cpfc/"
     ]
     model_path_list_3 = [
-        dir + "hc_bc_at_lickwell/",
-        dir + "hc_bc_not_at_lickwell/"
+        dir + "hc/"
     ]
     model_path_list_4 = [
-        dir + "chc_bc_at_lickwell/",
-        dir + "chc_bc_not_at_lickwell/"
+        dir + "chc/"
     ]
-    ax_label_list_1 = ["PFC at well","PFC not at well"]
-    ax_label_list_2 = ["CPFC at well", "CPFC not at well"]
-    ax_label_list_3 = ["HC at well", "HC not at well"]
-    ax_label_list_4 = ["CHC at well", "CHC not at well"]
+    ax_label_list_1 = ["PFC"]
+    ax_label_list_2 = ["CPFC"]
+    ax_label_list_3 = ["HC"]
+    ax_label_list_4 = ["CHC"]
 
-    color_code_list_1 = ["red","maroon"]
-    color_code_list_2 = ["orange","coral"]
-    color_code_list_3 = ["blue","navy"]
-    color_code_list_4 = ["slateblue","midnightblue"]
-    color_code_list_5 = ["green","lightgreen"]
+    color_code_list_1 = ["red","firebrick","darkred","maroon"]
+    color_code_list_2 = ["orange","darkorange","orangered","coral"]
+    color_code_list_3 = ["blue","mediumblue","darkblue","navy"]
+    color_code_list_4 = ["slateblue","mediumslateblue","darkslateblue","midnightblue"]
+    color_code_list_5 = ["green","limegreen","forestgreen","lightgreen"]
+
+    # at lickwell vs not at lickwell
+    # dir = "C:/Users/NN/Desktop/Master/experiments/Experiments for thesis/behavior component test/at lickwell/"
+    # model_path_list_1 = [
+    #     dir + "pfc_bc_at_lickwell/",
+    #     dir + "pfc_bc_not_at_lickwell/",
+    #
+    # ]
+    # model_path_list_2 = [
+    #     dir + "cpfc_bc_at_lickwell/",
+    #     dir + "cpfc_bc_not_at_lickwell/"
+    #
+    # ]
+    # model_path_list_3 = [
+    #     dir + "hc_bc_at_lickwell/",
+    #     dir + "hc_bc_not_at_lickwell/"
+    # ]
+    # model_path_list_4 = [
+    #     dir + "chc_bc_at_lickwell/",
+    #     dir + "chc_bc_not_at_lickwell/"
+    # ]
+    # ax_label_list_1 = ["PFC at well","PFC not at well"]
+    # ax_label_list_2 = ["CPFC at well", "CPFC not at well"]
+    # ax_label_list_3 = ["HC at well", "HC not at well"]
+    # ax_label_list_4 = ["CHC at well", "CHC not at well"]
+    #
+    # color_code_list_1 = ["red","maroon"]
+    # color_code_list_2 = ["orange","coral"]
+    # color_code_list_3 = ["blue","navy"]
+    # color_code_list_4 = ["slateblue","midnightblue"]
+    # color_code_list_5 = ["green","lightgreen"]
 
 
 
