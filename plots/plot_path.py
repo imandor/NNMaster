@@ -10,8 +10,9 @@ from statsmodels.nonparametric.smoothers_lowess import lowess
 from src.network_functions import run_network_process, initiate_network, run_network
 from src.database_api_beta import  Net_data
 import matplotlib.lines as mlines
+from matplotlib import rc
 
-
+""" plots positions of rodent with respect to time on x y map"""
 def newline(p1, p2):
     ax = plt.gca()
     xmin, xmax = ax.get_xbound()
@@ -83,19 +84,24 @@ if __name__ == '__main__':
         shuffle_factor=50
     )
     session = initiate_network(nd)
-    framerate = 250
+    framerate = 250 # with what rate the lines between positions are to be set
     p1 = [int(session.position_x[0]),int(session.position_y[0])]
     i = 0
+    rc('font',**{'family':'serif','serif':['Palatino']})
+    rc('text', usetex=True)
+    fig,ax = plt.subplots()
     for posx,posy in zip(session.position_x[1:-1],session.position_y[1:-1]):
         i = i + 1
         if i % framerate == 0:
             p2 = [posx, posy]
             if p1 != p2:
-                plt.plot([p1[0],p2[0]], [p1[1],p2[1]],linewidth=2,color="b")
+                ax.plot([p1[0],p2[0]], [p1[1],p2[1]],linewidth=2,color="b")
                 p1 = p2
-    plt.xlim(0,240)
-    plt.ylim(100,190)
-    plt.xlabel("X axis",fontsize=18)
-    plt.ylabel("Y axis",fontsize=18)
+    ax.set_xlim(0,240)
+    ax.set_ylim(120,190)
+    ax.tick_params(labelsize=24)
+    ax.set_xlabel("X-coordinate [cm]",fontsize=24)
+    ax.set_ylabel("Y-coordinate [cm]",fontsize=24)
+
     plt.show()
     pass

@@ -805,7 +805,7 @@ class Slice:
         spikes = []
         for i, spike in enumerate(spikes_raw):
             # the raw data contains spikes outside the session scope
-            if filter_tetrodes is not None and tetrode_channel_list[i] in filter_tetrodes:
+            if filter_tetrodes is None or tetrode_channel_list[i] in filter_tetrodes:
                 spikes.append(spikes_raw[i][:bisect.bisect_left(spikes_raw[i], len(position_x))])
         # load foster data
 

@@ -7,6 +7,7 @@ import numpy as np
 from scipy.interpolate import interp1d
 from matplotlib.patches import Patch
 from statsmodels.nonparametric.smoothers_lowess import lowess
+from matplotlib import rc
 def edit_axis(model_path_list,ax_label_list,color_list,ax=None,plot_error_bars=False,plot_type="ape"):
     ax = ax or plt.gca()
     for i,path in enumerate(model_path_list):
@@ -29,10 +30,10 @@ def edit_axis(model_path_list,ax_label_list,color_list,ax=None,plot_error_bars=F
         #     ax.plot(time_shift_list,y_i,color=c)#label="cv "+str(i+1)+"/10",
         if ape_avg_list is not None:
             if plot_error_bars is False:
-                ax.plot(time_shift_list, ape_avg_list, label=ax_label_list[i], color=color_list[i], marker="None") #,linestyle="None"
+                ax.plot(time_shift_list, ape_avg_list, label=ax_label_list[i], color=color_list[i], marker="None",linestyle=":") #,linestyle="None"
             else:
-                ax.errorbar(x=time_shift_list,y=ape_avg_list,yerr=errorbars,capsize=2,label=ax_label_list[i], color=color_list[i], marker="None")
-    ax.legend()
+                ax.errorbar(x=time_shift_list,y=ape_avg_list,yerr=errorbars,capsize=2,label=ax_label_list[i], color=color_list[i], marker="None",linestyle=":")
+    ax.legend(fontsize=fontsize)
     ax.grid(c='k', ls='-', alpha=0.3)
 
     return ax
@@ -59,7 +60,7 @@ def load_position_network_output(path):
 if __name__ == '__main__':
 
     # Settings
-    fontsize = 20
+    fontsize = 24
     plot_error_bars = True
     epoch = -1 # raw data contains information about all epochs, we only want the newest iteration
     # plot_type="r2"
@@ -107,7 +108,8 @@ if __name__ == '__main__':
     # color_code_list_5 = ["black","green","limegreen","forestgreen","lightgreen"]
 
     # regular decoding
-    dir = "C:/Users/NN/Desktop/Master/experiments/Experiments for thesis 2/Position decoding/"
+    # dir = "C:/Users/NN/Desktop/Master/experiments/Experiments for thesis 2/Position decoding/"
+    dir = "C:/Users/NN/Desktop/Master/experiments/position decoding/old/naive/"
     model_path_list_1 = [
         dir + "pfc/",
     ]
@@ -128,8 +130,8 @@ if __name__ == '__main__':
     color_code_list_1 = ["red","firebrick","darkred","maroon"]
     color_code_list_2 = ["orange","darkorange","orangered","coral"]
     color_code_list_3 = ["blue","mediumblue","darkblue","navy"]
-    color_code_list_4 = ["slateblue","mediumslateblue","darkslateblue","midnightblue"]
-    color_code_list_5 = ["green","limegreen","forestgreen","lightgreen"]
+    color_code_list_5 = ["slateblue","mediumslateblue","darkslateblue","midnightblue"]
+    color_code_list_4 = ["green","limegreen","forestgreen","lightgreen"]
 
     # at lickwell vs not at lickwell
     # dir = "C:/Users/NN/Desktop/Master/experiments/Experiments for thesis/behavior component test/at lickwell/"
@@ -165,18 +167,21 @@ if __name__ == '__main__':
 
 
     save_path ="C:/Users/NN/Desktop/Master/experiments/position decoding/ape.png"
+    rc('font',**{'family':'serif','serif':['Palatino']})
+    rc('text', usetex=True)
+    rc('xtick', labelsize=fontsize)
+    rc('ytick', labelsize=fontsize)
+    rc('axes', labelsize=fontsize)
     fig, ((ax1,ax2),(ax3,ax4)) = plt.subplots(nrows=2,ncols=2,sharey='all')
     axis_label_x = 'Time shift [ms]'
     if plot_type == "ape":
-        axis_label_y = r'$\varnothing$ abs. position error [cm]'
+        axis_label_y = r'$\o$ ape'
     if plot_type == "r2":
-        axis_label_y = r'$\varnothing$ r2 score'
-
+        axis_label_y = r'$\o$ r2 score'
     # plt.rc('font', family='serif', serif='Times')
-    plt.rc('text', usetex=True)
-    plt.rc('xtick', labelsize=fontsize)
-    plt.rc('ytick', labelsize=fontsize)
-    plt.rc('axes', labelsize=fontsize)
+    # plt.rc('xtick', labelsize=fontsize)
+    # plt.rc('ytick', labelsize=fontsize)
+    # plt.rc('axes', labelsize=fontsize)
     width = 3.5
     height = width / 1.5
     fig.set_size_inches(width, height)
@@ -184,15 +189,25 @@ if __name__ == '__main__':
     edit_axis(model_path_list_2,ax_label_list_2,color_list=color_code_list_2,ax=ax2,plot_error_bars=plot_error_bars,plot_type=plot_type)
     edit_axis(model_path_list_3,ax_label_list_3,color_list=color_code_list_3,ax=ax3,plot_error_bars=plot_error_bars,plot_type=plot_type)
     edit_axis(model_path_list_4,ax_label_list_4,color_list=color_code_list_4,ax=ax4,plot_error_bars=plot_error_bars,plot_type=plot_type)
+    # ax1.tick_params(labelsize=fontsize)
+    # ax2.tick_params(labelsize=fontsize)
+    # ax3.tick_params(labelsize=fontsize)
+    # ax4.tick_params(labelsize=fontsize)
     ax1.set_ylabel(axis_label_y,fontsize=fontsize)
     ax3.set_ylabel(axis_label_y,fontsize=fontsize)
     ax3.set_xlabel(axis_label_x,fontsize=fontsize)
     ax4.set_xlabel(axis_label_x,fontsize=fontsize)
+
     if plot_type == "r2":
         ax1.axhline(0)
         ax2.axhline(0)
         ax3.axhline(0)
         ax4.axhline(0)
+    else:
+        ax1.set_ylim(20,80)
+        ax2.set_ylim(20,80)
+        ax3.set_ylim(20,80)
+        ax4.set_ylim(20,80)
 
     plt.show()
     plt.savefig(save_path)
