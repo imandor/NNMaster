@@ -4,16 +4,21 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from src.settings import  load_pickle
 from src.metrics import get_lick_from_id
-
+from matplotlib import rc
 
 if __name__ == '__main__':
-    only_phase_change_trials = True
-    by_sample = True
+    only_phase_change_trials = False
+    by_sample = False
     path = "C:/Users/NN/Desktop/Master/experiments/Lickwell_prediction/"
     model_path_list = [
-                       path + "MLP_PFC/",
-                       path + "MLP_HC/"]
+        "C:/Users/NN/Desktop/Master/experiments/Experiments for thesis 2/well decoding/hc/"]
     image_title_list = ["pfc","hc"]
+    fontsize = 24
+    rc('font',**{'family':'serif','serif':['Palatino']})
+    rc('text', usetex=True)
+    rc('xtick', labelsize=fontsize)
+    rc('ytick', labelsize=fontsize)
+    rc('axes', labelsize=fontsize)
     if by_sample is False:
         for timeshift in [-1,1]:
             for j,path in enumerate(model_path_list):
@@ -46,10 +51,10 @@ if __name__ == '__main__':
                 df_cm = pd.DataFrame(array, index = [i for i in [2,3,4,5]],
                                   columns = [i for i in [2,3,4,5]])
                 plt.figure(figsize = (10,7))
-                plt.title('decoded vs. target label',fontsize=16)
-                ax = sn.heatmap(df_cm, annot=True)
-                ax.set_xlabel("target well",fontsize=16)
-                ax.set_ylabel("decoded well",fontsize=16)
+                plt.title('decoded vs. target label',fontsize=fontsize)
+                ax = sn.heatmap(df_cm, annot=True,annot_kws={"size": fontsize-3})
+                ax.set_xlabel("actual well")
+                ax.set_ylabel("predicted well")
                 if timeshift == -1:
                     shift = "last"
                 else:
@@ -57,6 +62,8 @@ if __name__ == '__main__':
                 pathname_metadata = ""
                 if only_phase_change_trials is True:
                     pathname_metadata = "_exclude_phasechange"
+                plt.show()
+
                 plt.savefig(path+"images/confusion_matrix_"+image_title_list[j]+"_"+shift+pathname_metadata)
     else:
         for timeshift in [-1, 1]:
@@ -88,10 +95,10 @@ if __name__ == '__main__':
                 df_cm = pd.DataFrame(array, index=[i for i in [2, 3, 4, 5]],
                                      columns=[i for i in [2, 3, 4, 5]])
                 plt.figure(figsize=(10, 7))
-                plt.title('decoded vs. target label', fontsize=16)
-                ax = sn.heatmap(df_cm, annot=True,fmt="d",cmap="BuPu")
-                ax.set_xlabel("target well", fontsize=16)
-                ax.set_ylabel("decoded well", fontsize=16)
+                plt.title('decoded vs. target label',fontsize=fontsize)
+                ax = sn.heatmap(df_cm, annot=True,fmt="d",cmap="BuPu",annot_kws={"size": fontsize-3})
+                ax.set_xlabel("actual well")
+                ax.set_ylabel("predicted well")
                 if timeshift == -1:
                     shift = "last"
                 else:
@@ -99,5 +106,6 @@ if __name__ == '__main__':
                 pathname_metadata = ""
                 if only_phase_change_trials is True:
                     pathname_metadata = "_only_phasechange"
+                plt.show()
                 plt.savefig(path + "images/confusion_matrix_" + image_title_list[j] + "_" + shift + pathname_metadata)
 

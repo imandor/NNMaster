@@ -109,7 +109,8 @@ if __name__ == '__main__':
 
     # regular decoding
     # dir = "C:/Users/NN/Desktop/Master/experiments/Experiments for thesis 2/Position decoding/"
-    dir = "C:/Users/NN/Desktop/Master/experiments/position decoding/old/naive/"
+    dir = "C:/Users/NN/Desktop/Master/experiments/Experiments for thesis 2/naive test/"
+    plot_error_bars =False
     model_path_list_1 = [
         dir + "pfc/",
     ]

@@ -8,7 +8,7 @@ from src.metrics import print_metric_details
 from random import seed# plots histogram of times the rat spent inside a given range from well 1
 from matplotlib.ticker import MaxNLocator
 from src.settings import save_as_pickle, load_pickle, save_net_dict
-
+from matplotlib import rc
 
 
 
@@ -103,7 +103,7 @@ if __name__ == '__main__':
     searchradius = 40
     xtickresolution = 2500
     # ytickresolution = 10
-    fontsize = 16
+    fontsize = 24
     interval = 500
     image_title_list = ["pfc_phase","hc_phase","pfc","hc"]
     path = nd.model_path+ "output/"
@@ -112,37 +112,31 @@ if __name__ == '__main__':
 
     nd.model_path = "G:/master_datafiles/trained_networks/MLP_PFC_2019-02-07_phase/"
     nd.raw_data_path = "G:/master_datafiles/raw_data/PFC/"
-    nd.filtered_data_path = "session_pfc_lw.pkl"
+    nd.filtered_data_path = "session_hc_lw.pkl"
 
 
     # lickids,entry_list,exit_list,counter_list,ind_labels = timehistogram_bar_values(nd,lickstart,lickstop,searchradius,interval)
 
 
-    # TODO delete start
-    session = initiate_lickwell_network(nd)  # Initialize session
-    for lick in session.licks:
-        if lick.lickwell == 1:
-            timeslice = session[int(lick.time + lickstart):int(lick.time + lickstop)]
-            for pos in timeslice.position_x:
-                if pos>77:
-                    print("id",lick.lick_id)
-                    break
 
-    # TODO delete end histogram
-
+    rc('font',**{'family':'serif','serif':['Palatino']})
+    rc('text', usetex=True)
+    rc('xtick', labelsize=fontsize)
+    rc('ytick', labelsize=fontsize)
+    rc('axes', labelsize=fontsize)
     lickids,entry_list,exit_list,counter_list,ind_labels = timehistogram_bar_values(nd,lickstart,lickstop,searchradius,interval)
     # plot results
     ind = np.arange(0,len(ind_labels))
     fig, (ax1,ax2) = plt.subplots(2)
     ax1.bar(ind_labels, counter_list, color='b', align='center',width=500,edgecolor="black")
     ax1.set_xticklabels(ind_labels)
-    ax1.set_ylabel("fraction of occurring events", fontsize=fontsize)
+    ax1.set_ylabel("fraction of events", fontsize=fontsize)
     # ax1.set_xlabel("time", fontsize=fontsize)
     ax1.axhline(0.95)
     ax1.set_xticks(np.arange(min(ind_labels), max(ind_labels) + 1, xtickresolution))
     ax1.set_xticklabels(np.arange(min(ind_labels), max(ind_labels) + 1, xtickresolution),fontsize=fontsize)
     # ax1.set_yticklabels(np.arange(0, len(lickids) + 1, ytickresolution),fontsize=fontsize)
-    ax1.legend(["0.95","HC"])
+    ax1.legend(["0.95","HC"],fontsize=fontsize)
 
     nd.model_path = "G:/master_datafiles/trained_networks/MLP_PFC_2019-02-07_phase/"
     nd.raw_data_path = "G:/master_datafiles/raw_data/PFC/"
@@ -152,13 +146,13 @@ if __name__ == '__main__':
     lickids,entry_list,exit_list,counter_list,ind_labels = timehistogram_bar_values(nd,lickstart,lickstop,searchradius,interval)
     ax2.bar(ind_labels, counter_list, color='r', align='center',width=interval,edgecolor="black")
     ax2.set_xticklabels(ind_labels)
-    ax2.set_ylabel("fraction of occurring events", fontsize=fontsize)
+    ax2.set_ylabel("fraction of events", fontsize=fontsize)
     ax2.set_xlabel("time", fontsize=fontsize)
     ax2.axhline(0.95)
     ax2.set_xticks(np.arange(min(ind_labels), max(ind_labels) + 1, xtickresolution))
     ax2.set_xticklabels(np.arange(min(ind_labels), max(ind_labels) + 1, xtickresolution),fontsize=fontsize)
     # ax2.set_yticklabels(np.arange(0, len(lickids) + 1, ytickresolution),fontsize=fontsize)
-    ax2.legend(["0.95","PFC"])
+    ax2.legend(["0.95","PFC"],fontsize=fontsize)
     plt.show()
     plt.savefig(save_path)
 

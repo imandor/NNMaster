@@ -9,7 +9,7 @@ from random import seed# plots histogram of times the rat spent inside a given r
 from matplotlib.ticker import MaxNLocator
 from src.settings import save_as_pickle, load_pickle, save_net_dict
 from itertools import dropwhile,takewhile
-
+from matplotlib import rc
 
 
 
@@ -81,12 +81,17 @@ if __name__ == '__main__':
     searchradius = 40
     xtickresolution = 2000
     # ytickresolution = 10
-    fontsize = 16
+    fontsize = 24
     resolution = 500
     image_title_list = ["pfc_phase","hc_phase","pfc","hc"]
     path = nd.model_path+ "output/"
     save_path = nd.model_path + "images/lick_duration"+".png"
     time_ind = np.arange(lickstart, lickstop, resolution)
+    rc('font',**{'family':'serif','serif':['Palatino']})
+    rc('text', usetex=True)
+    rc('xtick', labelsize=fontsize)
+    rc('ytick', labelsize=fontsize)
+    rc('axes', labelsize=fontsize)
 
     # speed_list_hc, spike_rate_list_hc = return_bar_values(nd, lickstart, lickstop, resolution)
     # nd.filtered_data_path = "session_pfc_lw.pkl"
@@ -114,7 +119,7 @@ if __name__ == '__main__':
     ax1.set_ylabel("speed [cm/s]", fontsize=fontsize)
     ax1.xaxis.set_major_locator(plt.MaxNLocator(3))
     ax1.yaxis.set_major_locator(plt.MaxNLocator(3))
-    ax1.legend()
+    ax1.legend(fontsize=fontsize)
     ax2.plot(time_ind, spike_rate_list_hc, color="b")  # label="cv "+str(i+1)+"/10",
     ax2.set_ylabel("spikes/s", fontsize=fontsize)
     ax2.set_xlabel("time", fontsize=fontsize)
@@ -125,16 +130,16 @@ if __name__ == '__main__':
     # ax3.set_ylabel("speed [cm/s]", fontsize=fontsize)
     ax3.xaxis.set_major_locator(plt.MaxNLocator(3))
     ax3.yaxis.set_major_locator(plt.MaxNLocator(3))
-    ax3.legend()
+    ax3.legend(fontsize=fontsize)
     ax4.plot(time_ind, spike_rate_list_pfc, color="r")  # label="cv "+str(i+1)+"/10",
     # ax4.set_ylabel("spikes/s", fontsize=fontsize)
     ax4.set_xlabel("time", fontsize=fontsize)
     ax4.xaxis.set_major_locator(plt.MaxNLocator(3))
     ax4.yaxis.set_major_locator(plt.MaxNLocator(3))
-    ax1.tick_params(axis='both', which='major', labelsize=fontsize)
-    ax2.tick_params(axis='both', which='major', labelsize=fontsize)
-    ax3.tick_params(axis='both', which='major', labelsize=fontsize)
-    ax4.tick_params(axis='both', which='major', labelsize=fontsize)
+    # ax1.tick_params(axis='both', which='major', labelsize=fontsize)
+    # ax2.tick_params(axis='both', which='major', labelsize=fontsize)
+    # ax3.tick_params(axis='both', which='major', labelsize=fontsize)
+    # ax4.tick_params(axis='both', which='major', labelsize=fontsize)
 
 
     plt.show()

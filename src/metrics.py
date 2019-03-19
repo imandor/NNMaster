@@ -515,7 +515,7 @@ class Lick_id_details:
                  licks_after_switch=None, filter=None, target_lick_correct=None, target_lick_false=None,
                  next_well_licked_2=None, next_well_licked_3=None, next_well_licked_4=None, next_well_licked_5=None,
                  next_phase_decoded=None, last_phase_decoded=None, next_lick_decoded=None, last_lick_decoded=None,
-                 current_phase_decoded=None, fraction_decoded=None, fraction_predicted=None,valid_licks=None):
+                 current_phase_decoded=None, fraction_decoded=None, fraction_predicted=None,valid_licks=None,second_highest_decoded=None):
         self.licks = licks  # list (of evaluated) licks
         self.target_lick_correct = target_lick_correct  # binary array, 1 if the rat licked correctly at target well of lick in list
         self.target_lick_false = target_lick_false  # 1 if said lick was false
@@ -536,7 +536,8 @@ class Lick_id_details:
         # active filter is target_lick_correct, so self.next_well_licked_2*self.filter gives all correct target licks at well 2 as a new binary array
         self.fraction_decoded = fraction_decoded  # fractional array, indicates which confidence the network has in its guess (what fraction of samples of lick were decoded with active prediction)
         self.fraction_predicted = fraction_predicted  # fractional array, indicates what fraction of samples were decoded as the correct target
-        self.valid_licks = valid_licks # TODO was added later, very small chance I missed updating some method for this # binary array of valid licks
+        self.valid_licks = valid_licks
+        self.second_highest_decoded = second_highest_decoded
     def print_details(self):
         # prints object details filtered with active filter in the format used in the lickwell_prediction excel file
         correct_licks = self.licks_decoded * self.filter
@@ -713,8 +714,32 @@ def get_metric_details(path, timeshift,pathname_metadata=""):
         obj = Lick_id_details()
         obj.from_metrics(nd=nd, metrics=metric, timeshift=timeshift, licks=licks)
         lick_id_details_k.append(obj)
+    # Calculate approximate accuracy
+    all_guesses = load_pickle(path + "all_guesses_timeshift=" + str(timeshift) + pathname_metadata +".pkl")
+    approximate_accuracy = np.zeros((len(lick_id_details.valid_licks),nd.num_wells))
+    for guess in all_guesses:
+        for evaluated_sample in guess:
+            i = evaluated_sample.lick_id-1
+            prediction = evaluated_sample.prediction
+            approximate_accuracy[i][prediction-1] += 1
+    second_highest_decoded = np.zeros(len(lick_id_details.valid_licks))
+    sum_highest = 0
+    sum_second = 0
+    sum_total = 0
+    for i, event in enumerate(approximate_accuracy):
+
+        # prints table of most frequent guesses by well
+        sum_highest += np.max(event)
+        sum_second += np.partition(event.flatten(), -2)[-2]
+        sum_total +=np.sum(event)
+        second_largest_well = int(np.where(event==np.partition(event.flatten(), -2)[-2])[0][0]+1)  # returns well of second largest value in list
+        if second_largest_well == licks[i].target and lick_id_details.valid_licks[i] ==1:
+            second_highest_decoded[i] = 1
+
+    lick_id_details.second_highest_decoded = second_highest_decoded
 
 
+    print(sum_highest,sum_second,sum_total)
     # generate all_guesses_k for standard deviation
     return lick_id_details, lick_id_details_k
 

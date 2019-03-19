@@ -9,7 +9,7 @@ from src.network_functions import initiate_lickwell_network, run_lickwell_networ
 from src.metrics import print_metric_details, get_metric_details
 from random import seed
 import numpy as np
-
+from matplotlib import rc
 
 
 
@@ -98,28 +98,30 @@ if __name__ == '__main__':
     n_list_4 = n_list[3]
 
 # plot chart
-    fontsize = 16
-    font = {'family': 'normal',
-            'size': 12}
-    matplotlib.rc('font', **font)
-    matplotlib.rc('xtick', labelsize=fontsize - 3)
+    fontsize = 24
+    rc('font', **{'family': 'serif', 'serif': ['Palatino']})
+    rc('text', usetex=True)
+    rc('xtick', labelsize=fontsize)
+    rc('ytick', labelsize=fontsize)
+    rc('axes', labelsize=fontsize)
+
     corrected_ind = np.arange(y_range.start+offset,y_range.stop+offset,(y_range.stop-y_range.start)/(plotrange.stop-plotrange.start))  # the x locations for the groups
     # corrected_ind = ind * (5.0 / 39.0)
     fig, ((ax1,ax2),(ax3,ax4)) = plt.subplots(2,2)
     ax1.plot(corrected_ind, y_list_1, color="violet", label="", linestyle="None", marker="P",markersize=5)  # label="cv "+str(i+1)+"/10",
     ax1.set_ylabel("next well accuracy", fontsize=fontsize)
     # ax1.set_xlabel("Time since start of lick [ms]",fontsize=fontsize)
-    ax1.set_title("Hippocampus",fontsize=fontsize)
+    ax1.set_title("hippocampus",fontsize=fontsize)
     ax2.plot(corrected_ind, y_list_2, color="violet", label="", linestyle="None", marker="P",markersize=5)  # label="cv "+str(i+1)+"/10",
-    ax2.set_ylabel("next well accuracy", fontsize=fontsize)
+    # ax2.set_ylabel("next well accuracy", fontsize=fontsize)
     # ax2.set_xlabel("Time since start of lick [ms]", fontsize=fontsize)
-    ax2.set_title("Prefrontal Cortex",fontsize=fontsize)
+    ax2.set_title("prefrontal cortex",fontsize=fontsize)
     ax3.plot(corrected_ind, y_list_3, color="violet", label="", linestyle="None", marker="P",markersize=5)  # label="cv "+str(i+1)+"/10",
     ax3.set_ylabel("last well accuracy", fontsize=fontsize)
-    ax3.set_xlabel("Time since start of lick [ms]", fontsize=fontsize)
+    ax3.set_xlabel("time since start of lick [ms]", fontsize=fontsize)
     ax4.plot(corrected_ind, y_list_4, color="violet", label="", linestyle="None", marker="P",markersize=5)  # label="cv "+str(i+1)+"/10",
-    ax4.set_ylabel("last well accuracy", fontsize=fontsize)
-    ax4.set_xlabel("Time since start of lick [ms]", fontsize=fontsize)
+    # ax4.set_ylabel("last well accuracy", fontsize=fontsize)
+    ax4.set_xlabel("time since start of lick [ms]", fontsize=fontsize)
     ax1.set_ylim(0.25, 0.6)
     ax2.set_ylim(0.25, 0.6)
     ax3.set_ylim(0.25, 0.6)
@@ -131,6 +133,6 @@ if __name__ == '__main__':
     ax3.axhline(np.average(y_list_3[50:100]))
     ax4.axhline(np.average(y_list_4[50:100]))
 
-    plt.tight_layout(pad=0.1, w_pad=0.5, h_pad=0)
+    # plt.tight_layout(pad=0.1, w_pad=0.5, h_pad=0)
     plt.show()
     plt.savefig(save_path)

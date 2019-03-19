@@ -50,7 +50,11 @@ if __name__ == '__main__':
         dropout=0.65,
         number_of_bins=10,
     )
-    # print_metric_details(MODEL_PATH,nd.initial_timeshift)
+    # print_metric_details("C:/Users/NN/Desktop/Master/experiments/Experiments for thesis 2/well decoding/hc/",1)
+    # print_metric_details("C:/Users/NN/Desktop/Master/experiments/Experiments for thesis 2/well decoding/pfc/",1)
+    # print_metric_details("C:/Users/NN/Desktop/Master/experiments/Experiments for thesis 2/well decoding/hc/",-1)
+    # print_metric_details("C:/Users/NN/Desktop/Master/experiments/Experiments for thesis 2/well decoding/pfc/",-1)
+
     session = initiate_lickwell_network(nd)  # Initialize session
     X, y,nd,session, = lickwells_io(session, nd, excluded_wells=[1], shift=nd.initial_timeshift, target_is_phase=True,
                                    lickstart=0,lickstop=5000)

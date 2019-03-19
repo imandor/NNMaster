@@ -167,23 +167,26 @@ def run_network_process(nd):
                         metric_eval.r2_by_epoch = metric_eval.r2_by_epoch[0:-1]
                         metric_eval.ape_by_epoch = metric_eval.ape_by_epoch[0:-1]
                         metric_eval.acc20_by_epoch = metric_eval.acc20_by_epoch[0:-1]
-            # a = get_radius_accuracy(prediction_list, actual_list, [network_dict["X_STEP"], network_dict["Y_STEP"]], 19)
-        for j in range(0, len(X_train) - nd.batch_size, nd.batch_size):
-            x = (X_train[j:j + nd.batch_size])
-            y = np.array(y_train[j:j + nd.batch_size])
-            try:
-                x = np.reshape(x, xshape)
-            except ValueError:
-                print("asd")
-            y = np.reshape(y, yshape)
-            if nd.naive_test is False or nd.time_shift == 0:
+
+        # Train network
+        if nd.naive_test is False or nd.time_shift == 0:
+
+            for j in range(0, len(X_train) - nd.batch_size, nd.batch_size):
+                x = (X_train[j:j + nd.batch_size])
+                y = np.array(y_train[j:j + nd.batch_size])
+                try:
+                    x = np.reshape(x, xshape)
+                except ValueError:
+                    print("Warning: Check training data")
+                y = np.reshape(y, yshape)
                 t = np.max(S.train(sess, x, y, dropout=0.65))
 
         metric_counter = metric_counter + 1
         nd.epochs_trained = i
         if stop_early is True:
             break
-    saver.save(sess, nd.model_path)
+    if nd.naive_test is False or nd.time_shift==0:
+        saver.save(sess, nd.model_path)
     # Close session and add current time shift to network save file
     sess.close()
     metric_eval.set_bests(nd.early_stopping)  # find best (or newest) value in metric object
@@ -260,7 +263,7 @@ def run_network(nd, session):
         X,y = filter_behavior_component(X, y, nd, session)
         if len(X) != len(y):
             raise ValueError("Error: Length of x and y are not identical")
-        X, y = shuffle_io(X, y, nd, seed_no=2,shuffle_batch_size=nd.shuffle_factor)
+        # X, y = shuffle_io(X, y, nd, seed_no=2,shuffle_batch_size=nd.shuffle_factor)
 
         metric_list = []
 

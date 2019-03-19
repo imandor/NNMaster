@@ -175,24 +175,24 @@ def get_accuracy_for_comparison_2(lick_id_details, lick_id_details_k,k_cross=10)
     : param k_cross: cross validation factor, relevant for the updated standard deviation since the old format didn't need it
     :return: list of accuracies by filtered lickwell,list of bernoulli standard deviations, list of absolute count of samples for each list entry
     """
-    # fraction decoded in all licks
+    # events decoded
     lick_id_details.filter = lick_id_details.valid_licks
     fractions_decoded_all, std_all, n_all = return_fraction_decoded_and_std(lick_id_details=lick_id_details,
-    lick_id_details_k=lick_id_details_k,parameter=lick_id_details.fraction_decoded, filter=lick_id_details.valid_licks)
+    lick_id_details_k=lick_id_details_k,parameter=lick_id_details.licks_decoded, filter=lick_id_details.valid_licks)
 
     # fraction decoded if target was last lick instead of next (or vice versa)
     for i, li in enumerate(lick_id_details_k):
         lick_id_details_k[i].filter = lick_id_details.filter
     fractions_decoded_last, std_last, n_last = return_fraction_decoded_and_std(
         lick_id_details=lick_id_details,lick_id_details_k=lick_id_details_k,
-        parameter=lick_id_details.last_lick_decoded*lick_id_details.fraction_decoded, filter=lick_id_details.valid_licks)
+        parameter=lick_id_details.second_highest_decoded, filter=lick_id_details.valid_licks)
 
     # fraction decoded if target lick is current phase
     for i, li in enumerate(lick_id_details_k):
         lick_id_details_k[i].filter = lick_id_details.filter
     fractions_decoded_phase, std_phase, n_phase = return_fraction_decoded_and_std(
         lick_id_details=lick_id_details,lick_id_details_k=lick_id_details_k,
-        parameter=lick_id_details.current_phase_decoded*lick_id_details.fraction_decoded, filter=lick_id_details.valid_licks)
+        parameter=lick_id_details.licks_decoded + lick_id_details.second_highest_decoded, filter=lick_id_details.valid_licks)
 
 
 
@@ -237,7 +237,6 @@ def return_fraction_decoded_and_std(lick_id_details,parameter,filter,lick_id_det
     std_fractions = []
     n = 0
     # calculate number of samples in range and correct fraction of filtered licks
-
     for i, lick in enumerate(lick_id_details.licks):
         j = lick.lick_id-1
         if filter[j] == 1 and lick_id_details.valid_licks[j] == 1:
