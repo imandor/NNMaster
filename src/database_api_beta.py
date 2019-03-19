@@ -194,8 +194,9 @@ class Net_data:
                  # if True, the saved model is loaded for training instead of a new one. Is set to True if naive testing is True and time-shift is != 0
                  train_model=True,
                  # if True, the model is not trained during runtime. Is set to True if naive testing is True and time-shift is != 0
-                 keep_neuron=-1,  # TODO not sure what this was supposed to do
+                 keep_neuron=-1,  # removes all neurons but one which is specified here
                  neurons_kept_factor=1.0,
+                 keep_neurons = -1 ,# randomly removes neurons until count is less or equal to keep_neurons
                  # if less than one, a corresponding fraction of neurons are randomly removed from session before training
                  lw_classifications=None,  # for well decoding: how many classes exist
                  lw_normalize=False,
@@ -280,6 +281,7 @@ class Net_data:
         self.start_time_by_lick_id = start_time_by_lick_id
         self.behavior_component_filter = behavior_component_filter
         self.switch_x_y = switch_x_y
+        self.keep_neurons = keep_neurons
     def clear_io(self):
         self.network_shape = None
         self.X_train = None
@@ -372,7 +374,7 @@ class Net_data:
             self.X_test = []
             self.y_test = []
 
-        if self.keep_neuron != -1:
+        if self.keep_neuron != -1: # removes all neurons but one
             for i in range(len(self.X_valid)):
                 for j in range(len(self.X_valid[0])):
                     if j != self.keep_neuron:
@@ -864,14 +866,26 @@ class Slice:
         print("finished loading session")
         return cls(spikes, licks, position_x, position_y, speed, trial_timestamp)
 
-    def filter_neurons_randomly(self, factor):
+    def filter_neurons_randomly(self, factor,keep_neurons):
+        """
+
+        :param factor: removes a fraction of neurons randomly if != 1
+        :param keep_neurons: removes neurons until count identical to keep_neurons if not -1
+        :return: spike_data with neurons removed (or not)
+        """
         seed(0)
         neurons_removed = int(len(self.spikes) * (1 - factor))
         for i in range(neurons_removed):
             neuron_index = np.random.randint(0, len(self.spikes))
             del self.spikes[neuron_index]
             self.filtered_spikes = np.delete(self.filtered_spikes, neuron_index, axis=0)
+        if keep_neurons!=-1:
+            while self.n_neurons>keep_neurons:
+                    neuron_index = np.random.randint(0, len(self.spikes))
+                    del self.spikes[neuron_index]
+                    self.filtered_spikes = np.delete(self.filtered_spikes, neuron_index, axis=0)
 
+                    self.n_neurons = len(self.spikes)
         self.n_neurons = len(self.spikes)
 
     def filter_neurons(self, minimum_spikes):

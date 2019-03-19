@@ -212,7 +212,7 @@ def initiate_network(nd):
         session.filtered_spikes = stats.zscore(session.filtered_spikes, axis=1)  # Z Score neural activity
         session.to_pickle(nd.filtered_data_path)
     session = Slice.from_pickle(nd.filtered_data_path)
-    session.filter_neurons_randomly(nd.neurons_kept_factor)
+    session.filter_neurons_randomly(nd.neurons_kept_factor,nd.keep_neurons)
     session.print_details()
     nd.n_neurons = session.n_neurons
     if nd.switch_x_y is True:
