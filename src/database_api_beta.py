@@ -212,7 +212,8 @@ class Net_data:
                  phase_change_ids=None,  # contains list of phase change lick_ids
                  number_of_bins = 10, # number of win sized bins going into the input
                  start_time_by_lick_id = None, # list of tuples (lick_id,start time) which describe the time at which a lick "officially starts relative to the lick time described in the lick object. Defaults to zero but can be changed if a different range is to be observed
-                 behavior_component_filter = None # filters session data, string
+                 behavior_component_filter = None, # filters session data, string
+                 switch_x_y = False # switches position_x and position_y if True
                  ):
         self.dropout = dropout
         self.session_from_raw = from_raw_data
@@ -278,6 +279,7 @@ class Net_data:
         self.number_of_bins = number_of_bins
         self.start_time_by_lick_id = start_time_by_lick_id
         self.behavior_component_filter = behavior_component_filter
+        self.switch_x_y = switch_x_y
     def clear_io(self):
         self.network_shape = None
         self.X_train = None

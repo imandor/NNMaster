@@ -215,6 +215,10 @@ def initiate_network(nd):
     session.filter_neurons_randomly(nd.neurons_kept_factor)
     session.print_details()
     nd.n_neurons = session.n_neurons
+    if nd.switch_x_y is True:
+        copy_pos_x = session.position_x
+        session.position_x = session.position_y
+        session.position_y = copy_pos_x
 
     # Start network with different time-shifts
 
