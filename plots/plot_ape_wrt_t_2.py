@@ -61,56 +61,17 @@ if __name__ == '__main__':
 
     # Settings
     fontsize = 24
-    plot_error_bars = True
+    plot_error_bars = False
     epoch = -1 # raw data contains information about all epochs, we only want the newest iteration
     # plot_type="r2"
     plot_type="ape"
 
-    # Neuron filter 1
-    # dir = "C:/Users/NN/Desktop/Master/experiments/Experiments for thesis/neuron filter/filter fraction/"
-    # model_path_list_1 = [
-    #     dir + "pfc/",
-    #     dir + "pfc_1d_80/",
-    #     dir + "pfc_1d_60/",
-    #     dir + "pfc_1d_40/",
-    #     dir + "pfc_1d_20/",
-    # ]
-    # model_path_list_2 = [
-    #     dir + "hc/",
-    #     dir + "hc_1d_80/",
-    #     dir + "hc_1d_60/",
-    #     dir + "hc_1d_40/",
-    #     dir + "hc_1d_20/",
-    # ]
-    # model_path_list_3 = [
-    #     dir + "cpfc/",
-    #     dir + "cpfc_1d_80/",
-    #     dir + "cpfc_1d_60/",
-    #     dir + "cpfc_1d_40/",
-    #     dir + "cpfc_1d_20/",
-    # ]
-    # model_path_list_4 = [
-    #     dir + "chc/",
-    #     dir + "chc_1d_80/",
-    #     dir + "chc_1d_60/",
-    #     dir + "chc_1d_40/",
-    #     dir + "chc_1d_20/",
-    # ]
-    # ax_label_list_1 = ["PFC","117","88","58","29"]
-    # ax_label_list_2 = ["HC", "44","33","22","11"]
-    # ax_label_list_3 = ["CPFC","28","21","14","7"]
-    # ax_label_list_4 = ["CHC","60","45","30","15"]
-    #
-    # color_code_list_1 = ["black","red","firebrick","darkred","maroon"]
-    # color_code_list_2 = ["black","orange","darkorange","orangered","coral"]
-    # color_code_list_3 = ["black","blue","mediumblue","darkblue","navy"]
-    # color_code_list_4 = ["black","slateblue","mediumslateblue","darkslateblue","midnightblue"]
-    # color_code_list_5 = ["black","green","limegreen","forestgreen","lightgreen"]
+
 
     # regular decoding
     # dir = "C:/Users/NN/Desktop/Master/experiments/Experiments for thesis 2/Position decoding/"
     dir = "C:/Users/NN/Desktop/Master/experiments/Experiments for thesis 2/naive test/"
-    plot_error_bars =False
+    # plot_error_bars =False
     model_path_list_1 = [
         dir + "pfc/",
     ]

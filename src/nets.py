@@ -94,11 +94,11 @@ class MultiLayerPerceptron(Network):
             layer = conf["fc{}".format(layer_number)]
             self.weights.append(tf.Variable(layer.weights, dtype=DTYPE))
             self.layers.append(layer.activation(tf.matmul(self.layers[-1], self.weights[-1])))
-        self.layers.append(tf.nn.dropout(x=self.layers[-1], keep_prob=self.dropout,seed=0))  # TODO
+        self.layers.append(tf.nn.dropout(x=self.layers[-1], keep_prob=self.dropout,seed=0))
 
         shape = conf.reshape.shape
         shape[0] = batch_size
-        self.layers.append(tf.reshape(self.layers[-1], shape))
+        self.layers.append(tf.reshape(tf.nn.softmax(self.layers[-1]), shape))
         self.output = self.layers[-1]
         self.output_target = tf.placeholder(shape=self.output.shape, dtype=DTYPE)
         self.loss = conf_to_loss(conf.loss_type, self.output, self.output_target)
@@ -141,7 +141,7 @@ class ConvolutionalNeuralNetwork1(Network):
         self.weights["fc1"] = tf.Variable(conf.fc1.weights)
         self.layers["fc1"] = conf.fc1.activation(tf.matmul(self.layers["flat"], self.weights["fc1"]))
         # fc2
-        self.layers["dropout"] = tf.nn.dropout(x=self.layers["fc1"], keep_prob=self.dropout)  # TODO
+        self.layers["dropout"] = tf.nn.dropout(x=self.layers["fc1"], keep_prob=self.dropout)
 
         self.weights["fc2"] = tf.Variable(conf.fc2.weights)
         self.layers["fc2"] = conf.fc2.activation(tf.matmul(self.layers["dropout"], self.weights["fc2"]))

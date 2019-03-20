@@ -29,9 +29,9 @@ if __name__ == '__main__':
 
     # only Prefrontal Cortex neurons
 
-    MODEL_PATH = "G:/master_datafiles/trained_networks/cpfc_naive/"
-    FILTERED_DATA_PATH = "session_CPFC.pkl"
-    filter_tetrodes=range(0,13)
+    # MODEL_PATH = "G:/master_datafiles/trained_networks/cpfc_naive/"
+    # FILTERED_DATA_PATH = "session_CPFC.pkl"
+    # filter_tetrodes=range(0,13)
 
     # all neurons
 
@@ -40,15 +40,15 @@ if __name__ == '__main__':
     nd = Net_data(
         initial_timeshift=0,
         time_shift_iter=500,
-        time_shift_steps=21,
+        time_shift_steps=1,
         early_stopping=False,
         model_path=MODEL_PATH,
         raw_data_path=RAW_DATA_PATH,
         filtered_data_path=FILTERED_DATA_PATH,
         k_cross_validation = 1,
         valid_ratio=0.1,
-        naive_test=True,
-        from_raw_data=True,
+        naive_test=False,
+        from_raw_data=False,
         epochs = 30,
         dropout=0.65,
         behavior_component_filter=None,

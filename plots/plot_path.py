@@ -81,27 +81,35 @@ if __name__ == '__main__':
         dropout=0.65,
         behavior_component_filter=None,
         filter_tetrodes=filter_tetrodes,
-        shuffle_factor=50
+        shuffle_factor=50,
+        switch_x_y=combination_data_set
     )
+
+
+
+
     session = initiate_network(nd)
-    framerate = 250 # with what rate the lines between positions are to be set
+    framerate = 2500 # with what rate the lines between positions are to be set
     p1 = [int(session.position_x[0]),int(session.position_y[0])]
     i = 0
     rc('font',**{'family':'serif','serif':['Palatino']})
     rc('text', usetex=True)
-    fig,ax = plt.subplots()
-    for posx,posy in zip(session.position_x[1:-1],session.position_y[1:-1]):
-        i = i + 1
-        if i % framerate == 0:
-            p2 = [posx, posy]
-            if p1 != p2:
-                ax.plot([p1[0],p2[0]], [p1[1],p2[1]],linewidth=2,color="b")
-                p1 = p2
-    ax.set_xlim(0,240)
-    ax.set_ylim(120,190)
-    ax.tick_params(labelsize=24)
-    ax.set_xlabel("X-coordinate [cm]",fontsize=24)
-    ax.set_ylabel("Y-coordinate [cm]",fontsize=24)
-
-    plt.show()
+    for i in range (0,len(session.position_x),10000):
+        save_path = "C:/Users/NN/Desktop/pathpictures_hc/img_"+str(i)+".png"
+        fig,ax = plt.subplots()
+        for posx,posy in zip(session.position_x[i:i+10000],session.position_y[i:i+10000]):
+            i = i + 1
+            if i % framerate == 0:
+                p2 = [posx, posy]
+                if p1 != p2:
+                    ax.plot([p1[0],p2[0]], [p1[1],p2[1]],linewidth=2,color="b")
+                    p1 = p2
+        ax.set_xlim(0,240)
+        ax.set_ylim(120,190)
+        ax.tick_params(labelsize=24)
+        ax.set_xlabel("X-coordinate [cm]",fontsize=24)
+        ax.set_ylabel("Y-coordinate [cm]",fontsize=24)
+        plt.savefig(save_path)
+        plt.close()
+        # plt.show()
     pass
