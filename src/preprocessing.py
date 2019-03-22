@@ -221,7 +221,7 @@ def filter_behavior_component(X,y,nd,session,allowed_distance=3):
     if filter == "correct trials" or filter == "false trials":
         start_index = 0
         for lick in session.licks:
-            stop_index = int(lick.time - nd.time_shift) // nd.win_size
+            stop_index = int(lick.time - nd.time_shift) // (nd.win_size*nd.number_of_bins)
             if filter == "correct trials" and lick.rewarded == 1 or filter == "false trials" and lick.rewarded == 0:
                 X_return.append(X[start_index:stop_index])
                 y_return.append(y[start_index:stop_index])

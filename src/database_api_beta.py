@@ -866,7 +866,7 @@ class Slice:
         print("finished loading session")
         return cls(spikes, licks, position_x, position_y, speed, trial_timestamp)
 
-    def filter_neurons_randomly(self, factor,keep_neurons):
+    def filter_neurons_randomly(self, factor,keep_neurons=-1):
         """
 
         :param factor: removes a fraction of neurons randomly if != 1

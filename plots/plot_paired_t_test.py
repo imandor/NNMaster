@@ -8,35 +8,91 @@ from scipy.interpolate import interp1d
 from matplotlib.patches import Patch
 from statsmodels.nonparametric.smoothers_lowess import lowess
 from matplotlib import rc
+from scipy import stats
+
+
+
+def create_t_shape_array(network_output_list,dir=1):
+    if dir == -1:
+        network_output_list= list(reversed(network_output_list))
+    network_output_list = network_output_list[1:]
+    return_list = np.zeros((len(network_output_list),len(network_output_list[0].metric_by_cvs)))
+    for j,a in enumerate(network_output_list):
+        metric_cvs = a.metric_by_cvs
+        for i,m in enumerate(metric_cvs):
+            return_list[j][i] = m.ape_by_epoch[-1]
+    return return_list
+
+
 def edit_axis(model_path_list,ax_label_list,color_list,ax=None,plot_error_bars=False,plot_type="ape"):
+    """
+
+    :param model_path_list:
+    :param ax_label_list:
+    :param color_list:
+    :param ax:
+    :param plot_error_bars:
+    :param plot_type:
+    :return: edits axis to give paired t-test p values to axis
+    """
     ax = ax or plt.gca()
-    for i,path in enumerate(model_path_list):
+        # Plot parameters
+    network_output_list = load_position_network_output(model_path_list[0])
+    all_samples = []
+    asd1 = network_output_list[len(network_output_list)//2:]
+    asd2 = network_output_list[:len(network_output_list)//2+1]
+    array_1 = create_t_shape_array(asd1,1)
+    array_2 = create_t_shape_array(asd2,-1)
+    a = stats.ttest_ind(array_1, array_2,axis=1)
+    # a.pvalue[0] = 0
+    time_shift_list = [a.net_data.time_shift for a in network_output_list][1:]
+    time_shift_list = time_shift_list[len(time_shift_list)//2:]
+
+    ax.plot(time_shift_list, a.pvalue, label=ax_label_list[0], color=color_list[0], marker="None",linestyle=":") #,linestyle="None"
+    ax.legend(fontsize=fontsize)
+    ax.grid(c='k', ls='-', alpha=0.3)
+    return ax
+
+
+def edit_axis_2(model_path_list, ax_label_list, color_list, ax=None, plot_error_bars=False, plot_type="ape"):
+    """
+
+    :param model_path_list:
+    :param ax_label_list:
+    :param color_list:
+    :param ax:
+    :param plot_error_bars:
+    :param plot_type:
+    :return: edits axis to give average value back
+    """
+    ax = ax or plt.gca()
+    for i, path in enumerate(model_path_list):
         # Plot parameters
         network_output_list = load_position_network_output(path)
-        all_samples = [a.metric_by_cvs for a in network_output_list]
-        if plot_type =="ape":
-            ape_avg_list = [np.average([b.ape_by_epoch[-1] for b in a.metric_by_cvs]) for a in network_output_list]
-            y_all = [[a.ape_by_epoch[epoch] for a in metric] for metric in all_samples]
-        if plot_type == "r2":
-            ape_avg_list = [np.average([b.r2_by_epoch[-1] for b in a.metric_by_cvs]) for a in network_output_list]
-            y_all = [[a.r2_by_epoch[epoch] for a in metric] for metric in all_samples]
+        all_samples = []
+        asd1 = network_output_list[len(network_output_list) // 2:]
+        asd2 = network_output_list[:len(network_output_list) // 2 + 1]
+        array_1 = create_t_shape_array(asd1, 1)
+        array_2 = create_t_shape_array(asd2, -1)
+        a = stats.ttest_rel(array_1, array_2, axis=1)
+        # a.pvalue[0] = 0
+        time_shift_list = [a.net_data.time_shift for a in network_output_list][1:]
+        time_shift_list = time_shift_list[len(time_shift_list) // 2:]
+        network_output_list = array_1 - array_2
 
-        time_shift_list = [a.net_data.time_shift for a in network_output_list]
-
-        errorbars = [np.std(y) for y in y_all]
         # for i in range(len(y_all[0])):
         #     y_i = [a[i] for a in y_all]
         #     c = get_c(i)
         #     ax.plot(time_shift_list,y_i,color=c)#label="cv "+str(i+1)+"/10",
-        if ape_avg_list is not None:
-            if plot_error_bars is False:
-                ax.plot(time_shift_list, ape_avg_list, label=ax_label_list[i], color=color_list[i], marker="None",linestyle=":") #,linestyle="None"
-            else:
-                ax.errorbar(x=time_shift_list,y=ape_avg_list,yerr=errorbars,capsize=2,label=ax_label_list[i], color=color_list[i], marker="None",linestyle=":")
-    ax.legend(fontsize=fontsize-3)
+    x = []
+    for i,output in enumerate(network_output_list):
+        x.append(np.average(output))
+    ax.plot(time_shift_list, x, label="", color=color_list[0], marker="None",
+                        linestyle=":")  # ,linestyle="None"
+    ax.legend(fontsize=fontsize)
     ax.grid(c='k', ls='-', alpha=0.3)
-
     return ax
+
 
 def load_position_network_output(path):
     dict_files = glob.glob(path + "output/" + "*.pkl")
@@ -61,7 +117,7 @@ if __name__ == '__main__':
 
     # Settings
     fontsize = 24
-    plot_error_bars = False
+    plot_error_bars = True
     epoch = -1 # raw data contains information about all epochs, we only want the newest iteration
     # plot_type="r2"
     plot_type="ape"
@@ -69,50 +125,24 @@ if __name__ == '__main__':
 
 
     # regular decoding
-    # dir = "C:/Users/NN/Desktop/Master/experiments/Experiments for thesis 2/Position decoding/"
+    dir = "C:/Users/NN/Desktop/Master/experiments/Experiments for thesis 2/Position decoding/"
     # dir = "C:/Users/NN/Desktop/Master/experiments/Experiments for thesis 2/naive test/"
-
-    # plot_error_bars =False
-    # model_path_list_1 = [
-    #     dir + "pfc/",
-    # ]
-    # model_path_list_2 = [
-    #     dir + "cpfc/"
-    # ]
-    # model_path_list_3 = [
-    #     dir + "hc/"
-    # ]
-    # model_path_list_4 = [
-    #     dir + "chc/"
-    # ]
-    dir = "C:/Users/NN/Desktop/Master/experiments/Experiments for thesis 2/behavior component test/at lickwell/"
-    dir = "C:/Users/NN/Desktop/Master/experiments/Experiments for thesis 2/behavior component test/correct trials/"
     model_path_list_1 = [
-        dir + "pfc_correct_trials/",
-        dir + "pfc_false_trials/",
-
+        dir + "pfc/",
     ]
     model_path_list_2 = [
-        dir + "cpfc_correct_trials/",
-        dir + "cpfc_false_trials/",
+        dir + "cpfc/"
     ]
     model_path_list_3 = [
-        dir + "hc_correct_trials/",
-        dir + "hc_false_trials/",
+        dir + "hc/"
     ]
     model_path_list_4 = [
-        dir + "chc_correct_trials/",
-        dir + "chc_false_trials/",
+        dir + "chc/"
     ]
-
-    ax_label_list_1 = ["PFC correct trial","incorrect trial"]
-    ax_label_list_2 = ["CPFC correct trial","incorrect trial"]
-    ax_label_list_3 = ["HC correct trial","incorrect trial"]
-    ax_label_list_4 = ["CHC correct trial","incorrect trial"]
-    # ax_label_list_1 = ["PFC"]
-    # ax_label_list_2 = ["CPFC"]
-    # ax_label_list_3 = ["HC"]
-    # ax_label_list_4 = ["CHC"]
+    ax_label_list_1 = ["PFC"]
+    ax_label_list_2 = ["CPFC"]
+    ax_label_list_3 = ["HC"]
+    ax_label_list_4 = ["CHC"]
 
     color_code_list_1 = ["red","firebrick","darkred","maroon"]
     color_code_list_2 = ["orange","darkorange","orangered","coral"]
@@ -190,11 +220,11 @@ if __name__ == '__main__':
         ax2.axhline(0)
         ax3.axhline(0)
         ax4.axhline(0)
-    else:
-        ax1.set_ylim(0,100)
-        ax2.set_ylim(0,100)
-        ax3.set_ylim(0,100)
-        ax4.set_ylim(0,100)
+    # else:
+        # ax1.set_ylim(-1,1)
+        # ax2.set_ylim(-1,1)
+        # ax3.set_ylim(-1,1)
+        # ax4.set_ylim(-1,1)
 
     plt.show()
     plt.savefig(save_path)
