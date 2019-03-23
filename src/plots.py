@@ -202,7 +202,7 @@ def get_accuracy_for_comparison_2(lick_id_details, lick_id_details_k,k_cross=10)
     return fra_list, std_list, n_list
 
 
-def get_corrected_std(bar_values, std_well):
+def get_corrected_std(bar_values, std_well,lower_limit=0,upper_limit=1):
     """
     :param bar_values: list of fractional values for bar charts
     :param std_well: list of corresponding standard deviations
@@ -211,11 +211,11 @@ def get_corrected_std(bar_values, std_well):
     std_lower = []
     std_upper = []
     for i, std in enumerate(std_well):
-        if std + bar_values[i] <= 1:
+        if std + bar_values[i] <= upper_limit:
             std_upper.append(std)
         else:
             std_upper.append(1 - bar_values[i])
-        if bar_values[i] - std >= 0:
+        if bar_values[i] - std >= lower_limit:
             std_lower.append(std)
         else:
             std_lower.append(bar_values[i])

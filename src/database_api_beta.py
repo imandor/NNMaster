@@ -298,45 +298,41 @@ class Net_data:
         self.valid_licks = None
         self.filter_tetrodes = None
 
-    def get_all_valid_lick_ids(self, session, lickstart, lickstop, start_well=1, shift=1):
+    def get_all_valid_lick_ids(self, session, lickstart, lickstop,valid_licks, start_well=1, shift=1):
+
         """
+
         :param session: session object
-        :param start_well: dominant well in training phase (usually well 1)
-        :return: a list of lick_ids of licks corresponding to filter
+        :param lickstart: currrently not used
+        :param lickstop: currently not used
+        :param valid_licks: if not
+        :param start_well:
+        :param shift:
+        :return:
         """
         filtered_licks = []
-        if shift == 1:
-            licks = session.licks
-            for i, lick in enumerate(licks[0:-1]):
-                well = lick.lickwell
-                next_well = licks[i + 1].lickwell
-                # print(well,next_well,end="")
-                if well == start_well and next_well != start_well:
-                    filtered_licks.append(lick.lick_id)
-                    # print("ding!")
-                # else:
-                # print("")
+
+        if valid_licks == []:
+            if shift == 1:
+                licks = session.licks
+                for i, lick in enumerate(licks[0:-1]):
+                    well = lick.lickwell
+                    next_well = licks[i + 1].lickwell
+                    # print(well,next_well,end="")
+                    if well == start_well and next_well != start_well:
+                        filtered_licks.append(lick.lick_id)
+            else:
+                licks = session.licks[1:-1]
+                for i, lick in enumerate(licks):
+                    well = lick.lickwell
+                    next_well = licks[i - 1].lickwell
+                    if well == start_well and next_well != start_well:
+                        filtered_licks.append(lick.lick_id)
         else:
-            licks = session.licks[1:-1]
-            for i, lick in enumerate(licks):
-                well = lick.lickwell
-                next_well = licks[i - 1].lickwell
-                if well == start_well and next_well != start_well:
+            filtered_licks = []
+            for i,lick in enumerate(session.licks):
+                if lick.lick_id in valid_licks:
                     filtered_licks.append(lick.lick_id)
-        # TODO additional filter function to exclude instances when rat moves around too much
-        # new_filtered_licks = []
-        # for lick_id in filtered_licks:
-        #     lick = get_lick_from_id(lick_id,session.licks)
-        #     time_start = lick.time + lickstart
-        #     time_stop = lick.time + lickstop
-        #     slice = session[int(time_start):int(time_stop)]
-        #     min = slice.position_x[0]
-        #     max = slice.position_x[lickstop-lickstart-1]
-        #     # std_lower.append(np.min(slice.position_x))
-        #     # std_upper.append(np.max(slice.position_x))
-        #     print(lick.lick_id,min,max)
-            # if max-min < 30:
-            #     new_filtered_licks.append(lick.lick_id)
         self.valid_licks = filtered_licks
 
     def assign_training_testing(self, X, y, k):

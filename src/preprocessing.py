@@ -297,7 +297,7 @@ def lickwells_io(session, nd, excluded_wells=[1], shift=1,
 
     # Filter licks and spread them as evenly as possible
 
-    nd.get_all_valid_lick_ids(session, start_well=1, lickstart = lickstart, lickstop=lickstop, shift=shift)
+    nd.get_all_valid_lick_ids(session, start_well=1, lickstart = lickstart, lickstop=lickstop, shift=shift,valid_licks=valid_licks)
     nd = session.add_lick_data_to_session_and_net_data(nd=nd)
     licks = session.licks
     # for i, lick in enumerate(licks):
@@ -312,7 +312,7 @@ def lickwells_io(session, nd, excluded_wells=[1], shift=1,
 
     # create list of valid licks
     for i, lick in enumerate(licks):
-        if  lick.lick_id in nd.valid_licks:
+        if lick.lick_id in nd.valid_licks:
             # exclude trailing samples to stay inside shift range
             filtered_licks.append(lick)
             next_well = int(licks[i + shift].lickwell)
