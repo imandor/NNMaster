@@ -63,8 +63,8 @@ if __name__ == '__main__':
     fontsize = 24
     plot_error_bars = False
     epoch = -1 # raw data contains information about all epochs, we only want the newest iteration
-    # plot_type="r2"
-    plot_type="ape"
+    plot_type="r2"
+    # plot_type="ape"
 
 
 
@@ -89,20 +89,20 @@ if __name__ == '__main__':
     dir = "C:/Users/NN/Desktop/Master/experiments/Experiments for thesis 2/behavior component test/correct trials/"
     model_path_list_1 = [
         dir + "pfc_correct_trials/",
-        dir + "pfc_false_trials/",
+        dir + "pfc_incorrect_trials/",
 
     ]
     model_path_list_2 = [
         dir + "cpfc_correct_trials/",
-        dir + "cpfc_false_trials/",
+        dir + "cpfc_incorrect_trials/",
     ]
     model_path_list_3 = [
         dir + "hc_correct_trials/",
-        dir + "hc_false_trials/",
+        dir + "hc_incorrect_trials/",
     ]
     model_path_list_4 = [
         dir + "chc_correct_trials/",
-        dir + "chc_false_trials/",
+        dir + "chc_incorrect_trials/",
     ]
 
     ax_label_list_1 = ["PFC correct trial","incorrect trial"]

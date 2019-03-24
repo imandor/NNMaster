@@ -221,7 +221,11 @@ def filter_behavior_component(X,y,nd,session,allowed_distance=3):
     if filter == "correct trials" or filter == "false trials":
         start_index = 0
         for lick in session.licks:
-            stop_index = int(lick.time - nd.time_shift) // (nd.win_size*nd.number_of_bins)
+            stop_index = int(lick.time) // (nd.win_size*nd.number_of_bins) # TODO Overflow testen
+            if nd.time_shift <0:
+                stop_index = stop_index- nd.time_shift //(nd.win_size*nd.number_of_bins)
+            if stop_index<0:
+                raise ValueError("Overflow in index when filtering data. Check behavior component filter")
             if filter == "correct trials" and lick.rewarded == 1 or filter == "false trials" and lick.rewarded == 0:
                 X_return.append(X[start_index:stop_index])
                 y_return.append(y[start_index:stop_index])

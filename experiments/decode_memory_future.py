@@ -5,12 +5,12 @@ from src.network_functions import run_network_process, initiate_network, run_net
 from src.model_data import c_dmf,chc_dmf,cpfc_dmf,hc_dmf,pfc_dmf
 if __name__ == '__main__':
 
-    model_data = hc_dmf
-    model_data.model_path="G:/master_datafiles/trained_networks/hc_correct_trials/"
+    model_data = chc_dmf
+    model_data.model_path="G:/master_datafiles/trained_networks/tester/"
     nd = Net_data(
-        initial_timeshift=-10000,
+        initial_timeshift=5000,
         time_shift_iter=500,
-        time_shift_steps=41,
+        time_shift_steps=1,
         early_stopping=False,
         model_path=model_data.model_path,
         raw_data_path=model_data.raw_data_path,
