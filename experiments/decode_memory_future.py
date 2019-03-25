@@ -5,7 +5,7 @@ from src.network_functions import run_network_process, initiate_network, run_net
 from src.model_data import c_dmf,chc_dmf,cpfc_dmf,hc_dmf,pfc_dmf
 if __name__ == '__main__':
 
-    model_data = chc_dmf
+    model_data = pfc_dmf
     model_data.model_path="G:/master_datafiles/trained_networks/tester/"
     nd = Net_data(
         initial_timeshift=5000,
@@ -21,7 +21,7 @@ if __name__ == '__main__':
         from_raw_data=False,
         epochs = 30,
         dropout=0.65,
-        behavior_component_filter="correct trials",
+        behavior_component_filter="not at lickwell",
         filter_tetrodes=model_data.filter_tetrodes,
         shuffle_data=True,
         shuffle_factor=10,

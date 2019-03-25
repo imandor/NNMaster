@@ -63,8 +63,8 @@ if __name__ == '__main__':
     fontsize = 24
     plot_error_bars = False
     epoch = -1 # raw data contains information about all epochs, we only want the newest iteration
-    plot_type="r2"
-    # plot_type="ape"
+    # plot_type="r2"
+    plot_type="ape"
 
 
 
@@ -114,11 +114,11 @@ if __name__ == '__main__':
     # ax_label_list_3 = ["HC"]
     # ax_label_list_4 = ["CHC"]
 
-    color_code_list_1 = ["red","firebrick","darkred","maroon"]
-    color_code_list_2 = ["orange","darkorange","orangered","coral"]
-    color_code_list_3 = ["blue","mediumblue","darkblue","navy"]
-    color_code_list_5 = ["slateblue","mediumslateblue","darkslateblue","midnightblue"]
-    color_code_list_4 = ["green","limegreen","forestgreen","lightgreen"]
+    color_code_list_1 = ["red","maroon","firebrick","darkred"]
+    color_code_list_2 = ["orange","coral","darkorange","orangered"]
+    color_code_list_3 = ["blue","navy","mediumblue","darkblue"]
+    color_code_list_5 = ["slateblue","midnightblue","mediumslateblue","darkslateblue"]
+    color_code_list_4 = ["green","forestgreen","limegreen","lightgreen"]
 
     # at lickwell vs not at lickwell
     # dir = "C:/Users/NN/Desktop/Master/experiments/Experiments for thesis/behavior component test/at lickwell/"

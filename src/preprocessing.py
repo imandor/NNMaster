@@ -182,7 +182,7 @@ def return_well_positions(session):
             position_by_well.append(np.average(avg_pos))
     return position_by_well
 
-def filter_behavior_component(X,y,nd,session,allowed_distance=3):
+def filter_behavior_component(X,y,nd,session,allowed_distance=2):
     """
     :param X:
     :param y:
@@ -211,7 +211,7 @@ def filter_behavior_component(X,y,nd,session,allowed_distance=3):
             found_at_well = False
             position = nd.x_step * median_position_bin(position_as_map)
             for well_position in well_positions:
-                if abs(position-well_position)<allowed_distance:
+                if abs(position-well_position)<nd.x_step*allowed_distance:
                     found_at_well = True
                     break
             if found_at_well is False:
@@ -221,7 +221,7 @@ def filter_behavior_component(X,y,nd,session,allowed_distance=3):
     if filter == "correct trials" or filter == "false trials":
         start_index = 0
         for lick in session.licks:
-            stop_index = int(lick.time) // (nd.win_size*nd.number_of_bins) # TODO Overflow testen
+            stop_index = int(lick.time) // (nd.win_size*nd.number_of_bins)
             if nd.time_shift <0:
                 stop_index = stop_index- nd.time_shift //(nd.win_size*nd.number_of_bins)
             if stop_index<0:

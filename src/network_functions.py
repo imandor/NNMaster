@@ -267,6 +267,9 @@ def run_network(nd, session):
         X,y = filter_behavior_component(X, y, nd, session)
         if len(X) != len(y):
             raise ValueError("Error: Length of x and y are not identical")
+        if len(X) == 0:
+            raise ValueError("Error: No samples. Check behavior component filter")
+
         # X, y = shuffle_io(X, y, nd, seed_no=2,shuffle_batch_size=nd.shuffle_factor)
 
         metric_list = []
