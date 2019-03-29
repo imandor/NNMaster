@@ -182,7 +182,7 @@ def return_well_positions(session):
             position_by_well.append(np.average(avg_pos))
     return position_by_well
 
-def filter_behavior_component(X,y,nd,session,allowed_distance=2):
+def filter_behavior_component(X,y,nd,session,allowed_distance=10):
     """
     :param X:
     :param y:
@@ -211,14 +211,14 @@ def filter_behavior_component(X,y,nd,session,allowed_distance=2):
             found_at_well = False
             position = nd.x_step * median_position_bin(position_as_map)
             for well_position in well_positions:
-                if abs(position-well_position)<nd.x_step*allowed_distance:
+                if abs(position-well_position)<allowed_distance:
                     found_at_well = True
                     break
             if found_at_well is False:
                 X_return.append(X[i])
                 y_return.append(position_as_map)
 
-    if filter == "correct trials" or filter == "false trials":
+    if filter == "correct trials" or filter == "incorrect trials":
         start_index = 0
         for lick in session.licks:
             stop_index = int(lick.time) // (nd.win_size*nd.number_of_bins)
@@ -226,7 +226,7 @@ def filter_behavior_component(X,y,nd,session,allowed_distance=2):
                 stop_index = stop_index- nd.time_shift //(nd.win_size*nd.number_of_bins)
             if stop_index<0:
                 raise ValueError("Overflow in index when filtering data. Check behavior component filter")
-            if filter == "correct trials" and lick.rewarded == 1 or filter == "false trials" and lick.rewarded == 0:
+            if filter == "correct trials" and lick.rewarded == 1 or filter == "incorrect trials" and lick.rewarded == 0:
                 X_return.append(X[start_index:stop_index])
                 y_return.append(y[start_index:stop_index])
             start_index = stop_index

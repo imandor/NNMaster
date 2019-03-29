@@ -264,7 +264,7 @@ def run_network(nd, session):
         nd.time_shift = z  # set current time shift
         # Time-Shift input and output
         X, y = time_shift_positions(session, z, nd)
-        X,y = filter_behavior_component(X, y, nd, session)
+        X, y = filter_behavior_component(X, y, nd, session)
         if len(X) != len(y):
             raise ValueError("Error: Length of x and y are not identical")
         if len(X) == 0:

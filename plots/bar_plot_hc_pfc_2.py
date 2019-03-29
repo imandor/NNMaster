@@ -61,7 +61,7 @@ if __name__ == '__main__':
     ax1.bar(ind, x_1, color="b", yerr=[std_lower_1, std_upper_1], error_kw=error_kw, align='center',label="Hippocampus",edgecolor="black")
     ax1.set_xticks(ind)
     ax1.set_ylabel("fraction decoded", fontsize=fontsize)
-    ax1.set_xticklabels(['by event', 'second best', 'combined'], fontsize=fontsize)
+    ax1.set_xticklabels(['rewarded', 'not rewarded', 'ensuing'], fontsize=fontsize)
     ax1.set_title("decoding next well",fontsize=fontsize)
     if add_trial_numbers is True:
         for i, j in zip(ind, x_1):
@@ -74,7 +74,7 @@ if __name__ == '__main__':
     ax2.bar(ind, x_2, color="b", yerr=[std_lower_2, std_upper_2], error_kw=error_kw, align='center',edgecolor="black")
     ax2.set_xticks(ind)
     # ax2.set_ylabel("fraction decoded", fontsize=fontsize)
-    ax2.set_xticklabels(['by event', 'second best', 'combined'], fontsize=fontsize)
+    ax2.set_xticklabels(['rewarded', 'not rewarded', 'preceding'], fontsize=fontsize)
     ax2.set_title("decoding last well", fontsize=fontsize)
 
     if add_trial_numbers is True:
@@ -88,7 +88,7 @@ if __name__ == '__main__':
     ax3.set_xticks(ind)
     ax3.set_ylabel("fraction decoded", fontsize=fontsize)
 
-    ax3.set_xticklabels(['by event', 'second best', 'combined'], fontsize=fontsize)
+    ax3.set_xticklabels(['rewarded', 'not rewarded', 'ensuing'], fontsize=fontsize)
     if add_trial_numbers is True:
         for i, j in zip(ind, x_3):
             if j < 0.2:
@@ -98,7 +98,7 @@ if __name__ == '__main__':
             ax3.annotate(int(n_3[i]), xy=(i - 0.1, j + offset),fontsize=fontsize-2)
     ax4.bar(ind, x_4, color="r", yerr=[std_lower_4, std_upper_4], error_kw=error_kw, align='center',edgecolor="black")
     ax4.set_xticks(ind)
-    ax4.set_xticklabels(['by event', 'second best', 'combined'], fontsize=fontsize)
+    ax4.set_xticklabels(['rewarded', 'not rewarded', 'preceding'], fontsize=fontsize)
     if add_trial_numbers is True:
         for i, j in zip(ind, x_4):
             if j < 0.2:

@@ -5,10 +5,10 @@ from src.network_functions import run_network_process, initiate_network, run_net
 from src.model_data import c_dmf,chc_dmf,cpfc_dmf,hc_dmf,pfc_dmf
 if __name__ == '__main__':
 
-    model_data = pfc_dmf
-    model_data.model_path="G:/master_datafiles/trained_networks/tester/"
+    model_data = chc_dmf
+    model_data.model_path="G:/master_datafiles/trained_networks/speedtest/"
     nd = Net_data(
-        initial_timeshift=5000,
+        initial_timeshift=0,
         time_shift_iter=500,
         time_shift_steps=1,
         early_stopping=False,
@@ -21,7 +21,11 @@ if __name__ == '__main__':
         from_raw_data=False,
         epochs = 30,
         dropout=0.65,
-        behavior_component_filter="not at lickwell",
+        # behavior_component_filter="at lickwell",
+        # behavior_component_filter="not at lickwell",
+        # behavior_component_filter="correct trials",
+        # behavior_component_filter="incorrect trials",
+
         filter_tetrodes=model_data.filter_tetrodes,
         shuffle_data=True,
         shuffle_factor=10,
@@ -29,6 +33,16 @@ if __name__ == '__main__':
         switch_x_y=model_data.switch_x_y
     )
     session = initiate_network(nd)
-
+    speedlist = []
+    maxspeed = np.max(session.speed)
+    for speed in session.speed:
+        if speed<0:
+            speedlist.append(0)
+        else:
+            speedbin = int(79*speed/maxspeed)
+            if speedbin>=80:
+                print("beep")
+            speedlist.append(speedbin)
+    session.position_x = speedlist
     run_network(nd, session)
 

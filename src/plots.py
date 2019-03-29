@@ -178,21 +178,21 @@ def get_accuracy_for_comparison_2(lick_id_details, lick_id_details_k,k_cross=10)
     # events decoded
     lick_id_details.filter = lick_id_details.valid_licks
     fractions_decoded_all, std_all, n_all = return_fraction_decoded_and_std(lick_id_details=lick_id_details,
-    lick_id_details_k=lick_id_details_k,parameter=lick_id_details.licks_decoded, filter=lick_id_details.valid_licks)
+    lick_id_details_k=lick_id_details_k,parameter=lick_id_details.licks_decoded, filter=lick_id_details.target_lick_correct)
 
     # fraction decoded if target was last lick instead of next (or vice versa)
     for i, li in enumerate(lick_id_details_k):
         lick_id_details_k[i].filter = lick_id_details.filter
     fractions_decoded_last, std_last, n_last = return_fraction_decoded_and_std(
         lick_id_details=lick_id_details,lick_id_details_k=lick_id_details_k,
-        parameter=lick_id_details.second_highest_decoded, filter=lick_id_details.valid_licks)
+        parameter=lick_id_details.licks_decoded, filter=lick_id_details.target_lick_false)
 
     # fraction decoded if target lick is current phase
     for i, li in enumerate(lick_id_details_k):
         lick_id_details_k[i].filter = lick_id_details.filter
     fractions_decoded_phase, std_phase, n_phase = return_fraction_decoded_and_std(
         lick_id_details=lick_id_details,lick_id_details_k=lick_id_details_k,
-        parameter=lick_id_details.licks_decoded + lick_id_details.second_highest_decoded, filter=lick_id_details.valid_licks)
+        parameter=lick_id_details.next_lick_decoded, filter=lick_id_details.target_lick_false)
 
 
 
@@ -267,13 +267,13 @@ def return_fraction_decoded_and_std(lick_id_details,parameter,filter,lick_id_det
 def metric_details_by_lickwell(path,timeshift):
     lick_id_details, lick_id_details_k = get_metric_details(path+"output/", timeshift)
     fractions_decoded_2, std_2, n_2 = return_fraction_decoded_and_std(lick_id_details=lick_id_details,
-        lick_id_details_k=lick_id_details_k,parameter=lick_id_details.fraction_decoded,filter=lick_id_details.next_well_licked_2)
+        lick_id_details_k=lick_id_details_k,parameter=lick_id_details.licks_decoded,filter=lick_id_details.next_well_licked_2)
     fractions_decoded_3, std_3, n_3 = return_fraction_decoded_and_std(lick_id_details=lick_id_details,
-        lick_id_details_k=lick_id_details_k, parameter=lick_id_details.fraction_decoded,filter=lick_id_details.next_well_licked_3)
+        lick_id_details_k=lick_id_details_k, parameter=lick_id_details.licks_decoded,filter=lick_id_details.next_well_licked_3)
     fractions_decoded_4, std_4, n_4 = return_fraction_decoded_and_std(lick_id_details=lick_id_details,
-        lick_id_details_k=lick_id_details_k, parameter=lick_id_details.fraction_decoded,filter=lick_id_details.next_well_licked_4)
+        lick_id_details_k=lick_id_details_k, parameter=lick_id_details.licks_decoded,filter=lick_id_details.next_well_licked_4)
     fractions_decoded_5, std_5, n_5 = return_fraction_decoded_and_std(lick_id_details=lick_id_details,
-        lick_id_details_k=lick_id_details_k, parameter=lick_id_details.fraction_decoded,filter=lick_id_details.next_well_licked_5)
+        lick_id_details_k=lick_id_details_k, parameter=lick_id_details.licks_decoded,filter=lick_id_details.next_well_licked_5)
 
     bar_values = [fractions_decoded_2, fractions_decoded_3, fractions_decoded_4, fractions_decoded_5]
     std_well = [std_2, std_3, std_4, std_5]

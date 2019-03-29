@@ -70,7 +70,7 @@ def print_table(paths):
     for i,datarow in enumerate(data_collection):
         print(i+1,end=" & ")
         for j,data in enumerate(datarow):
-            if j in [0,1,4,5]:
+            if j in [0,1,4,5]: # which columns are ints (wells)
                 print(str(int(data)) + " & ",end="")
             else:
                 print(format(float(data), ".1f") + " & ",end="")
