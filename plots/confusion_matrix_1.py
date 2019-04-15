@@ -8,7 +8,7 @@ from matplotlib import rc
 
 if __name__ == '__main__':
     only_phase_change_trials = False
-    by_sample = False
+    by_sample = True
     path = "C:/Users/NN/Desktop/Master/experiments/Lickwell_prediction/"
     model_path_list = [
         "C:/Users/NN/Desktop/Master/experiments/Experiments for thesis 2/well decoding/hc/"]
@@ -20,7 +20,7 @@ if __name__ == '__main__':
     rc('ytick', labelsize=fontsize)
     rc('axes', labelsize=fontsize)
     if by_sample is False:
-        for timeshift in [-1,1]:
+        for timeshift in [1]:
             for j,path in enumerate(model_path_list):
                 metrics = load_pickle(path + "output/metrics_timeshift=" + str(timeshift) + ".pkl")
                 metrics_k = load_pickle(path + "output/metrics_k_timeshift=" + str(timeshift) + ".pkl")
@@ -66,7 +66,7 @@ if __name__ == '__main__':
 
                 plt.savefig(path+"images/confusion_matrix_"+image_title_list[j]+"_"+shift+pathname_metadata)
     else:
-        for timeshift in [-1, 1]:
+        for timeshift in [ 1]:
             for j, path in enumerate(model_path_list):
                 all_guesses = load_pickle(path + "output/all_guesses_timeshift=" + str(timeshift) + ".pkl")
                 nd = load_pickle(path + "output/nd_timeshift=" + str(timeshift) + ".pkl")

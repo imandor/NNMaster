@@ -182,7 +182,7 @@ def return_well_positions(session):
             position_by_well.append(np.average(avg_pos))
     return position_by_well
 
-def filter_behavior_component(X,y,nd,session,allowed_distance=10):
+def filter_behavior_component(X,y,nd,session,allowed_distance=10,allowed_speed=0.1):
     """
     :param X:
     :param y:
@@ -195,7 +195,7 @@ def filter_behavior_component(X,y,nd,session,allowed_distance=10):
     X_return = []
     y_return = []
 
-    if filter == "at lickwell":
+    if filter == "at lickwell": # target sample allowed_distance cm close to well
         well_positions = return_well_positions(session)
         for i, position_as_map in enumerate(y):
             position = nd.x_step * median_position_bin(position_as_map)
@@ -205,7 +205,7 @@ def filter_behavior_component(X,y,nd,session,allowed_distance=10):
                     y_return.append(position_as_map)
                     break
 
-    if filter == "not at lickwell":
+    if filter == "not at lickwell": # target_sample not allowed_distance cm close to well
         well_positions = return_well_positions(session)
         for i, position_as_map in enumerate(y):
             found_at_well = False
@@ -218,7 +218,7 @@ def filter_behavior_component(X,y,nd,session,allowed_distance=10):
                 X_return.append(X[i])
                 y_return.append(position_as_map)
 
-    if filter == "correct trials" or filter == "incorrect trials":
+    if filter == "correct trials" or filter == "incorrect trials": # looks at samples between all lick events and excludes those belonging to (in)-correct trials
         start_index = 0
         for lick in session.licks:
             stop_index = int(lick.time) // (nd.win_size*nd.number_of_bins)
@@ -233,6 +233,15 @@ def filter_behavior_component(X,y,nd,session,allowed_distance=10):
         X_return = [a for li in X_return for a in li]
         y_return = [a for li in y_return for a in li]
 
+    if filter =="move": # only takes samples with neural activity corresponding to movement-speed<> speed
+        for i, position_as_map in enumerate(y):
+            j = i*nd.number_of_bins*nd.win_size # 1 ms resolution index of neural data (and speed) corresponding to sample
+            if nd.time_shift<0:
+                j = j - nd.time_shift
+            previous_speed = session.speed[j] # speed is roughly identical over entire 1000 ms, I am simplifying by only taking first speed over range
+            if (previous_speed < allowed_speed and filter=="rest") or (previous_speed >= allowed_speed and filter=="move"):
+                    X_return.append(X[i])
+                    y_return.append(position_as_map)
 
     return X_return,y_return
 

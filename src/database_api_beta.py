@@ -151,7 +151,7 @@ class Net_data:
                  filtered_data_path=None,
                  stride=100,
                  # stride [ms]with which output samples are generated (making it smaller than y_slice_size creates overlapping samples)
-                 y_slice_size=100,  # size of each output sample in [ms]
+                 # y_slice_size=100,  # size of each output sample in [ms] TODO: check if still works with this gone
                  network_type="MLP",
                  # originally multiple network types were tested. This is a descriptor for easier recognition of network type in file data
                  epochs=20,  # how many epochs the network is trained
@@ -222,7 +222,7 @@ class Net_data:
         self.evaluate_training = evaluate_training
         self.stride = stride
         self.train_model = train_model
-        self.y_slice_size = y_slice_size
+        # self.y_slice_size = y_slice_size
         self.network_type = network_type
         self.epochs = epochs
         self.session_filter = session_filter
@@ -431,7 +431,6 @@ class Net_data:
         y = [y[j] for j in r]
         x_return = x.copy()
         y_return = y.copy()
-
         for i, e in enumerate(y):
             well_index = normalize_well(well=e.target, num_wells=self.num_wells, excluded_wells=excluded_wells)
             if counts[well_index] < max(counts):  # if count at well position smaller than max

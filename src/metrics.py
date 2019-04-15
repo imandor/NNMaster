@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from src.preprocessing import position_as_map, median_position_bin
 from src.database_api_beta import Evaluated_Lick, get_lick_from_id
 from src.settings import load_pickle
-
+from sklearn.metrics import r2_score
 
 def get_r2(y_predicted, y_target):
     """
@@ -16,7 +16,9 @@ def get_r2(y_predicted, y_target):
     y_predicted = y_predicted
     y_target = y_target
     y_mean = np.mean(y_target)
-    R2 = 1 - np.sum((y_predicted - y_target) ** 2) / np.sum((y_target - y_mean) ** 2)
+    # asd = y_predicted  - y_target
+    # R2 = 1 - np.sum((y_predicted - y_target) ** 2) / np.sum((y_target - y_mean) ** 2)
+    R2 = r2_score(y_true=y_target,y_pred=y_predicted)
     R2_list.append(R2)
     R2_array = np.array(R2_list)
     return R2_array  # Return an array of R2s
@@ -454,15 +456,15 @@ def plot_axis_representation_1d(y_values, path, is_training):
 
 
 def print_Net_data(nd):
-    print("session_filter", nd.session_filter)
+    # print("session_filter", nd.session_filter)
     print("slice_size", nd.slice_size)
-    print("y_slice_size", nd.y_slice_size)
+    # print("y_slice_size", nd.y_slice_size)
     print("stride", nd.stride)
     print("win_size", nd.win_size)
     print("epochs", nd.epochs)
     print("time_shift_steps", nd.time_shift_steps)
-    print("shuffle_data", nd.shuffle_data)
-    print("shuffle_factor", nd.shuffle_factor)
+    # print("shuffle_data", nd.shuffle_data)
+    # print("shuffle_factor", nd.shuffle_factor)
     print("time_shift_iter", nd.time_shift_iter)
     print("metric_iter", nd.metric_iter)
     print("batch_size", nd.batch_size)

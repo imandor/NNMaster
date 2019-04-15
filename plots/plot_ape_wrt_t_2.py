@@ -6,11 +6,12 @@ from matplotlib import rc
 
 def edit_axis_special(model_path_list,ax_label_list,color_list,ax=None,plot_error_bars=False,plot_type="ape"):
     ax = ax or plt.gca()
+
     for i, path in enumerate(model_path_list):
         # Plot parameters
         network_output_list = load_position_network_output(path)
         all_samples = [a.metric_by_cvs for a in network_output_list]
-        if plot_type == "ape":
+        if plot_type == "ape":# or plot_type=="rpe":
             ape_avg_list = [np.average([b.ape_by_epoch[-1] for b in a.metric_by_cvs]) for a in network_output_list]
             y_all = [[a.ape_by_epoch[epoch] for a in metric] for metric in all_samples]
         if plot_type == "r2":
@@ -18,6 +19,8 @@ def edit_axis_special(model_path_list,ax_label_list,color_list,ax=None,plot_erro
             y_all = [[a.r2_by_epoch[epoch] for a in metric] for metric in all_samples]
         time_shift_list = [a.net_data.time_shift for a in network_output_list]
         errorbars = [np.std(y) for y in y_all]
+        # if plot_type=="rpe":
+        #     ape_avg_list == [x/divide_by for x in ape_avg_list]
         if ape_avg_list is not None:
             if plot_error_bars is False:
                 ax.plot(time_shift_list, ape_avg_list, label=ax_label_list[i], color=color_list[i], marker="None",
@@ -30,13 +33,15 @@ def edit_axis_special(model_path_list,ax_label_list,color_list,ax=None,plot_erro
     return ax
 
 
-def edit_axis(model_path_list,ax_label_list,color_list,ax=None,plot_error_bars=False,plot_type="ape"):
+def edit_axis(model_path_list,ax_label_list,color_list,ax=None,plot_error_bars=False,plot_type="ape",divide_by=1):
     ax = ax or plt.gca()
+    if plot_type=="rpe":
+        plot_error_bars=False
     for i,path in enumerate(model_path_list):
         # Plot parameters
         network_output_list = load_position_network_output(path)
         all_samples = [a.metric_by_cvs for a in network_output_list]
-        if plot_type =="ape":
+        if plot_type =="ape" or plot_type=="rpe":
             ape_avg_list = [np.average([b.ape_by_epoch[-1] for b in a.metric_by_cvs]) for a in network_output_list]
             y_all = [[a.ape_by_epoch[epoch] for a in metric] for metric in all_samples]
         if plot_type == "r2":
@@ -44,9 +49,12 @@ def edit_axis(model_path_list,ax_label_list,color_list,ax=None,plot_error_bars=F
             y_all = [[a.r2_by_epoch[epoch] for a in metric] for metric in all_samples]
         time_shift_list = [a.net_data.time_shift for a in network_output_list]
         errorbars = [np.std(y) for y in y_all]
+        if plot_type=="rpe":
+            ape_avg_list = [x / divide_by for x in ape_avg_list]
+
         if ape_avg_list is not None:
             if plot_error_bars is False:
-                ax.plot(time_shift_list, ape_avg_list, label=ax_label_list[i], color=color_list[i], marker="None",linestyle=":") #,linestyle="None"
+                ax.plot(time_shift_list, ape_avg_list, label=ax_label_list[i], color=color_list[i], marker="None",linestyle="-") #,linestyle="None"
             else:
                 ax.errorbar(x=time_shift_list,y=ape_avg_list,yerr=errorbars,capsize=2,label=ax_label_list[i], color=color_list[i], marker="None",linestyle=":")
     ax.legend(fontsize=fontsize-3)
@@ -80,42 +88,42 @@ if __name__ == '__main__':
     epoch = -1 # raw data contains information about all epochs, we only want the newest iteration but it can also be set to an arbitrary epoch
     combined_comparison = False # used for comparison in combined data set so values are added
     # plot_type="r2"
-    plot_type="ape"
+    # plot_type="ape"
+    plot_type="rpe" # ape divided by chance error
 
     # comparison in combined data set
-    dir = "C:/Users/NN/Desktop/Master/experiments/Experiments for thesis 2/Position decoding/"
-
+    # dir = "C:/Users/NN/Desktop/Master/experiments/Experiments for thesis 2/Position decoding/"
     plot_error_bars =False
-    model_path_list_1 = [
-        dir + "cpfc/",
-    ]
-    model_path_list_2 = [
-        dir + "chc/"
-    ]
-    model_path_list_3 = [
-        dir + "c/"
-    ]
-    model_path_list_4 = [
-        dir + "c/",
-        dir + "chc/",
-        dir + "cpfc/"
-    ]
-    combined_comparison = True
-
-    ax_label_list_1 = ["CPFC"]
-    ax_label_list_2 = ["CHC"]
-    ax_label_list_3 = ["Combined"]
-    ax_label_list_4 = ["Combined","CPFC","CHC"]
-    # ax_label_list_1 = ["PFC"]
-    # ax_label_list_2 = ["CPFC"]
-    # ax_label_list_3 = ["HC"]
-    # ax_label_list_4 = ["CHC"]
-
-    color_code_list_1 = ["red","maroon","firebrick","darkred"]
-    color_code_list_2 = ["orange","orangered","darkorange","coral"]
-    color_code_list_3 = ["aqua","navy","mediumblue","darkblue"]
-    color_code_list_5 = ["purple","lightgreen","orange","darkslateblue"]
-    color_code_list_4 = ["lightgreen","forestgreen","limegreen","green"]
+    # model_path_list_1 = [
+    #     dir + "cpfc/",
+    # ]
+    # model_path_list_2 = [
+    #     dir + "chc/"
+    # ]
+    # model_path_list_3 = [
+    #     dir + "c/"
+    # ]
+    # model_path_list_4 = [
+    #     dir + "c/",
+    #     dir + "chc/",
+    #     dir + "cpfc/"
+    # ]
+    # combined_comparison = True
+    #
+    # ax_label_list_1 = ["CPFC"]
+    # ax_label_list_2 = ["CHC"]
+    # ax_label_list_3 = ["Combined"]
+    # ax_label_list_4 = ["Combined","CPFC","CHC"]
+    # # ax_label_list_1 = ["PFC"]
+    # # ax_label_list_2 = ["CPFC"]
+    # # ax_label_list_3 = ["HC"]
+    # # ax_label_list_4 = ["CHC"]
+    #
+    # color_code_list_1 = ["red","maroon","firebrick","darkred"]
+    # color_code_list_2 = ["orange","orangered","darkorange","coral"]
+    # color_code_list_3 = ["aqua","navy","mediumblue","darkblue"]
+    # color_code_list_5 = ["purple","lightgreen","orange","darkslateblue"]
+    # color_code_list_4 = ["lightgreen","forestgreen","limegreen","green"]
 
 
 
@@ -123,20 +131,21 @@ if __name__ == '__main__':
     # regular decoding
     # dir = "C:/Users/NN/Desktop/Master/experiments/Experiments for thesis 2/Position decoding/"
     # dir = "C:/Users/NN/Desktop/Master/experiments/Experiments for thesis 2/naive test/"
+    dir = "C:/Users/NN/Desktop/Master/experiments/Experiments for thesis 2/Position decoding/"
 
-    # plot_error_bars =False
-    # model_path_list_1 = [
-    #     dir + "pfc/",
-    # ]
-    # model_path_list_2 = [
-    #     dir + "cpfc/"
-    # ]
-    # model_path_list_3 = [
-    #     dir + "hc/"
-    # ]
-    # model_path_list_4 = [
-    #     dir + "chc/"
-    # ]
+    plot_error_bars = True
+    model_path_list_1 = [
+        dir + "pfc/",
+    ]
+    model_path_list_2 = [
+        dir + "cpfc/"
+    ]
+    model_path_list_3 = [
+        dir + "hc/"
+    ]
+    model_path_list_4 = [
+        dir + "chc/"
+    ]
     # dir = "C:/Users/NN/Desktop/Master/experiments/Experiments for thesis 2/behavior component test/at lickwell/"
     # dir = "C:/Users/NN/Desktop/Master/experiments/Experiments for thesis 2/behavior component test/correct trials/"
     # model_path_list_1 = [
@@ -161,16 +170,16 @@ if __name__ == '__main__':
     # ax_label_list_2 = ["CPFC correct trials","incorrect trials"]
     # ax_label_list_3 = ["HC correct trials","incorrect trials"]
     # ax_label_list_4 = ["CHC correct trials","incorrect trials"]
-    # # ax_label_list_1 = ["PFC"]
-    # # ax_label_list_2 = ["CPFC"]
-    # # ax_label_list_3 = ["HC"]
-    # # ax_label_list_4 = ["CHC"]
-    #
-    # color_code_list_1 = ["red","maroon","firebrick","darkred"]
-    # color_code_list_2 = ["orange","orangered","darkorange","coral"]
-    # color_code_list_3 = ["aqua","navy","mediumblue","darkblue"]
-    # color_code_list_5 = ["slateblue","midnightblue","mediumslateblue","darkslateblue"]
-    # color_code_list_4 = ["lightgreen","forestgreen","limegreen","green"]
+    ax_label_list_1 = ["PFC"]
+    ax_label_list_2 = ["CPFC"]
+    ax_label_list_3 = ["HC"]
+    ax_label_list_4 = ["CHC"]
+
+    color_code_list_1 = ["red","maroon","firebrick","darkred"]
+    color_code_list_2 = ["orange","orangered","darkorange","coral"]
+    color_code_list_3 = ["aqua","navy","mediumblue","darkblue"]
+    color_code_list_5 = ["slateblue","midnightblue","mediumslateblue","darkslateblue"]
+    color_code_list_4 = ["lightgreen","forestgreen","limegreen","green"]
 
     # at lickwell vs not at lickwell
     # dir = "C:/Users/NN/Desktop/Master/experiments/Experiments for thesis/behavior component test/at lickwell/"
@@ -211,9 +220,9 @@ if __name__ == '__main__':
     rc('xtick', labelsize=fontsize)
     rc('ytick', labelsize=fontsize)
     rc('axes', labelsize=fontsize)
-    fig, ((ax1,ax2),(ax3,ax4)) = plt.subplots(nrows=2,ncols=2)
+    fig, ((ax1,ax2),(ax3,ax4)) = plt.subplots(nrows=2,ncols=2,sharey=True)
     axis_label_x = 'Time shift [ms]'
-    if plot_type == "ape":
+    if plot_type == "ape" or plot_type=="rpe":
         axis_label_y = r'$\o$ ape'
     if plot_type == "r2":
         axis_label_y = r'$\o$ r2 score'
@@ -224,11 +233,11 @@ if __name__ == '__main__':
     width = 3.5
     height = width / 1.5
     fig.set_size_inches(width, height)
-    edit_axis(model_path_list_1,ax_label_list_1,color_list=color_code_list_1,ax=ax1,plot_error_bars=plot_error_bars,plot_type=plot_type)
-    edit_axis(model_path_list_2,ax_label_list_2,color_list=color_code_list_2,ax=ax2,plot_error_bars=plot_error_bars,plot_type=plot_type)
-    edit_axis(model_path_list_3,ax_label_list_3,color_list=color_code_list_3,ax=ax3,plot_error_bars=plot_error_bars,plot_type=plot_type)
+    edit_axis(model_path_list_1,ax_label_list_1,color_list=color_code_list_1,ax=ax1,plot_error_bars=plot_error_bars,plot_type=plot_type,divide_by=75)
+    edit_axis(model_path_list_2,ax_label_list_2,color_list=color_code_list_2,ax=ax2,plot_error_bars=plot_error_bars,plot_type=plot_type,divide_by=50)
+    edit_axis(model_path_list_3,ax_label_list_3,color_list=color_code_list_3,ax=ax3,plot_error_bars=plot_error_bars,plot_type=plot_type,divide_by=61)
     if combined_comparison is False:
-        edit_axis(model_path_list_4,ax_label_list_4,color_list=color_code_list_4,ax=ax4,plot_error_bars=plot_error_bars,plot_type=plot_type)
+        edit_axis(model_path_list_4,ax_label_list_4,color_list=color_code_list_4,ax=ax4,plot_error_bars=plot_error_bars,plot_type=plot_type,divide_by=50)
     else:
         edit_axis_special(model_path_list_4,ax_label_list_4,color_list=color_code_list_5,ax=ax4,plot_error_bars=plot_error_bars,plot_type="r2")
     # ax1.tick_params(labelsize=fontsize)
@@ -246,11 +255,30 @@ if __name__ == '__main__':
         ax2.axhline(0)
         ax3.axhline(0)
         ax4.axhline(0)
-    else:
+    if plot_type=="ape":
+        ax1.axhline(75)
+        ax2.axhline(50)
+        ax3.axhline(61)
+        ax4.axhline(50)
         ax1.set_ylim(0,100)
         ax2.set_ylim(0,100)
         ax3.set_ylim(0,100)
-        if combined_comparison is False:
+    if plot_type =="rpe":
+        ax1.set_ylim(0.5,1.5)
+        ax2.set_ylim(0.5,1.5)
+        ax3.set_ylim(0.5,1.5)
+        ax4.set_ylim(0.5,1.5)
+        ax1.set_ylabel("ape/chance")
+        # ax2.set_ylabel("ape/chance")
+        ax3.set_ylabel("ape/chance")
+        # ax4.set_ylabel("ape/chance")
+        ax1.axhline(1)
+        ax2.axhline(1)
+        ax3.axhline(1)
+        ax4.axhline(1)
+
+    else:
+        if combined_comparison is False and plot_type=="ape":
             ax4.set_ylim(0,100)
         else:
             ax4.set_ylim(-1,1)
@@ -259,6 +287,7 @@ if __name__ == '__main__':
             ax4.legend(fontsize=fontsize-6)
             ax4.axhline(0)
             ax4b.set_yticks([])
+
     plt.show()
     plt.savefig(save_path)
     plt.close()
