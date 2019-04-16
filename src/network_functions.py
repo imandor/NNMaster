@@ -1,5 +1,7 @@
 import tensorflow as tf
 from src.nets import MultiLayerPerceptron
+from src.plots import plot_1d_position_histogram
+
 from src.metrics import  plot_histogram, Metric, Network_output,print_metric_details
 from src.conf import mlp, mlp_discrete
 from src.database_api_beta import Slice, Filter, hann
@@ -265,6 +267,9 @@ def run_network(nd, session):
         # Time-Shift input and output
         X, y = time_shift_positions(session, z, nd)
         X, y = filter_behavior_component(X, y, nd, session)
+        plot_1d_position_histogram(y,nd)
+
+
         if len(X) != len(y):
             raise ValueError("Error: Length of x and y are not identical")
         if len(X) == 0:

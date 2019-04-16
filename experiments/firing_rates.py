@@ -223,7 +223,7 @@ if __name__ == '__main__':
         lickstart=0
         lickstop = 5000
         lower_limit = 0 # upper and lower limit of y range shown on plot
-        upper_limit = 15
+        upper_limit = 9
         valid_spikecount = 0 # number of spikes the neuron must have to be plotted
         time_range = (lickstop-lickstart)/1000 # divide amount of spikes in range by this value to get spikes/s
         session = initiate_lickwell_network(nd)  # Initialize session
@@ -335,8 +335,8 @@ if __name__ == '__main__':
 
         edit_axis(neurons_by_well, xticklabels, time_range=1,color=color_list[0], label="HC", ax=ax1, errorbar=None, plot_error_bars=False, y_label="neurons", x_label="")
         edit_axis(preferred_firing_rate, xticklabels, time_range,color=color_list[1], label="", ax=ax2, errorbar=[std_preferred_well_lower,std_preferred_well_upper], plot_error_bars=True, y_label="spikes/s", x_label="")
-        edit_axis(minimum_firing_rate, xticklabels,time_range, color=color_list[3], label="", ax=ax3, errorbar=[std_minimum_well_lower,std_minimum_well_upper], plot_error_bars=True, y_label="min spikes/s", x_label="preferred well")
-        edit_axis(average_firing_rate, xticklabels,time_range, color=color_list[2], label="", ax=ax4, errorbar=[std_average_well_lower,std_average_well_upper], plot_error_bars=True, y_label="avg spikes/s", x_label="preferred well")
+        edit_axis(minimum_firing_rate, xticklabels,time_range, color=color_list[3], label="", ax=ax3, errorbar=[std_minimum_well_lower,std_minimum_well_upper], plot_error_bars=True, y_label="min spikes/s", x_label="preferred " + preferred_well + " well")
+        edit_axis(average_firing_rate, xticklabels,time_range, color=color_list[2], label="", ax=ax4, errorbar=[std_average_well_lower,std_average_well_upper], plot_error_bars=True, y_label="avg spikes/s", x_label="preferred " + preferred_well + " well")
 
         ax1.set_ylim(0,55)
         ax2.set_ylim(lower_limit,upper_limit)

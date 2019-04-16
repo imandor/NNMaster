@@ -182,7 +182,7 @@ def return_well_positions(session):
             position_by_well.append(np.average(avg_pos))
     return position_by_well
 
-def filter_behavior_component(X,y,nd,session,allowed_distance=10,allowed_speed=0.1):
+def filter_behavior_component(X,y,nd,session,allowed_distance=10,allowed_speed=1):
     """
     :param X:
     :param y:
@@ -233,7 +233,7 @@ def filter_behavior_component(X,y,nd,session,allowed_distance=10,allowed_speed=0
         X_return = [a for li in X_return for a in li]
         y_return = [a for li in y_return for a in li]
 
-    if filter =="move": # only takes samples with neural activity corresponding to movement-speed<> speed
+    if filter =="move" or filter=="rest": # only takes samples with neural activity corresponding to movement-speed<> speed
         for i, position_as_map in enumerate(y):
             j = i*nd.number_of_bins*nd.win_size # 1 ms resolution index of neural data (and speed) corresponding to sample
             if nd.time_shift<0:

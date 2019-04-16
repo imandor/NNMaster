@@ -87,9 +87,9 @@ if __name__ == '__main__':
     plot_error_bars = False
     epoch = -1 # raw data contains information about all epochs, we only want the newest iteration but it can also be set to an arbitrary epoch
     combined_comparison = False # used for comparison in combined data set so values are added
-    # plot_type="r2"
+    plot_type="r2"
     # plot_type="ape"
-    plot_type="rpe" # ape divided by chance error
+    # plot_type="rpe" # ape divided by chance error
 
     # comparison in combined data set
     # dir = "C:/Users/NN/Desktop/Master/experiments/Experiments for thesis 2/Position decoding/"
@@ -133,7 +133,7 @@ if __name__ == '__main__':
     # dir = "C:/Users/NN/Desktop/Master/experiments/Experiments for thesis 2/naive test/"
     dir = "C:/Users/NN/Desktop/Master/experiments/Experiments for thesis 2/Position decoding/"
 
-    plot_error_bars = True
+    plot_error_bars = False
     model_path_list_1 = [
         dir + "pfc/",
     ]
@@ -146,6 +146,30 @@ if __name__ == '__main__':
     model_path_list_4 = [
         dir + "chc/"
     ]
+    dir = "C:/Users/NN/Desktop/Master/experiments/Experiments for thesis 2/behavior component test/speed/"
+    model_path_list_1 = [
+        dir + "pfc_move/",
+        dir + "pfc_rest/",
+
+    ]
+    model_path_list_2 = [
+        dir + "cpfc_move/",
+        dir + "cpfc_rest/",
+    ]
+    model_path_list_3 = [
+        dir + "hc_move/",
+        dir + "hc_rest/",
+    ]
+    model_path_list_4 = [
+        dir + "chc_move/",
+        dir + "chc_rest/",
+    ]
+
+    ax_label_list_1 = ["PFC move","rest"]
+    ax_label_list_2 = ["CPFC move","rest"]
+    ax_label_list_3 = ["HC move","rest"]
+    ax_label_list_4 = ["CHC move","rest"]
+
     # dir = "C:/Users/NN/Desktop/Master/experiments/Experiments for thesis 2/behavior component test/at lickwell/"
     # dir = "C:/Users/NN/Desktop/Master/experiments/Experiments for thesis 2/behavior component test/correct trials/"
     # model_path_list_1 = [
@@ -170,10 +194,11 @@ if __name__ == '__main__':
     # ax_label_list_2 = ["CPFC correct trials","incorrect trials"]
     # ax_label_list_3 = ["HC correct trials","incorrect trials"]
     # ax_label_list_4 = ["CHC correct trials","incorrect trials"]
-    ax_label_list_1 = ["PFC"]
-    ax_label_list_2 = ["CPFC"]
-    ax_label_list_3 = ["HC"]
-    ax_label_list_4 = ["CHC"]
+    #
+    # ax_label_list_1 = ["PFC"]
+    # ax_label_list_2 = ["CPFC"]
+    # ax_label_list_3 = ["HC"]
+    # ax_label_list_4 = ["CHC"]
 
     color_code_list_1 = ["red","maroon","firebrick","darkred"]
     color_code_list_2 = ["orange","orangered","darkorange","coral"]

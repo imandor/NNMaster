@@ -862,10 +862,18 @@ def print_lickwell_metrics(metrics_i, nd, licks):
     for i, m in enumerate(metrics):
         if nd.initial_timeshift == 1:
             target_lick = get_lick_from_id(m.next_lick_id, licks)
+            after_predicted_lick = get_lick_from_id(m.next_lick_id, licks, shift=0)
+
         else:
             target_lick = get_lick_from_id(m.last_lick_id, licks)
+            after_predicted_lick = get_lick_from_id(m.last_lick_id, licks, shift=0)
+
+        if after_predicted_lick is None:
+            after_predicted_lick = "None"
+        else:
+            after_predicted_lick = after_predicted_lick.lickwell
         print(m.lick_id, " & ", target_lick.rewarded, " & ", m.target, end=" & ")
-        print(m.prediction, " & ", np.round(m.fraction_decoded, 2), " & ",  np.round(m.fraction_predicted, 2), " & ", end=" ")
+        print(m.prediction, " & ",after_predicted_lick," & ", np.round(m.fraction_decoded, 2), " & ",  np.round(m.fraction_predicted, 2), " & ", end=" ")
         if i != len(metrics) - 1:
             print(" \ ")
             # if metrics[i + 1].lick_id in nd.phase_change_ids:

@@ -5,7 +5,7 @@ from src.network_functions import run_network_process, initiate_network, run_net
 from src.model_data import c_dmf,chc_dmf,cpfc_dmf,hc_dmf,pfc_dmf
 if __name__ == '__main__':
 
-    model_data = chc_dmf
+    model_data = hc_dmf
     model_data.model_path="G:/master_datafiles/trained_networks/speedtest/"
     nd = Net_data(
         initial_timeshift=0,
@@ -21,7 +21,7 @@ if __name__ == '__main__':
         from_raw_data=False,
         epochs = 30,
         dropout=0.65,
-        behavior_component_filter="at lickwell",
+        behavior_component_filter="rest",
         # behavior_component_filter="not at lickwell",
         # behavior_component_filter="correct trials",
         # behavior_component_filter="incorrect trials",

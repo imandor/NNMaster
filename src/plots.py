@@ -340,3 +340,27 @@ def plot_position_by_licktime(session,y,metadata,plotrange,title,save_path,color
     plt.tight_layout(pad=0.1, w_pad=0.5, h_pad=0)
     # plt.show()
     plt.savefig(save_path)
+
+def plot_1d_position_histogram(y,nd):
+    """
+
+    :param y:
+    :param nd:
+    :return: histogram of distribution of position
+    """
+    fontsize = 24
+    font = {'family': 'normal',
+            'size': fontsize}
+    matplotlib.rc('font', **font)
+    matplotlib.rc('xtick', labelsize=fontsize - 3)
+    fig, ax = plt.subplots()
+    y_abs = []
+    for i in y:
+        y_abs.append(np.argmax(i)*nd.x_step)
+    ax.hist(y_abs,24,density=False,color="blue") # roughly 10 cm per bin
+
+    ax.set_xlabel("X-coordinate [cm]")
+    ax.set_ylabel("number of corresponding samples")
+    fig.show()
+    pass
+
