@@ -87,13 +87,12 @@ if __name__ == '__main__':
     plot_error_bars = False
     epoch = -1 # raw data contains information about all epochs, we only want the newest iteration but it can also be set to an arbitrary epoch
     combined_comparison = False # used for comparison in combined data set so values are added
-    plot_type="r2"
+    # plot_type="r2"
     # plot_type="ape"
-    # plot_type="rpe" # ape divided by chance error
+    plot_type="rpe" # ape divided by chance error
 
     # comparison in combined data set
     # dir = "C:/Users/NN/Desktop/Master/experiments/Experiments for thesis 2/Position decoding/"
-    plot_error_bars =False
     # model_path_list_1 = [
     #     dir + "cpfc/",
     # ]
@@ -133,7 +132,6 @@ if __name__ == '__main__':
     # dir = "C:/Users/NN/Desktop/Master/experiments/Experiments for thesis 2/naive test/"
     dir = "C:/Users/NN/Desktop/Master/experiments/Experiments for thesis 2/Position decoding/"
 
-    plot_error_bars = False
     model_path_list_1 = [
         dir + "pfc/",
     ]
@@ -146,32 +144,32 @@ if __name__ == '__main__':
     model_path_list_4 = [
         dir + "chc/"
     ]
-    dir = "C:/Users/NN/Desktop/Master/experiments/Experiments for thesis 2/behavior component test/speed/"
-    model_path_list_1 = [
-        dir + "pfc_move/",
-        dir + "pfc_rest/",
-
-    ]
-    model_path_list_2 = [
-        dir + "cpfc_move/",
-        dir + "cpfc_rest/",
-    ]
-    model_path_list_3 = [
-        dir + "hc_move/",
-        dir + "hc_rest/",
-    ]
-    model_path_list_4 = [
-        dir + "chc_move/",
-        dir + "chc_rest/",
-    ]
-
-    ax_label_list_1 = ["PFC move","rest"]
-    ax_label_list_2 = ["CPFC move","rest"]
-    ax_label_list_3 = ["HC move","rest"]
-    ax_label_list_4 = ["CHC move","rest"]
+    # dir = "C:/Users/NN/Desktop/Master/experiments/Experiments for thesis 2/behavior component test/speed/"
+    # model_path_list_1 = [
+    #     dir + "pfc_move/",
+    #     dir + "pfc_rest/",
+    #
+    # ]
+    # model_path_list_2 = [
+    #     dir + "cpfc_move/",
+    #     dir + "cpfc_rest/",
+    # ]
+    # model_path_list_3 = [
+    #     dir + "hc_move/",
+    #     dir + "hc_rest/",
+    # ]
+    # model_path_list_4 = [
+    #     dir + "chc_move/",
+    #     dir + "chc_rest/",
+    # ]
+    #
+    # ax_label_list_1 = ["PFC move","rest"]
+    # ax_label_list_2 = ["CPFC move","rest"]
+    # ax_label_list_3 = ["HC move","rest"]
+    # ax_label_list_4 = ["CHC move","rest"]
 
     # dir = "C:/Users/NN/Desktop/Master/experiments/Experiments for thesis 2/behavior component test/at lickwell/"
-    # dir = "C:/Users/NN/Desktop/Master/experiments/Experiments for thesis 2/behavior component test/correct trials/"
+    dir = "C:/Users/NN/Desktop/Master/experiments/Experiments for thesis 2/behavior component test/correct trials/"
     # model_path_list_1 = [
     #     dir + "pfc_correct_trials/",
     #     dir + "pfc_incorrect_trials/",
@@ -195,16 +193,16 @@ if __name__ == '__main__':
     # ax_label_list_3 = ["HC correct trials","incorrect trials"]
     # ax_label_list_4 = ["CHC correct trials","incorrect trials"]
     #
-    # ax_label_list_1 = ["PFC"]
-    # ax_label_list_2 = ["CPFC"]
-    # ax_label_list_3 = ["HC"]
-    # ax_label_list_4 = ["CHC"]
-
-    color_code_list_1 = ["red","maroon","firebrick","darkred"]
-    color_code_list_2 = ["orange","orangered","darkorange","coral"]
-    color_code_list_3 = ["aqua","navy","mediumblue","darkblue"]
-    color_code_list_5 = ["slateblue","midnightblue","mediumslateblue","darkslateblue"]
-    color_code_list_4 = ["lightgreen","forestgreen","limegreen","green"]
+    ax_label_list_1 = ["PFC"]
+    ax_label_list_2 = ["CPFC"]
+    ax_label_list_3 = ["HC"]
+    ax_label_list_4 = ["CHC"]
+    #
+    color_code_list_1 = ["red","maroon"]
+    color_code_list_2 = ["orange","coral"]
+    color_code_list_3 = ["blue","navy"]
+    color_code_list_4 = ["lightblue","midnightblue"]
+    color_code_list_5 = ["darkgreen","lightgreen"]
 
     # at lickwell vs not at lickwell
     # dir = "C:/Users/NN/Desktop/Master/experiments/Experiments for thesis/behavior component test/at lickwell/"
@@ -234,8 +232,8 @@ if __name__ == '__main__':
     # color_code_list_1 = ["red","maroon"]
     # color_code_list_2 = ["orange","coral"]
     # color_code_list_3 = ["blue","navy"]
-    # color_code_list_4 = ["slateblue","midnightblue"]
-    # color_code_list_5 = ["green","lightgreen"]
+    # color_code_list_4 = ["lightblue","midnightblue"]
+    # color_code_list_5 = ["darkgreen","lightgreen"]
 
 
 
@@ -258,11 +256,11 @@ if __name__ == '__main__':
     width = 3.5
     height = width / 1.5
     fig.set_size_inches(width, height)
-    edit_axis(model_path_list_1,ax_label_list_1,color_list=color_code_list_1,ax=ax1,plot_error_bars=plot_error_bars,plot_type=plot_type,divide_by=75)
-    edit_axis(model_path_list_2,ax_label_list_2,color_list=color_code_list_2,ax=ax2,plot_error_bars=plot_error_bars,plot_type=plot_type,divide_by=50)
-    edit_axis(model_path_list_3,ax_label_list_3,color_list=color_code_list_3,ax=ax3,plot_error_bars=plot_error_bars,plot_type=plot_type,divide_by=61)
+    edit_axis(model_path_list_1,ax_label_list_1,color_list=color_code_list_1,ax=ax1,plot_error_bars=plot_error_bars,plot_type=plot_type,divide_by=57.3)
+    edit_axis(model_path_list_2,ax_label_list_2,color_list=color_code_list_2,ax=ax2,plot_error_bars=plot_error_bars,plot_type=plot_type,divide_by=61.4)
+    edit_axis(model_path_list_3,ax_label_list_3,color_list=color_code_list_3,ax=ax3,plot_error_bars=plot_error_bars,plot_type=plot_type,divide_by=63.5)
     if combined_comparison is False:
-        edit_axis(model_path_list_4,ax_label_list_4,color_list=color_code_list_4,ax=ax4,plot_error_bars=plot_error_bars,plot_type=plot_type,divide_by=50)
+        edit_axis(model_path_list_4,ax_label_list_4,color_list=color_code_list_4,ax=ax4,plot_error_bars=plot_error_bars,plot_type=plot_type,divide_by=61.4)
     else:
         edit_axis_special(model_path_list_4,ax_label_list_4,color_list=color_code_list_5,ax=ax4,plot_error_bars=plot_error_bars,plot_type="r2")
     # ax1.tick_params(labelsize=fontsize)
@@ -280,19 +278,51 @@ if __name__ == '__main__':
         ax2.axhline(0)
         ax3.axhline(0)
         ax4.axhline(0)
+        ax1.set_ylim(-30,2)
+        ax2.set_ylim(-30,2)
+        ax3.set_ylim(-30,2)
     if plot_type=="ape":
-        ax1.axhline(75)
-        ax2.axhline(50)
-        ax3.axhline(61)
-        ax4.axhline(50)
+        # speed
+        # ax1.axhline(36.6,color=color_code_list_1[1])
+        # ax1.axhline(60.2,color=color_code_list_1[0])
+        # ax2.axhline(64.7,color=color_code_list_2[1])
+        # ax2.axhline(60.6,color=color_code_list_2[0])
+        # ax3.axhline(52.7,color=color_code_list_3[1])
+        # ax3.axhline(64.5,color=color_code_list_3[0])
+        # ax4.axhline(64.7,color=color_code_list_4[1])
+        # ax4.axhline(60.6,color=color_code_list_4[0])
+        # at well
+        # ax1.axhline(59.8,color=color_code_list_1[0])
+        # ax1.axhline(52.4,color=color_code_list_1[1])
+        # ax2.axhline(60.1,color=color_code_list_2[0])
+        # ax2.axhline(67.1,color=color_code_list_2[1])
+        # ax3.axhline(62.1,color=color_code_list_3[0])
+        # ax3.axhline(65.5,color=color_code_list_3[1])
+        # ax4.axhline(60.1,color=color_code_list_4[0])
+        # ax4.axhline(67.1,color=color_code_list_4[1])
+        # correct vs incorrect trial
+        # ax1.axhline(54.4,color=color_code_list_1[0])
+        # ax1.axhline(82.7,color=color_code_list_1[1])
+        # ax2.axhline(67.9,color=color_code_list_2[0])
+        # ax2.axhline(42.5,color=color_code_list_2[1])
+        # ax3.axhline(64.3,color=color_code_list_3[0])
+        # ax3.axhline(62.3,color=color_code_list_3[1])
+        # ax4.axhline(67.9,color=color_code_list_4[0])
+        # ax4.axhline(42.5,color=color_code_list_4[1])
+        # regular
+        ax1.axhline(57.3,color=color_code_list_1[0])
+        ax2.axhline(61.4,color=color_code_list_2[0])
+        ax3.axhline(63.5,color=color_code_list_3[0])
+        ax4.axhline(61.4,color=color_code_list_4[0])
+
         ax1.set_ylim(0,100)
         ax2.set_ylim(0,100)
         ax3.set_ylim(0,100)
     if plot_type =="rpe":
-        ax1.set_ylim(0.5,1.5)
-        ax2.set_ylim(0.5,1.5)
-        ax3.set_ylim(0.5,1.5)
-        ax4.set_ylim(0.5,1.5)
+        ax1.set_ylim(0.4,1.5)
+        ax2.set_ylim(0.4,1.5)
+        ax3.set_ylim(0.4,1.5)
+        ax4.set_ylim(0.4,1.5)
         ax1.set_ylabel("ape/chance")
         # ax2.set_ylabel("ape/chance")
         ax3.set_ylabel("ape/chance")
@@ -306,12 +336,13 @@ if __name__ == '__main__':
         if combined_comparison is False and plot_type=="ape":
             ax4.set_ylim(0,100)
         else:
-            ax4.set_ylim(-1,1)
-            ax4b = ax4.twinx()
-            ax4b.set_ylabel("r2-score")
-            ax4.legend(fontsize=fontsize-6)
-            ax4.axhline(0)
-            ax4b.set_yticks([])
+            if combined_comparison is True:
+                ax4.set_ylim(-1,1)
+                ax4b = ax4.twinx()
+                ax4b.set_ylabel("r2-score")
+                ax4.legend(fontsize=fontsize-6)
+                ax4.axhline(0)
+                ax4b.set_yticks([])
 
     plt.show()
     plt.savefig(save_path)

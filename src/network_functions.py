@@ -2,7 +2,7 @@ import tensorflow as tf
 from src.nets import MultiLayerPerceptron
 from src.plots import plot_1d_position_histogram
 
-from src.metrics import  plot_histogram, Metric, Network_output,print_metric_details
+from src.metrics import  plot_histogram, Metric, Network_output,print_metric_details,print_chance_level_error
 from src.conf import mlp, mlp_discrete
 from src.database_api_beta import Slice, Filter, hann
 from src.metrics import print_Net_data, cross_validate_lickwell_data, Evaluated_Samples_By_Epoch,print_lickwell_metrics
@@ -267,7 +267,11 @@ def run_network(nd, session):
         # Time-Shift input and output
         X, y = time_shift_positions(session, z, nd)
         X, y = filter_behavior_component(X, y, nd, session)
-        plot_1d_position_histogram(y,nd)
+        # average position error
+        print_chance_level_error(y, nd)
+
+
+        # plot_1d_position_histogram(y,nd)
 
 
         if len(X) != len(y):

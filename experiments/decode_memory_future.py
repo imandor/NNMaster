@@ -6,9 +6,12 @@ from src.model_data import c_dmf,chc_dmf,cpfc_dmf,hc_dmf,pfc_dmf
 if __name__ == '__main__':
 
     model_data = hc_dmf
+    # model_data = pfc_dmf
+    # model_data = chc_dmf
+
     model_data.model_path="G:/master_datafiles/trained_networks/speedtest/"
     nd = Net_data(
-        initial_timeshift=0,
+        initial_timeshift=10000,
         time_shift_iter=500,
         time_shift_steps=1,
         early_stopping=False,
@@ -21,7 +24,7 @@ if __name__ == '__main__':
         from_raw_data=False,
         epochs = 30,
         dropout=0.65,
-        behavior_component_filter="rest",
+        # behavior_component_filter="rest",
         # behavior_component_filter="not at lickwell",
         # behavior_component_filter="correct trials",
         # behavior_component_filter="incorrect trials",
@@ -34,6 +37,13 @@ if __name__ == '__main__':
         switch_x_y=model_data.switch_x_y
     )
     session = initiate_network(nd)
+    licks_timestamp = [lick.time for lick in session.licks]
+    session.plot(ax_filtered_spikes=session.filtered_spikes, ax_raw_spikes=session.spikes, ax_licks=licks_timestamp)
+    i = 0
+    for lick in session.licks:
+        if lick.rewarded == 0:
+            i+=1
+    pass
     # speedlist = [] # Speed test
     # maxspeed = np.max(session.speed)
     # for speed in session.speed:

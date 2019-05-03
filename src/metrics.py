@@ -764,6 +764,24 @@ def get_metric_details(path, timeshift,pathname_metadata=""):
     return lick_id_details, lick_id_details_k
 
 
+def print_chance_level_error(y,nd):
+    """
+
+    :param y:
+    :return: prints chance level error, eg average distance between samples and average position
+    """
+    y_avg = np.average(y,axis=0)
+    asd = 0
+    for y_i in y:
+        asd += np.argmax(y_i)
+    y_avg = asd /len(y)
+    summ = 0
+    for a in y:
+        summ+= abs(np.argmax(a)*nd.x_step-y_avg)
+    summ = summ/len(y)
+    print(summ)
+
+
 def print_metric_details(path, timeshift, pathname_metadata=""):
     """
 
