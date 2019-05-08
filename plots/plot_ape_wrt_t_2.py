@@ -88,8 +88,8 @@ if __name__ == '__main__':
     epoch = -1 # raw data contains information about all epochs, we only want the newest iteration but it can also be set to an arbitrary epoch
     combined_comparison = False # used for comparison in combined data set so values are added
     # plot_type="r2"
-    # plot_type="ape"
-    plot_type="rpe" # ape divided by chance error
+    plot_type="ape"
+    # plot_type="rpe" # ape divided by chance error
 
     # comparison in combined data set
     # dir = "C:/Users/NN/Desktop/Master/experiments/Experiments for thesis 2/Position decoding/"
@@ -133,16 +133,16 @@ if __name__ == '__main__':
     dir = "C:/Users/NN/Desktop/Master/experiments/Experiments for thesis 2/Position decoding/"
 
     model_path_list_1 = [
-        dir + "pfc/",
+        dir + "hc_naive_2/",
     ]
     model_path_list_2 = [
-        dir + "cpfc/"
+        dir + "hc_naive_2/"
     ]
     model_path_list_3 = [
-        dir + "hc/"
+        dir + "hc_naive_2/"
     ]
     model_path_list_4 = [
-        dir + "chc/"
+        dir + "hc_naive_2/"
     ]
     # dir = "C:/Users/NN/Desktop/Master/experiments/Experiments for thesis 2/behavior component test/speed/"
     # model_path_list_1 = [

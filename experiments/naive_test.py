@@ -15,14 +15,14 @@ if __name__ == '__main__':
 
     # hippocampus
     #
-    # MODEL_PATH = "G:/master_datafiles/trained_networks/hc_naive/"
-    # RAW_DATA_PATH = "G:/master_datafiles/raw_data/HC/"
-    # FILTERED_DATA_PATH = "session_hc"
+    MODEL_PATH = "G:/master_datafiles/trained_networks/hc_naive_2/"
+    RAW_DATA_PATH = "G:/master_datafiles/raw_data/HC/"
+    FILTERED_DATA_PATH = "session_hc"
 
     # Combination data set
 
-    RAW_DATA_PATH = "G:/master_datafiles/raw_data/C"
-    combination_data_set = True  # for some reason, the combination data set has switched x and y axis, which needs to be manually switched back
+    # RAW_DATA_PATH = "G:/master_datafiles/raw_data/C"
+    # combination_data_set = True  # for some reason, the combination data set has switched x and y axis, which needs to be manually switched back
     # only Hippocampus neurons
 
     # MODEL_PATH = "G:/master_datafiles/trained_networks/chc_naive/"
@@ -31,16 +31,16 @@ if __name__ == '__main__':
 
     # only Prefrontal Cortex neurons
 
-    MODEL_PATH = "G:/master_datafiles/trained_networks/cpfc_naive/"
-    FILTERED_DATA_PATH = "session_CPFC.pkl"
-    filter_tetrodes = range(0, 13)
+    # MODEL_PATH = "G:/master_datafiles/trained_networks/cpfc_naive/"
+    # FILTERED_DATA_PATH = "session_CPFC.pkl"
+    # filter_tetrodes = range(0, 13)
 
     # all neurons
 
     # MODEL_PATH = "G:/master_datafiles/trained_networks/c_naive/"
     # FILTERED_DATA_PATH = "slice_C.pkl"
     nd = Net_data(
-        initial_timeshift=0,
+        initial_timeshift=-2000,
         time_shift_iter=500,
         time_shift_steps=21,
         early_stopping=False,
@@ -50,7 +50,7 @@ if __name__ == '__main__':
         k_cross_validation=1,
         valid_ratio=0.1,
         naive_test=True,
-        from_raw_data=False,
+        from_raw_data=True,
         epochs=30,
         dropout=0.65,
         behavior_component_filter=None,
@@ -64,7 +64,7 @@ if __name__ == '__main__':
     run_network(nd, session)
 
     nd = Net_data(
-        initial_timeshift=-500,
+        initial_timeshift=-2500,
         time_shift_iter=-500,
         time_shift_steps=20,
         early_stopping=False,
