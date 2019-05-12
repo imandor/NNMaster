@@ -115,25 +115,25 @@ if __name__ == '__main__':
 
     # plot results
     fig, ((ax1,ax3),(ax2,ax4)) = plt.subplots(2,2)
-    ax1.plot(time_ind, speed_list_hc, color="b",label="Hippocampus")  # label="cv "+str(i+1)+"/10",
+    ax1.plot(time_ind, speed_list_hc, color="b",label="HC")  # label="cv "+str(i+1)+"/10",
     ax1.set_ylabel("speed [cm/s]", fontsize=fontsize)
     ax1.xaxis.set_major_locator(plt.MaxNLocator(3))
     ax1.yaxis.set_major_locator(plt.MaxNLocator(3))
     ax1.legend(fontsize=fontsize)
     ax2.plot(time_ind, spike_rate_list_hc, color="b")  # label="cv "+str(i+1)+"/10",
     ax2.set_ylabel("spikes/s", fontsize=fontsize)
-    ax2.set_xlabel("time", fontsize=fontsize)
+    ax2.set_xlabel("time [ms]", fontsize=fontsize)
     ax2.xaxis.set_major_locator(plt.MaxNLocator(3))
     ax2.yaxis.set_major_locator(plt.MaxNLocator(3))
 
-    ax3.plot(time_ind, speed_list_pfc, color="r",label="Prefrontal Cortex")  # label="cv "+str(i+1)+"/10",
+    ax3.plot(time_ind, speed_list_pfc, color="r",label="PFC")  # label="cv "+str(i+1)+"/10",
     # ax3.set_ylabel("speed [cm/s]", fontsize=fontsize)
     ax3.xaxis.set_major_locator(plt.MaxNLocator(3))
     ax3.yaxis.set_major_locator(plt.MaxNLocator(3))
     ax3.legend(fontsize=fontsize)
     ax4.plot(time_ind, spike_rate_list_pfc, color="r")  # label="cv "+str(i+1)+"/10",
     # ax4.set_ylabel("spikes/s", fontsize=fontsize)
-    ax4.set_xlabel("time", fontsize=fontsize)
+    ax4.set_xlabel("time [ms]", fontsize=fontsize)
     ax4.xaxis.set_major_locator(plt.MaxNLocator(3))
     ax4.yaxis.set_major_locator(plt.MaxNLocator(3))
     # ax1.tick_params(axis='both', which='major', labelsize=fontsize)

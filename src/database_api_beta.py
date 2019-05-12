@@ -171,7 +171,7 @@ class Net_data:
                  time_shift_iter=500,  # determines, how much the time is shifted after each time_shift_step
                  initial_timeshift=0,
                  # initial time_shift for position decoding. For well-decoding, I appropiated this parameter to determine if the previous or next well is to be decoded (sorry). +1 indicates next well, -1 previous well
-                 metric_iter=1,  # after how many epochs the network performance is to be evaluated
+                 metric_iter=14,  # after how many epochs the network performance is to be evaluated
                  batch_size=50,  # how many samples are to be given into the network at once (google batch_size)
                  slice_size=1000,  # how many [ms] of neural spike data are in each sample
                  x_max=240,  # determines shape of the track the rat is located on [cm]
@@ -791,7 +791,9 @@ class Slice:
         # Extract spiketracker data
 
         spiketracker_data = scipy.io.loadmat(spiketracker_path)
-        if filter_tetrodes is not None:  # This value apparently only exists in session 3 but is necessary to distinguish pfc and hc
+        if filter_tetrodes is False: # corrects possible input error in GUI
+            filter_tetrodes = None
+        if filter_tetrodes is not None :  # This value apparently only exists in session 3 but is necessary to distinguish pfc and hc
             tetrode_channel_list = spiketracker_data["waveform"]["tetrode_n"][0][0][0]
 
         # param: head_s, pixelcm, speed_s, spike_templates, spike_times, waveform,x_s, y_s

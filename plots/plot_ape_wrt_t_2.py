@@ -53,7 +53,7 @@ def edit_axis(model_path_list,ax_label_list,color_list,ax=None,plot_error_bars=F
             ape_avg_list = [x / divide_by for x in ape_avg_list]
 
         if ape_avg_list is not None:
-            if plot_error_bars is False:
+            if plot_error_bars is False or plot_type =="r2":
                 ax.plot(time_shift_list, ape_avg_list, label=ax_label_list[i], color=color_list[i], marker="None",linestyle="-") #,linestyle="None"
             else:
                 ax.errorbar(x=time_shift_list,y=ape_avg_list,yerr=errorbars,capsize=2,label=ax_label_list[i], color=color_list[i], marker="None",linestyle=":")
@@ -84,45 +84,45 @@ if __name__ == '__main__':
 
     # Settings
     fontsize = 24
-    plot_error_bars = False
+    plot_error_bars = True
     epoch = -1 # raw data contains information about all epochs, we only want the newest iteration but it can also be set to an arbitrary epoch
-    combined_comparison = False # used for comparison in combined data set so values are added
+    combined_comparison = True # used for comparison in combined data set so values are added
     # plot_type="r2"
     plot_type="ape"
     # plot_type="rpe" # ape divided by chance error
 
     # comparison in combined data set
-    # dir = "C:/Users/NN/Desktop/Master/experiments/Experiments for thesis 2/Position decoding/"
-    # model_path_list_1 = [
-    #     dir + "cpfc/",
-    # ]
-    # model_path_list_2 = [
-    #     dir + "chc/"
-    # ]
-    # model_path_list_3 = [
-    #     dir + "c/"
-    # ]
-    # model_path_list_4 = [
-    #     dir + "c/",
-    #     dir + "chc/",
-    #     dir + "cpfc/"
-    # ]
-    # combined_comparison = True
-    #
-    # ax_label_list_1 = ["CPFC"]
-    # ax_label_list_2 = ["CHC"]
-    # ax_label_list_3 = ["Combined"]
-    # ax_label_list_4 = ["Combined","CPFC","CHC"]
+    dir = "C:/Users/NN/Desktop/Master/experiments/Experiments for thesis 2/Position decoding/"
+    model_path_list_1 = [
+        dir + "cpfc/",
+    ]
+    model_path_list_2 = [
+        dir + "chc/"
+    ]
+    model_path_list_3 = [
+        dir + "c/"
+    ]
+    model_path_list_4 = [
+        dir + "c/",
+        dir + "chc/",
+        dir + "cpfc/"
+    ]
+    combined_comparison = True
+
+    ax_label_list_1 = ["CPFC"]
+    ax_label_list_2 = ["CHC"]
+    ax_label_list_3 = ["Combined"]
+    ax_label_list_4 = ["Combined","CPFC","CHC"]
     # # ax_label_list_1 = ["PFC"]
     # # ax_label_list_2 = ["CPFC"]
     # # ax_label_list_3 = ["HC"]
     # # ax_label_list_4 = ["CHC"]
     #
-    # color_code_list_1 = ["red","maroon","firebrick","darkred"]
-    # color_code_list_2 = ["orange","orangered","darkorange","coral"]
-    # color_code_list_3 = ["aqua","navy","mediumblue","darkblue"]
-    # color_code_list_5 = ["purple","lightgreen","orange","darkslateblue"]
-    # color_code_list_4 = ["lightgreen","forestgreen","limegreen","green"]
+    color_code_list_1 = ["red","maroon","firebrick","darkred"]
+    color_code_list_2 = ["orange","orangered","darkorange","coral"]
+    color_code_list_3 = ["aqua","navy","mediumblue","darkblue"]
+    color_code_list_5 = ["purple","lightgreen","orange","darkslateblue"]
+    color_code_list_4 = ["lightgreen","forestgreen","limegreen","green"]
 
 
 
@@ -130,20 +130,20 @@ if __name__ == '__main__':
     # regular decoding
     # dir = "C:/Users/NN/Desktop/Master/experiments/Experiments for thesis 2/Position decoding/"
     # dir = "C:/Users/NN/Desktop/Master/experiments/Experiments for thesis 2/naive test/"
-    dir = "C:/Users/NN/Desktop/Master/experiments/Experiments for thesis 2/Position decoding/"
-
-    model_path_list_1 = [
-        dir + "hc_naive_2/",
-    ]
-    model_path_list_2 = [
-        dir + "hc_naive_2/"
-    ]
-    model_path_list_3 = [
-        dir + "hc_naive_2/"
-    ]
-    model_path_list_4 = [
-        dir + "hc_naive_2/"
-    ]
+    # dir = "C:/Users/NN/Desktop/Master/experiments/Experiments for thesis 2/Position decoding/"
+    # #
+    # model_path_list_1 = [
+    #     dir + "pfc/",
+    # ]
+    # model_path_list_2 = [
+    #     dir + "cpfc/"
+    # ]
+    # model_path_list_3 = [
+    #     dir + "hc/"
+    # ]
+    # model_path_list_4 = [
+    #     dir + "chc/"
+    # ]
     # dir = "C:/Users/NN/Desktop/Master/experiments/Experiments for thesis 2/behavior component test/speed/"
     # model_path_list_1 = [
     #     dir + "pfc_move/",
@@ -163,13 +163,12 @@ if __name__ == '__main__':
     #     dir + "chc_rest/",
     # ]
     #
-    # ax_label_list_1 = ["PFC move","rest"]
-    # ax_label_list_2 = ["CPFC move","rest"]
-    # ax_label_list_3 = ["HC move","rest"]
-    # ax_label_list_4 = ["CHC move","rest"]
+    # ax_label_list_1 = ["PFC","rest"]
+    # ax_label_list_2 = ["CPFC","rest"]
+    # ax_label_list_3 = ["HC","rest"]
+    # ax_label_list_4 = ["CHC","rest"]
 
-    # dir = "C:/Users/NN/Desktop/Master/experiments/Experiments for thesis 2/behavior component test/at lickwell/"
-    dir = "C:/Users/NN/Desktop/Master/experiments/Experiments for thesis 2/behavior component test/correct trials/"
+    # dir = "C:/Users/NN/Desktop/Master/experiments/Experiments for thesis 2/behavior component test/correct trials/"
     # model_path_list_1 = [
     #     dir + "pfc_correct_trials/",
     #     dir + "pfc_incorrect_trials/",
@@ -177,58 +176,58 @@ if __name__ == '__main__':
     # ]
     # model_path_list_2 = [
     #     dir + "cpfc_correct_trials/",
-    #     dir + "cpfc_incorrect_trials/",
+    #     dir + "pfc_incorrect_trials/",
     # ]
     # model_path_list_3 = [
     #     dir + "hc_correct_trials/",
-    #     dir + "hc_incorrect_trials/",
+    #     dir + "pfc_incorrect_trials/",
     # ]
     # model_path_list_4 = [
     #     dir + "chc_correct_trials/",
-    #     dir + "chc_incorrect_trials/",
+    #     dir + "pfc_incorrect_trials/",
     # ]
     #
     # ax_label_list_1 = ["PFC correct trials","incorrect trials"]
     # ax_label_list_2 = ["CPFC correct trials","incorrect trials"]
     # ax_label_list_3 = ["HC correct trials","incorrect trials"]
     # ax_label_list_4 = ["CHC correct trials","incorrect trials"]
-    #
-    ax_label_list_1 = ["PFC"]
-    ax_label_list_2 = ["CPFC"]
-    ax_label_list_3 = ["HC"]
-    ax_label_list_4 = ["CHC"]
-    #
-    color_code_list_1 = ["red","maroon"]
-    color_code_list_2 = ["orange","coral"]
-    color_code_list_3 = ["blue","navy"]
-    color_code_list_4 = ["lightblue","midnightblue"]
-    color_code_list_5 = ["darkgreen","lightgreen"]
+    # #
+    # ax_label_list_1 = ["PFC"]
+    # ax_label_list_2 = ["CPFC"]
+    # ax_label_list_3 = ["HC"]
+    # ax_label_list_4 = ["CHC"]
+    # #
+    # color_code_list_1 = ["red","maroon"]
+    # color_code_list_2 = ["orange","coral"]
+    # color_code_list_3 = ["blue","navy"]
+    # color_code_list_4 = ["lightblue","midnightblue"]
+    # color_code_list_5 = ["darkgreen","lightgreen"]
 
     # at lickwell vs not at lickwell
-    # dir = "C:/Users/NN/Desktop/Master/experiments/Experiments for thesis/behavior component test/at lickwell/"
+    # dir = "C:/Users/NN/Desktop/Master/experiments/Experiments for thesis 2/behavior component test/at lickwell/"
     # model_path_list_1 = [
-    #     dir + "pfc_bc_at_lickwell/",
-    #     dir + "pfc_bc_not_at_lickwell/",
+    #     dir + "pfc_at_lickwell/",
+    #     dir + "pfc_not_at_lickwell/",
     #
     # ]
     # model_path_list_2 = [
-    #     dir + "cpfc_bc_at_lickwell/",
-    #     dir + "cpfc_bc_not_at_lickwell/"
+    #     dir + "cpfc_at_lickwell/",
+    #     dir + "cpfc_not_at_lickwell/"
     #
     # ]
     # model_path_list_3 = [
-    #     dir + "hc_bc_at_lickwell/",
-    #     dir + "hc_bc_not_at_lickwell/"
+    #     dir + "hc_at_lickwell/",
+    #     dir + "hc_not_at_lickwell/"
     # ]
     # model_path_list_4 = [
-    #     dir + "chc_bc_at_lickwell/",
-    #     dir + "chc_bc_not_at_lickwell/"
+    #     dir + "chc_at_lickwell/",
+    #     dir + "chc_not_at_lickwell/"
     # ]
     # ax_label_list_1 = ["PFC at well","PFC not at well"]
     # ax_label_list_2 = ["CPFC at well", "CPFC not at well"]
     # ax_label_list_3 = ["HC at well", "HC not at well"]
     # ax_label_list_4 = ["CHC at well", "CHC not at well"]
-    #
+
     # color_code_list_1 = ["red","maroon"]
     # color_code_list_2 = ["orange","coral"]
     # color_code_list_3 = ["blue","navy"]
@@ -243,10 +242,10 @@ if __name__ == '__main__':
     rc('xtick', labelsize=fontsize)
     rc('ytick', labelsize=fontsize)
     rc('axes', labelsize=fontsize)
-    fig, ((ax1,ax2),(ax3,ax4)) = plt.subplots(nrows=2,ncols=2,sharey=True)
+    fig, ((ax1,ax2),(ax3,ax4)) = plt.subplots(nrows=2,ncols=2,sharey=False)
     axis_label_x = 'Time shift [ms]'
     if plot_type == "ape" or plot_type=="rpe":
-        axis_label_y = r'$\o$ ape'
+        axis_label_y = r'$\o$ ape [cm]'
     if plot_type == "r2":
         axis_label_y = r'$\o$ r2 score'
     # plt.rc('font', family='serif', serif='Times')
@@ -262,7 +261,7 @@ if __name__ == '__main__':
     if combined_comparison is False:
         edit_axis(model_path_list_4,ax_label_list_4,color_list=color_code_list_4,ax=ax4,plot_error_bars=plot_error_bars,plot_type=plot_type,divide_by=61.4)
     else:
-        edit_axis_special(model_path_list_4,ax_label_list_4,color_list=color_code_list_5,ax=ax4,plot_error_bars=plot_error_bars,plot_type="r2")
+        edit_axis_special(model_path_list_4,ax_label_list_4,color_list=color_code_list_5,ax=ax4,plot_error_bars=False,plot_type="r2")
     # ax1.tick_params(labelsize=fontsize)
     # ax2.tick_params(labelsize=fontsize)
     # ax3.tick_params(labelsize=fontsize)
@@ -310,10 +309,10 @@ if __name__ == '__main__':
         # ax4.axhline(67.9,color=color_code_list_4[0])
         # ax4.axhline(42.5,color=color_code_list_4[1])
         # regular
-        ax1.axhline(57.3,color=color_code_list_1[0])
-        ax2.axhline(61.4,color=color_code_list_2[0])
-        ax3.axhline(63.5,color=color_code_list_3[0])
-        ax4.axhline(61.4,color=color_code_list_4[0])
+        # ax1.axhline(57.3,color=color_code_list_1[0])
+        # ax2.axhline(61.4,color=color_code_list_2[0])
+        # ax3.axhline(63.5,color=color_code_list_3[0])
+        # ax4.axhline(61.4,color=color_code_list_4[0])
 
         ax1.set_ylim(0,100)
         ax2.set_ylim(0,100)

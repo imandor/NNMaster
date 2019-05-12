@@ -68,15 +68,15 @@ if __name__ == '__main__':
     fontsize = 24
     plot_error_bars = True
     epoch = -1 # raw data contains information about all epochs, we only want the newest iteration
-    plot_type="r2"
-    # plot_type="ape"
+    # plot_type="r2"
+    plot_type="ape"
 
     # ]
 
     plot_error_bars =False
     neuron_filter_list = ["_full","56","44","33","22","11"]
     directory = "C:/Users/NN/Desktop/Master/experiments/Experiments for thesis 2/neuron filter/"
-    ax_label_list = ["pfc","cpfc","hc","chc"]
+    ax_label_list = ["PFC","CPFC","HC","CHC"]
     data_set = ax_label_list[0]
     path_list_1 = [
         directory + data_set + neuron_filter_list[0] + "/",
@@ -127,7 +127,7 @@ if __name__ == '__main__':
     fig, ((ax1,ax2),(ax3,ax4)) = plt.subplots(nrows=2,ncols=2,sharey='all')
     axis_label_x = 'Time shift [ms]'
     if plot_type == "ape":
-        axis_label_y = r'$\o$ ape'
+        axis_label_y = r'$\o$ ape [cm]'
     if plot_type == "r2":
         axis_label_y = r'$\o$ r2 score'
     # plt.rc('font', family='serif', serif='Times')
@@ -137,9 +137,10 @@ if __name__ == '__main__':
     width = 3.5
     height = width / 1.5
     fig.set_size_inches(width, height)
-    edit_axis(path_list_1,ax_label_list[0],color=color_code_list[0],ax=ax1,plot_type=plot_type,y_label=plot_type)
+    edit_axis(path_list_1,ax_label_list[0],color=color_code_list[0],ax=ax1,plot_type=plot_type,y_label=axis_label_y)
     edit_axis(path_list_2,ax_label_list[1],color=color_code_list[1],ax=ax2,plot_type=plot_type)
-    edit_axis(path_list_3,ax_label_list[2],color=color_code_list[2],ax=ax3,plot_type=plot_type,y_label=plot_type,x_label="number of neurons")
+    edit_axis(path_list_3,ax_label_list[2],color=color_code_list[2],ax=ax3,plot_type=plot_type,y_label=axis_label_y,x_label="number of neurons")
     edit_axis(path_list_4,ax_label_list[3],color=color_code_list[3],ax=ax4,plot_type=plot_type,x_label="number of neurons")
+
     plt.show()
     plt.close()

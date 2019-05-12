@@ -147,7 +147,7 @@ if __name__ == '__main__':
     ax2.bar(ind_labels, counter_list, color='r', align='center',width=interval,edgecolor="black")
     ax2.set_xticklabels(ind_labels)
     ax2.set_ylabel("fraction of events", fontsize=fontsize)
-    ax2.set_xlabel("time", fontsize=fontsize)
+    ax2.set_xlabel("time [ms]", fontsize=fontsize)
     ax2.axhline(0.95)
     ax2.set_xticks(np.arange(min(ind_labels), max(ind_labels) + 1, xtickresolution))
     ax2.set_xticklabels(np.arange(min(ind_labels), max(ind_labels) + 1, xtickresolution),fontsize=fontsize)

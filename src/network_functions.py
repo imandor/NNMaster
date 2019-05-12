@@ -171,7 +171,7 @@ def run_network_process(nd):
                         metric_eval.acc20_by_epoch = metric_eval.acc20_by_epoch[0:-1]
 
         # Train network
-        if nd.naive_test is False or nd.time_shift == -2000: # TODO undo to 0
+        if nd.naive_test is False or nd.time_shift == 0:
 
             for j in range(0, len(X_train) - nd.batch_size, nd.batch_size):
                 x = (X_train[j:j + nd.batch_size])
@@ -286,7 +286,7 @@ def run_network(nd, session):
         for k in range(0, nd.k_cross_validation):
             print("Timeshift", nd.time_shift)
             print("cross validation step", str(k + 1), "of", nd.k_cross_validation)
-            if nd.naive_test is True and nd.time_shift != -2000: # todo undo to shift == 0
+            if nd.naive_test is True and nd.time_shift != 0: #
                 nd.load_model = True
                 nd.epochs=1
             nd.assign_training_testing(X, y, k)
